@@ -932,7 +932,7 @@ function runSafetyCheck(price, ema8, vwap, rsi3, timeframe, extras) {
 //   4. TƏSDİQ ŞAMI (bloklayıcı): kəsişmə şamı siqnal istiqamətində bağlanmalıdır
 //   5. Hədəf: ATR × 3 (trend davam edir, geniş hədəf), stop: ATR × 1.5
 function runTrendCheck(price, timeframe, extras) {
-  const { atr, ema200, ema9, ema20, prevEma9, prevEma20, adx, lastClosedCandle } = extras;
+  const { atr, ema200, ema9, ema20, prevEma9, prevEma20, adx, lastClosedCandle, dxy } = extras;
   const results = [];
 
   const check = (label, required, actual, pass, reasonIfFail) => {
@@ -940,6 +940,17 @@ function runTrendCheck(price, timeframe, extras) {
     const icon = pass ? "✅" : "🚫";
     console.log(`  ${icon} ${label}`);
     console.log(`     Tələb: ${required} | Faktiki: ${actual}`);
+  };
+
+  // Məlumat xarakterli göstərici — siqnalı BLOKLAMIR. Video-təlimindən öyrənilən ideya:
+  // DXY (dollar indeksi) qızılla tarixən əks-korrelyasiyadadır. Hələ bloklayıcı DEYİL —
+  // order flow kimi əvvəlcə göstərilir, aylarla nəticəsi ölçülüb sübut olunsa bloklayıcı olar.
+  const info = (label, expected, actual, good) => {
+    results.push({
+      label: `${good ? "✓" : "⚠"} ${label} (məlumat — bloklamır)`,
+      required: expected, actual, pass: true, reasonIfFail: null,
+    });
+    console.log(`  ${good ? "ℹ️ " : "⚠️ "}${label}: ${actual} (gözlənilən: ${expected})`);
   };
 
   console.log("\n── Təhlükəsizlik Yoxlaması (Trend-Following / QIZIL) ─────\n");
@@ -998,6 +1009,19 @@ function runTrendCheck(price, timeframe, extras) {
       `${candleDir} (açılış $${fmtPrice(lastClosedCandle.open)} → bağlanış $${fmtPrice(lastClosedCandle.close)})`,
       candleOk,
       `Kəsişmə şamı ${candleDir} bağlanıb — siqnal istiqaməti (${side}) ilə uyğun deyil. Zəif təsdiqlə giriş yalan siqnal riskini artırır.`,
+    );
+  }
+
+  // DXY (dollar indeksi) — qızılla əks-korrelyasiya. Video-təlimindəki "HAHO/DXI ters
+  // teyit" ideyası: BUY üçün DXY zəifləməsi, SHORT üçün güclənməsi siqnalı dəstəkləyir.
+  if (dxy) {
+    const dxyFalling = dxy.change5d < 0;
+    const aligned = side === "BUY" ? dxyFalling : !dxyFalling;
+    info(
+      "DXY (dollar indeksi) əks-korrelyasiya",
+      side === "BUY" ? "DXY zəifləyir (dəstək)" : "DXY güclənir (dəstək)",
+      `${dxy.close.toFixed(2)} (5 gündə ${dxy.change5d >= 0 ? "+" : ""}${dxy.change5d.toFixed(2)}%)`,
+      aligned,
     );
   }
 
@@ -1383,8 +1407,11 @@ async function analyzeSymbol(symbol, log, positions, canSignal, btcBias) {
     const adx = calcADX(closedCandles);
     const lastClosedCandle = closedCandles[closedCandles.length - 1];
     goldAlertInfo = { ema9, ema20, adx };
+    // DXY (dollar indeksi) — məlumat xarakterli, xəta olsa belə siqnalı dayandırmır
+    let dxy = null;
+    try { dxy = await fetchDxyContext(); } catch (err) { console.log(`⚠️  DXY yüklənə bilmədi: ${err.message}`); }
     checkOutcome = runTrendCheck(price, CONFIG.timeframe, {
-      symbol, atr, ema200, ema9, ema20, prevEma9, prevEma20, adx, lastClosedCandle,
+      symbol, atr, ema200, ema9, ema20, prevEma9, prevEma20, adx, lastClosedCandle, dxy,
     });
   } else {
     // Giriş hadisəsi BAĞLANMIŞ şamlarla: son bağlanmış şamın RSI-si həddi keçib,
@@ -1895,6 +1922,21 @@ async function fetchYahooDaily(ticker) {
     });
   }
   return out;
+}
+
+// DXY (ABŞ dollar indeksi) — qızıl siqnalına MƏLUMAT XARAKTERLİ kontekst (bloklamır).
+// Video-təlimindən öyrənilən ideya: DXY qızılla tarixən əks-korrelyasiyadadır. 5 illik
+// robustluq testi APARILMAYIB — ona görə hələ bloklayıcı deyil, yalnız göstərilir.
+let dxyCache = { at: 0, value: null };
+async function fetchDxyContext() {
+  if (Date.now() - dxyCache.at < 3_600_000) return dxyCache.value; // 1 saat keş — gündəlik data tez-tez dəyişmir
+  const candles = await fetchYahooDaily("DX-Y.NYB");
+  if (candles.length < 6) return null;
+  const last = candles[candles.length - 1];
+  const prev5 = candles[candles.length - 6];
+  const value = { close: last.close, change5d: ((last.close - prev5.close) / prev5.close) * 100 };
+  dxyCache = { at: Date.now(), value };
+  return value;
 }
 
 // Ümumi Connors günlük mean-reversion brifinqi — S&P 500 üçün qurulub, sonra
