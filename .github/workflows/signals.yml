@@ -52,8 +52,9 @@ jobs:
       FOCUS_SYMBOLS: ETHUSDT,PAXGUSDT
       TREND_SYMBOLS: PAXGUSDT
 
-      # ── S&P 500 günlük siqnalı (NY açılışından sonra hər ticarət günü brifinq) ──
+      # ── S&P 500 və US100 günlük siqnalı (NY açılışından sonra hər ticarət günü brifinq) ──
       SP500: "1"
+      US100: "1"
 
       # ── Xəbər analizi: RSS lentləri + Claude təsir qiymətləndirməsi ──
       NEWS: "1"

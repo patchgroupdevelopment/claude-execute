@@ -1852,6 +1852,7 @@ async function sendWeeklyReportIfDue() {
 // balansa daxil deyil), nəticələri sp500-state.json-da izlənir.
 
 const SPX_STATE_FILE = path.join(DATA_DIR, "sp500-state.json");
+const US100_STATE_FILE = path.join(DATA_DIR, "us100-state.json");
 
 function nyParts(d = new Date()) {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -1870,9 +1871,9 @@ function nyParts(d = new Date()) {
 
 // Yahoo Finance v8 (pulsuz, açarsız). Bugünkü YARIMÇIQ günü atırıq —
 // qərarlar yalnız bağlanmış günlərlə verilir (kriptoda olduğu kimi).
-async function fetchSpxDaily() {
+async function fetchYahooDaily(ticker) {
   const res = await fetch(
-    "https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=2y",
+    `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=2y`,
     { headers: { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" } },
   );
   if (!res.ok) throw new Error(`Yahoo Finance xətası: ${res.status}`);
@@ -1895,9 +1896,19 @@ async function fetchSpxDaily() {
   return out;
 }
 
-async function sendSp500DailyBriefIfDue() {
-  if (process.env.SP500 !== "1" || !process.env.TELEGRAM_BOT_TOKEN) return;
-  const force = process.env.FORCE_SP500 === "1";
+// Ümumi Connors günlük mean-reversion brifinqi — S&P 500 üçün qurulub, sonra
+// 10 illik testdən keçən Nasdaq 100 (US100) üçün də eyni funksiya istifadə olunur
+// (60 siqnal/10 il, 75% win rate, +0.92%/siqnal — S&P 500-ə çox yaxın profil).
+//
+// DİQQƏT: Neft (Brent/WTI) üzərində EYNİ qayda test edildi və RƏDD EDİLDİ — win
+// rate yüksək görünsə də (60-80%) orta PnL sıfıra yaxın/mənfi çıxdı (nadir amma
+// böyük itkilər, məs. tək əməliyyatda -10.8%/-12.8%). Neft əmtəədir, qızıl kimi
+// tarixən trend-yönümlüdür — mean-reversion ona uyğun deyil, ona görə əlavə
+// edilməyib. Neft üçün qızıldakı kimi trend-following testi gələcək iş olaraq qalır.
+async function sendDailyEquityBriefIfDue(cfg) {
+  const { envFlag, forceEnvFlag, label, emoji, yahooTicker, stateFile, xmSymbol, claudeAssetName } = cfg;
+  if (process.env[envFlag] !== "1" || !process.env.TELEGRAM_BOT_TOKEN) return;
+  const force = process.env[forceEnvFlag] === "1";
   const ny = nyParts();
   if (!force) {
     if (ny.weekday === "Sat" || ny.weekday === "Sun") return;
@@ -1905,14 +1916,14 @@ async function sendSp500DailyBriefIfDue() {
   }
 
   let state = { lastBrief: null, position: null, history: [] };
-  if (existsSync(SPX_STATE_FILE)) {
-    try { state = JSON.parse(await readFile(SPX_STATE_FILE, "utf8")); } catch {}
+  if (existsSync(stateFile)) {
+    try { state = JSON.parse(await readFile(stateFile, "utf8")); } catch {}
   }
   if (!force && state.lastBrief === ny.date) return; // bu gün artıq göndərilib
 
-  console.log("\n📈 S&P 500 günlük yoxlaması...");
-  const candles = await fetchSpxDaily();
-  if (candles.length < 210) { console.log("⚠️  S&P 500: kifayət qədər data yoxdur."); return; }
+  console.log(`\n${emoji} ${label} günlük yoxlaması...`);
+  const candles = await fetchYahooDaily(yahooTicker);
+  if (candles.length < 210) { console.log(`⚠️  ${label}: kifayət qədər data yoxdur.`); return; }
   const closes = candles.map((c) => c.close);
   const last = candles[candles.length - 1];
   const sma200 = smaAt(closes, 200);
@@ -1924,7 +1935,7 @@ async function sendSp500DailyBriefIfDue() {
   const fmtN = (v) => v.toLocaleString("en-US", { maximumFractionDigits: 0 });
   // Diqqət: Telegram HTML rejimində "&" simvolu "&amp;" kimi yazılmalıdır — yoxsa HTTP 400
   let msg =
-    `📈 <b>S&amp;P 500 GÜNLÜK</b> (${last.date} bağlanışı ilə)\n\n` +
+    `${emoji} <b>${label} GÜNLÜK</b> (${last.date} bağlanışı ilə)\n\n` +
     `Bağlanış: <b>${fmtN(last.close)}</b> | SMA200: ${fmtN(sma200)} (${smaDist >= 0 ? "+" : ""}${smaDist.toFixed(1)}%)\n` +
     `Rejim: ${bull ? "🟢 BULL (SMA200 üstündə)" : "🔴 BEAR (SMA200 altında)"} | RSI(3): <b>${rsi3.toFixed(1)}</b>\n\n`;
 
@@ -1942,7 +1953,7 @@ async function sendSp500DailyBriefIfDue() {
       const tagText = exitTag === "stop" ? "stop-loss işlədi" : exitTag === "tp" ? "hədəfə çatdı" : "RSI(3) &gt; 65 — Connors çıxışı";
       msg += `${pnlPct >= 0 ? "✅" : "🔴"} <b>ÇIXIŞ TÖVSİYƏSİ</b> — ${tagText}\n` +
         `Giriş ${fmtN(p.entry)} (${p.entryDate}) → çıxış ${fmtN(exitPrice)} | <b>${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(2)}%</b>\n` +
-        `XM-də US500 mövqeyin varsa bağlamağı düşün.\n`;
+        `XM-də ${xmSymbol} mövqeyin varsa bağlamağı düşün.\n`;
     } else {
       const pnlPct = ((last.close - p.entry) / p.entry) * 100;
       msg += `⏳ Açıq tövsiyə: AL @ ${fmtN(p.entry)} (${p.entryDate}) — hazırkı ${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(2)}%\n` +
@@ -1961,11 +1972,11 @@ async function sendSp500DailyBriefIfDue() {
     const units = riskUsd / (last.close - stop);
     msg += `🚨 <b>AL SİQNALI</b> — bull rejimdə RSI(3) ${rsi3.toFixed(1)} (&lt; 15 oversold)\n` +
       `Giriş: ~${fmtN(last.close)} | 🛑 SL: ${fmtN(stop)} | 🎯 TP: ${fmtN(tp)}\n` +
-      `📐 XM: <b>US500Cash</b> | Ölçü: ${units.toFixed(2)} vahid (SL itkisi ~$${riskUsd.toFixed(0)})\n`;
+      `📐 XM: <b>${xmSymbol}</b> | Ölçü: ${units.toFixed(4)} vahid (SL itkisi ~$${riskUsd.toFixed(0)})\n`;
     // Claude ikinci rəyi — yalnız AL siqnalında (gündəlik brifinqdə yox)
     const review = await reviewSignalWithClaude({
       siqnal: {
-        symbol: "S&P500", side: "BUY", qiymet: last.close,
+        symbol: claudeAssetName, side: "BUY", qiymet: last.close,
         strategiya: "Connors günlük mean-reversion (RSI3 < 15, bull rejim)",
         tp, sl: stop, riskReward: 2.0, sistemKeyfiyyetBali: null,
       },
@@ -1994,12 +2005,26 @@ async function sendSp500DailyBriefIfDue() {
   const sent = await sendTelegram(msg);
   if (!sent) {
     // Göndəriş alınmadı — state yazılmır ki, növbəti dövrədə (30 dəq sonra) yenidən cəhd olunsun
-    console.log("⚠️  S&P 500 brifinqi göndərilə bilmədi — növbəti dövrədə təkrar cəhd olunacaq.");
+    console.log(`⚠️  ${label} brifinqi göndərilə bilmədi — növbəti dövrədə təkrar cəhd olunacaq.`);
     return;
   }
   state.lastBrief = ny.date;
-  await writeFile(SPX_STATE_FILE, JSON.stringify(state, null, 2));
-  console.log("📈 S&P 500 brifinqi göndərildi.");
+  await writeFile(stateFile, JSON.stringify(state, null, 2));
+  console.log(`${emoji} ${label} brifinqi göndərildi.`);
+}
+
+async function sendSp500DailyBriefIfDue() {
+  return sendDailyEquityBriefIfDue({
+    envFlag: "SP500", forceEnvFlag: "FORCE_SP500", label: "S&amp;P 500", emoji: "📈",
+    yahooTicker: "%5EGSPC", stateFile: SPX_STATE_FILE, xmSymbol: "US500Cash", claudeAssetName: "S&P500",
+  });
+}
+
+async function sendUs100DailyBriefIfDue() {
+  return sendDailyEquityBriefIfDue({
+    envFlag: "US100", forceEnvFlag: "FORCE_US100", label: "US100 (Nasdaq 100)", emoji: "💻",
+    yahooTicker: "%5ENDX", stateFile: US100_STATE_FILE, xmSymbol: "US100Cash", claudeAssetName: "US100",
+  });
 }
 
 // ─── Xəbər Analizi (NEWS=1 olduqda aktivdir) ─────────────────────────────────
@@ -2336,11 +2361,16 @@ async function run() {
     console.log(`⚠️  Həftəlik hesabat xətası: ${err.message}`);
   }
 
-  // S&P 500 günlük brifinqi (NY açılışından sonra bir dəfə)
+  // S&P 500 və US100 günlük brifinqi (NY açılışından sonra bir dəfə)
   try {
     await sendSp500DailyBriefIfDue();
   } catch (err) {
     console.log(`⚠️  S&P 500 yoxlaması xətası: ${err.message}`);
+  }
+  try {
+    await sendUs100DailyBriefIfDue();
+  } catch (err) {
+    console.log(`⚠️  US100 yoxlaması xətası: ${err.message}`);
   }
 
   // Xəbər lentləri + Claude təsir analizi
@@ -2353,7 +2383,7 @@ async function run() {
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
-export { run, CONFIG, sendWeeklyReportIfDue, analyzeLongTermRegime, sendSp500DailyBriefIfDue, checkNewsAndNotify, checkPriceLevelAlerts };
+export { run, CONFIG, sendWeeklyReportIfDue, analyzeLongTermRegime, sendSp500DailyBriefIfDue, sendUs100DailyBriefIfDue, checkNewsAndNotify, checkPriceLevelAlerts };
 
 if (isMain) {
   if (process.argv.includes("--tax-summary")) {
