@@ -1,0 +1,16 @@
+{
+  "name": "claude-execute-signals",
+  "version": "2.0.0",
+  "description": "Signal-only trading advisor — deterministic rules + optional Claude second-opinion layer. Never places orders.",
+  "main": "bot.js",
+  "type": "module",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "node bot.js",
+    "dashboard": "node dashboard/server.cjs"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

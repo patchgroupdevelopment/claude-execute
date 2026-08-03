@@ -1,0 +1,992 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>CLAUDE EXECUTE :: TERMINAL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #000;
+  --bg-panel: #050805;
+  --bg-row: #070b07;
+  --green: #00ff66;
+  --green-dim: #00aa44;
+  --green-faint: #035c1f;
+  --green-glow: rgba(0,255,102,0.45);
+  --amber: #ffb700;
+  --red: #ff3355;
+  --grey: #4a5a4a;
+  --grid: rgba(0,255,102,0.08);
+  --mono: 'JetBrains Mono', 'Share Tech Mono', ui-monospace, Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--green);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.4;
+  height: 100%;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  position: relative;
+  text-shadow: 0 0 6px var(--green-glow);
+}
+
+#rain {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+#scanlines {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(0,255,102,0.03) 0px,
+    rgba(0,255,102,0.03) 1px,
+    transparent 2px,
+    transparent 4px
+  );
+  mix-blend-mode: screen;
+}
+
+.app {
+  position: relative;
+  z-index: 2;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 1px;
+  background: var(--green-faint);
+}
+
+/* ─── Top bar ─── */
+header {
+  background: var(--bg);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  padding: 8px 14px;
+  gap: 24px;
+}
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  font-size: 14px;
+  color: var(--green);
+}
+.brand .sep { color: var(--green-dim); margin: 0 8px; }
+.brand .sub { color: var(--green-dim); font-weight: 400; letter-spacing: 0.12em; }
+
+.ticker {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  justify-content: center;
+  color: var(--green-dim);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.ticker b { color: var(--green); font-weight: 500; }
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+.dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green-glow);
+  animation: blink 1.4s steps(2,end) infinite;
+  margin-right: 6px;
+}
+.dot.amber { background: var(--amber); box-shadow: 0 0 8px rgba(255,183,0,0.6); }
+@keyframes blink { 50% { opacity: 0.25; } }
+
+/* ─── Stats strip ─── */
+.stats {
+  background: var(--bg);
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1px;
+  background: var(--green-faint);
+}
+.stat {
+  background: var(--bg-panel);
+  padding: 12px 14px;
+}
+.stat .label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--green-dim);
+  text-transform: uppercase;
+}
+.stat .val {
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 4px;
+  color: var(--green);
+  letter-spacing: 0.04em;
+}
+.stat .val.red { color: var(--red); text-shadow: 0 0 8px rgba(255,51,85,0.5); }
+.stat .val.amber { color: var(--amber); text-shadow: 0 0 8px rgba(255,183,0,0.5); }
+.stat .sub {
+  font-size: 10px;
+  color: var(--green-dim);
+  margin-top: 2px;
+  letter-spacing: 0.1em;
+}
+
+/* ─── Main grid ─── */
+main {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 1px;
+  overflow: hidden;
+  background: var(--green-faint);
+  min-height: 0;
+}
+.panel {
+  background: var(--bg-panel);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--green-faint);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--green-dim);
+  text-transform: uppercase;
+  background: rgba(0,255,102,0.02);
+}
+.panel-head .h { color: var(--green); font-weight: 700; }
+.panel-head .pill {
+  border: 1px solid var(--green-faint);
+  padding: 2px 6px;
+  font-size: 10px;
+  color: var(--green-dim);
+}
+
+.panel-body {
+  flex: 1;
+  overflow: auto;
+  font-size: 12px;
+}
+
+/* ─── Tables ─── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-panel);
+  text-align: left;
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--green-dim);
+  text-transform: uppercase;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--green-faint);
+}
+td {
+  padding: 6px 12px;
+  border-bottom: 1px dotted var(--green-faint);
+  vertical-align: top;
+  white-space: nowrap;
+}
+tbody tr {
+  cursor: pointer;
+  transition: background 0.08s;
+}
+tbody tr:hover { background: rgba(0,255,102,0.05); }
+tbody tr.selected { background: rgba(0,255,102,0.10); outline: 1px solid var(--green-faint); }
+
+.side-buy { color: var(--green); }
+.side-sell { color: var(--red); }
+.tag-pass { color: var(--green); }
+.tag-block { color: var(--red); }
+.dim { color: var(--green-dim); }
+.tabular { font-variant-numeric: tabular-nums; }
+
+.empty {
+  padding: 30px 20px;
+  text-align: center;
+  color: var(--green-dim);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+.empty .ascii {
+  font-size: 10px;
+  white-space: pre;
+  margin: 14px 0;
+  opacity: 0.6;
+}
+
+/* ─── Detail panel ─── */
+.detail {
+  padding: 14px;
+  font-size: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.detail h3 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--green-dim);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.kv {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 14px;
+  font-size: 12px;
+}
+.kv .k { color: var(--green-dim); letter-spacing: 0.06em; }
+.kv .v { color: var(--green); text-align: right; font-variant-numeric: tabular-nums; }
+.kv .v.red { color: var(--red); }
+.cond {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px dotted var(--green-faint);
+  align-items: baseline;
+}
+.cond .marker { font-weight: 700; }
+.cond .label { color: var(--green); }
+.cond .val { color: var(--green-dim); font-size: 11px; font-variant-numeric: tabular-nums; }
+.cond.fail .marker, .cond.fail .label { color: var(--red); }
+.cond.pass .marker, .cond.pass .label { color: var(--green); }
+
+/* ─── Footer ─── */
+footer {
+  background: var(--bg);
+  padding: 6px 14px;
+  font-size: 10px;
+  color: var(--green-dim);
+  letter-spacing: 0.12em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ─── Filter chips ─── */
+.chips { display: flex; gap: 6px; }
+.chip {
+  border: 1px solid var(--green-faint);
+  background: transparent;
+  color: var(--green-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+.chip:hover { color: var(--green); border-color: var(--green-dim); }
+.chip.active {
+  color: #000;
+  background: var(--green);
+  border-color: var(--green);
+  box-shadow: 0 0 6px var(--green-glow);
+}
+
+/* Coin status strip — hər coin üçün trend + RSI */
+.coin-strip { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.coinchip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 7px; font-size: 11px; letter-spacing: 0.5px;
+  border: 1px solid var(--green-faint); border-radius: 3px;
+  color: var(--green-dim); white-space: nowrap; cursor: default;
+}
+.coinchip .arrow-up { color: var(--green); }
+.coinchip .arrow-down { color: var(--red); }
+.coinchip.near-signal {
+  border-color: var(--amber); color: var(--amber);
+  box-shadow: 0 0 5px rgba(255, 190, 60, 0.35);
+  animation: chip-pulse 1.6s ease-in-out infinite;
+}
+.coinchip.signal-active {
+  border-color: var(--green); color: #000; background: var(--green);
+  box-shadow: 0 0 8px var(--green-glow);
+}
+@keyframes chip-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-panel); }
+::-webkit-scrollbar-thumb { background: var(--green-faint); }
+::-webkit-scrollbar-thumb:hover { background: var(--green-dim); }
+</style>
+</head>
+<body>
+
+<canvas id="rain"></canvas>
+<div id="scanlines"></div>
+
+<div class="app">
+  <!-- TOP BAR -->
+  <header>
+    <div class="brand">CLAUDE&nbsp;EXECUTE<span class="sep">::</span><span class="sub">TERMINAL</span></div>
+    <div class="ticker" id="ticker">
+      <span><b id="timeframe">—</b></span>
+      <span class="dim">|</span>
+      <span id="coin-strip" class="coin-strip"><span class="dim">yüklənir…</span></span>
+    </div>
+    <div class="status">
+      <span><span class="dot amber" id="mode-dot"></span><span id="mode-text">YALNIZ SİQNAL — AVTOMATİK İCRA YOXDUR</span></span>
+      <span id="utc-clock" class="dim">--:--:-- (Bakı)</span>
+    </div>
+  </header>
+
+  <!-- STATS STRIP -->
+  <div class="stats">
+    <div class="stat"><div class="label">Ümumi Qərarlar</div><div class="val tabular" id="s-total">0</div><div class="sub">bütün zamanlar</div></div>
+    <div class="stat"><div class="label">Verilmiş Siqnal</div><div class="val tabular" id="s-taken">0</div><div class="sub">manual icra et</div></div>
+    <div class="stat"><div class="label">Gözləmədə</div><div class="val red tabular" id="s-blocked">0</div><div class="sub">şərtlər ödənmədi</div></div>
+    <div class="stat"><div class="label">Bu Gün</div><div class="val amber tabular" id="s-today">0 / 0</div><div class="sub">istifadə / limit</div></div>
+    <div class="stat"><div class="label">Təklif Olunan Ölçü</div><div class="val tabular" id="s-volume">$0</div><div class="sub">USD, icra olunmayıb</div></div>
+    <div class="stat"><div class="label">İzlənilən Coinlər</div><div class="val tabular" id="s-fees">0</div><div class="sub">konfiqurasiya edilib</div></div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <main>
+    <!-- SIGNALS + POSITIONS (stacked in column 1) -->
+    <div style="grid-column: 1; grid-row: 1 / span 2; display: flex; flex-direction: column; min-height: 0; gap: 1px; background: var(--green-faint);">
+      <section class="panel" style="flex: 1; min-height: 0;">
+        <div class="panel-head">
+          <span><span class="h">▸ SİQNALLAR — MANUAL İCRA ET</span></span>
+          <span class="pill" id="exec-count">0 qeyd</span>
+        </div>
+        <div class="panel-body" id="exec-body">
+          <div class="empty">
+            <div>HƏLƏ SİQNAL YOXDUR</div>
+            <pre class="ascii">  ░░░░░░░░░░░░░░░
+  SİQNAL GÖZLƏNİLİR
+  ░░░░░░░░░░░░░░░</pre>
+            <div><code>node bot.js</code> işə sal — təhlükəsizlik yoxlamasından keçən hər siqnal bura yazılacaq.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" style="flex: 1; min-height: 0;">
+        <div class="panel-head">
+          <span><span class="h">▸ UZUNMÜDDƏTLİ REJİM — AL/TUT</span></span>
+          <span class="pill" id="regime-pill">yüklənir</span>
+        </div>
+        <div class="panel-body" id="regime-body">
+          <div class="empty">YÜKLƏNİR...</div>
+        </div>
+      </section>
+
+      <section class="panel" style="flex: 1; min-height: 0;">
+        <div class="panel-head">
+          <span><span class="h">▸ AÇIQ MÖVQƏLƏR</span></span>
+          <span class="pill" id="pos-count">0 mövqə</span>
+        </div>
+        <div class="panel-body" id="positions-body">
+          <div class="empty">AÇIQ MÖVQƏ YOXDUR</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- DECISION FEED -->
+    <section class="panel" style="grid-column: 2; grid-row: 1;">
+      <div class="panel-head" style="flex-wrap:wrap; gap:6px; row-gap:6px;">
+        <span><span class="h">▸ QƏRAR AXINI</span></span>
+        <span class="chips" style="flex-wrap:wrap">
+          <select id="symbol-filter" class="chip" style="cursor:pointer">
+            <option value="all">BÜTÜN COİNLƏR</option>
+          </select>
+          <button class="chip active" data-filter="all">HAMISI</button>
+          <button class="chip" data-filter="pass">SİQNAL</button>
+          <button class="chip" data-filter="block">GÖZLƏ</button>
+        </span>
+      </div>
+      <div class="panel-body" id="feed-body">
+        <div class="empty">HƏLƏ QƏRAR QEYDƏ ALINMAYIB</div>
+      </div>
+    </section>
+
+    <!-- DETAIL -->
+    <section class="panel" style="grid-column: 2; grid-row: 2;">
+      <div class="panel-head">
+        <span><span class="h">▸ QƏRAR DETALI</span></span>
+        <span class="pill" id="detail-ts">—</span>
+      </div>
+      <div class="panel-body" id="detail-body">
+        <div class="empty">YOXLAMAQ ÜÇÜN BİR QƏRAR SEÇ</div>
+      </div>
+    </section>
+
+    <!-- VIRTUAL BALANS (PAPER TRADING) -->
+    <section class="panel" style="grid-column: 3; grid-row: 1 / span 2;">
+      <div class="panel-head">
+        <span><span class="h">▸ VİRTUAL BALANS — PAPER TRADING</span></span>
+        <span class="pill" id="paper-symbol">—</span>
+      </div>
+      <div class="panel-body" id="paper-body">
+        <div class="empty">YÜKLƏNİR...</div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span id="status-line">▸ HAZIR</span>
+    <span class="dim" id="last-refresh">—</span>
+  </footer>
+</div>
+
+<script>
+// ─── Matrix rain ──────────────────────────────────────────────────────────────
+(() => {
+  const canvas = document.getElementById('rain');
+  const ctx = canvas.getContext('2d');
+  let cols, drops, fontSize = 14;
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    cols = Math.floor(canvas.width / fontSize);
+    drops = Array(cols).fill(0).map(() => Math.random() * -100);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  const chars = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉ01ABCDEF$#%&*+-=<>'.split('');
+  function draw() {
+    ctx.fillStyle = 'rgba(0,0,0,0.10)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#00ff66';
+    ctx.font = fontSize + 'px JetBrains Mono, monospace';
+    for (let i = 0; i < drops.length; i++) {
+      const ch = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillText(ch, i * fontSize, drops[i] * fontSize);
+      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ─── Saat (Bakı vaxtı, AZT) ────────────────────────────────────────────────────
+const BAKU_TZ = 'Asia/Baku';
+function tickClock() {
+  const d = new Date();
+  const t = d.toLocaleTimeString('en-GB', { timeZone: BAKU_TZ, hour12: false });
+  document.getElementById('utc-clock').textContent = t + ' (Bakı)';
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+// ─── State ────────────────────────────────────────────────────────────────────
+const state = {
+  log: { trades: [] },
+  env: {},
+  rules: {},
+  csv: '',
+  positions: [],
+  paper: {},
+  stats: {},
+  regime: [],
+  filter: 'all',
+  selectedIdx: null,
+};
+
+const fmtNum = (n, dp = 2) => Number.isFinite(n) ? Number(n).toLocaleString(undefined, { maximumFractionDigits: dp, minimumFractionDigits: dp }) : '—';
+const fmtUSD = (n) => Number.isFinite(n) ? '$' + Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 }) : '—';
+const fmtTime = (iso) => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  const datePart = d.toLocaleDateString('en-CA', { timeZone: BAKU_TZ });
+  const timePart = d.toLocaleTimeString('en-GB', { timeZone: BAKU_TZ, hour12: false });
+  return `${datePart} ${timePart}`;
+};
+
+async function fetchAll() {
+  try {
+    const [logRes, envRes, csvRes, rulesRes, positionsRes, paperRes, statsRes] = await Promise.all([
+      fetch('/api/log').then(r => r.json()),
+      fetch('/api/env').then(r => r.json()),
+      fetch('/api/csv').then(r => r.text()),
+      fetch('/api/rules').then(r => r.json()),
+      fetch('/api/positions').then(r => r.json()),
+      fetch('/api/paper-trading').then(r => r.json()),
+      fetch('/api/stats').then(r => r.json()),
+    ]);
+    // Rejim ayrıca çəkilir — serverdə 30 dəq keşlənir, xətası dashboardu dayandırmasın
+    fetch('/api/regime').then(r => r.json()).then(d => {
+      if (Array.isArray(d)) { state.regime = d; renderRegime(); }
+    }).catch(() => {});
+    state.log = logRes && logRes.trades ? logRes : { trades: [] };
+    state.env = envRes;
+    state.csv = csvRes;
+    state.rules = rulesRes;
+    state.positions = positionsRes || [];
+    state.paper = paperRes || {};
+    state.stats = statsRes || {};
+    render();
+    document.getElementById('status-line').textContent = '▸ QOŞULUB — ' + state.log.trades.length + ' qərar qeydə alınıb';
+    document.getElementById('last-refresh').textContent = 'son sinxronizasiya: ' + new Date().toLocaleTimeString('en-GB', { timeZone: BAKU_TZ, hour12: false }) + ' (Bakı)';
+  } catch (e) {
+    document.getElementById('status-line').textContent = '▸ ƏLAQƏ KƏSİLDİ — ' + e.message;
+  }
+}
+
+function render() {
+  // Header: hər coin üçün canlı status çipi (trend oxu + RSI + siqnala yaxınlıq)
+  document.getElementById('timeframe').textContent = state.env.timeframe || '—';
+  renderCoinStrip();
+
+  // Stats
+  const trades = state.log.trades;
+  const taken = trades.filter(t => t.allPass).length;
+  const blocked = trades.filter(t => !t.allPass).length;
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const today = trades.filter(t => (t.timestamp || '').startsWith(todayKey) && t.allPass).length;
+  const cap = state.env.maxTradesPerDay || 0;
+  const volume = trades.filter(t => t.allPass).reduce((s, t) => s + (t.tradeSize || 0), 0);
+
+  document.getElementById('s-total').textContent = trades.length;
+  document.getElementById('s-taken').textContent = taken;
+  document.getElementById('s-blocked').textContent = blocked;
+  document.getElementById('s-today').textContent = today + ' / ' + cap;
+  document.getElementById('s-volume').textContent = fmtUSD(volume);
+  document.getElementById('s-fees').textContent = (state.env.symbols || []).length;
+
+  renderExecuted();
+  renderPositions();
+  renderFeed();
+  renderDetail();
+  renderPaperTrading();
+}
+
+// Hər coinin SON qərarından status çipi: ▲/▼ trend (EMA200-ə görə), RSI(3),
+// siqnala yaxınlıqda sarı pulsasiya, aktiv siqnalda yaşıl dolğu
+function renderCoinStrip() {
+  const strip = document.getElementById('coin-strip');
+  const symbols = (state.env.symbols && state.env.symbols.length)
+    ? state.env.symbols
+    : Array.from(new Set(state.log.trades.map(t => t.symbol)));
+  if (!symbols.length) { strip.innerHTML = '<span class="dim">məlumat yoxdur</span>'; return; }
+
+  // Son qərarı coin-ə görə tap (arxadan gəz — ən təzəsi qalsın)
+  const latest = {};
+  for (let i = state.log.trades.length - 1; i >= 0; i--) {
+    const t = state.log.trades[i];
+    if (!latest[t.symbol]) latest[t.symbol] = t;
+  }
+
+  const dispName = sym => sym === 'PAXGUSDT' ? 'GOLD' : sym.replace('USDT','');
+  strip.innerHTML = symbols.map(sym => {
+    const t = latest[sym];
+    if (!t || !t.indicators) return `<span class="coinchip">${dispName(sym)} <span class="dim">—</span></span>`;
+    const rsi = t.indicators.rsi3;
+    const ema200 = t.indicators.ema200;
+    const uptrend = ema200 != null ? t.price > ema200 : null;
+    const arrow = uptrend === null ? '' : uptrend
+      ? '<span class="arrow-up">▲</span>'
+      : '<span class="arrow-down">▼</span>';
+    // Siqnala yaxınlıq: BUY axtarılır → RSI < 30 yaxın sayılır; SHORT axtarılır → RSI > 70
+    const near = uptrend === null ? false : uptrend ? rsi < 30 : rsi > 70;
+    const cls = t.allPass ? 'coinchip signal-active' : near ? 'coinchip near-signal' : 'coinchip';
+    const title = `${sym}: $${(t.price ?? 0).toLocaleString('en-US',{maximumFractionDigits:2})} | RSI(3) ${rsi != null ? rsi.toFixed(1) : '—'} | trend: ${uptrend === null ? '?' : uptrend ? 'YÜKSƏLİŞ (BUY axtarılır)' : 'DÜŞÜŞ (SHORT axtarılır)'}${t.allPass ? ' | SİQNAL AKTİV' : near ? ' | siqnala yaxın' : ''}`;
+    return `<span class="${cls}" title="${title}">${dispName(sym)} ${arrow} ${rsi != null ? rsi.toFixed(0) : '—'}</span>`;
+  }).join('');
+}
+
+// Uzunmüddətli rejim paneli — Binance al-tut mövqeləri üçün (günlük şamlar)
+function renderRegime() {
+  const body = document.getElementById('regime-body');
+  const pill = document.getElementById('regime-pill');
+  const data = state.regime || [];
+  if (!data.length) { body.innerHTML = '<div class="empty">MƏLUMAT YOXDUR</div>'; pill.textContent = '—'; return; }
+
+  const holds = data.filter(r => r.verdict === 'SAXLA').length;
+  pill.textContent = `${holds}/${data.length} saxla`;
+
+  body.innerHTML = `<div style="padding:10px">` + data.map(r => {
+    const label = r.symbol === 'PAXGUSDT' ? 'GOLD' : r.symbol.replace('USDT', '');
+    const color = r.verdict === 'SAXLA' ? 'var(--green)' : r.verdict === 'EHTİYATLI OL' ? 'var(--amber)' : 'var(--red)';
+    const tick = v => v ? '<span style="color:var(--green)">✅</span>' : '<span style="color:var(--red)">❌</span>';
+    return `
+      <div style="margin-bottom:10px; padding-bottom:8px; border-bottom:1px dashed var(--green-faint)">
+        <div style="display:flex; justify-content:space-between; align-items:baseline">
+          <b>${label}</b>
+          <b style="color:${color}">${r.verdict} (${r.positives}/${r.total})</b>
+        </div>
+        <div class="dim" style="font-size:10px; margin-top:3px">
+          ${tick(r.aboveSma200)} SMA200 &nbsp; ${tick(r.goldenCross)} Golden Cross &nbsp; ${tick(r.momentum12m)} 12ay ${Number.isFinite(r.momentumPct) ? (r.momentumPct >= 0 ? '+' : '') + r.momentumPct.toFixed(0) + '%' : ''}
+        </div>
+        ${Number.isFinite(r.mayer) ? `<div class="dim" style="font-size:10px">Mayer ${r.mayer.toFixed(2)} — ${r.mayerZone}</div>` : ''}
+      </div>`;
+  }).join('') + `<div class="dim" style="font-size:10px; line-height:1.5">🟢 SAXLA = 3-dən 2+ müsbət · 🟡 EHTİYATLI = 1 · 🔴 SAT = 0<br>Günlük şamlar — 4H siqnallardan ayrıdır.</div></div>`;
+}
+
+function renderPaperTrading() {
+  const p = state.paper || {};
+  const s = (state.stats || {}).paperTrading || {};
+  // Köhnə tək-mövqe formatı ilə uyğunluq
+  const positions = Array.isArray(p.positions) ? p.positions : (p.position ? [p.position] : []);
+  document.getElementById('paper-symbol').textContent = positions.length
+    ? positions.map(x => x.symbol === 'PAXGUSDT' ? 'GOLD' : x.symbol.replace('USDT','')).join(', ')
+    : 'gözləyir';
+  const body = document.getElementById('paper-body');
+
+  const invested = positions.reduce((sum, x) => sum + (x.quantity * x.entryPrice || 0), 0);
+  const equity = (p.balance || 0) + invested;
+  const balanceColor = (equity >= p.startingBalance) ? '' : 'red';
+  const returnPct = s.totalReturnPct;
+  const returnColor = (returnPct >= 0) ? '' : 'red';
+
+  let positionHtml = '<div class="dim" style="margin-top:6px">Açıq virtual mövqə yoxdur.</div>';
+  if (positions.length) {
+    positionHtml = positions.map(pos => {
+      const pnlClass = (pos.unrealizedPnlPct >= 0) ? '' : 'red';
+      return `
+      <div class="kv" style="margin-top:6px; padding-bottom:6px; border-bottom: 1px dashed var(--green-faint)">
+        <span class="k">${pos.symbol === 'PAXGUSDT' ? 'GOLD' : pos.symbol}</span><span class="v side-${pos.side === 'SHORT' ? 'sell' : 'buy'}">${pos.side}${pos.breakevenArmed ? ' 🛡️' : ''}</span>
+        <span class="k">Giriş → Cari</span><span class="v">${fmtUSD(pos.entryPrice)} → ${fmtUSD(pos.currentPrice)}</span>
+        <span class="k">PnL</span><span class="v ${pnlClass}">${Number.isFinite(pos.unrealizedPnlPct) ? (pos.unrealizedPnlPct >= 0 ? '+' : '') + fmtNum(pos.unrealizedPnlPct, 2) + '%' : '—'} (${Number.isFinite(pos.unrealizedPnlUsd) ? (pos.unrealizedPnlUsd >= 0 ? '+' : '') + fmtUSD(pos.unrealizedPnlUsd) : '—'})</span>
+      </div>`;
+    }).join('');
+  }
+
+  const history = (p.history || []).slice().reverse();
+  const historyRows = history.map(h => {
+    const pnlClass = h.pnlPct >= 0 ? 'side-buy' : 'side-sell';
+    return `<tr>
+      <td class="dim tabular" style="font-size:10px">${fmtTime(h.closedAt).slice(5)}</td>
+      <td class="dim" style="font-size:10px">${h.symbol || '—'}</td>
+      <td class="${pnlClass === 'side-buy' ? 'side-buy' : 'side-sell'}">${h.side}</td>
+      <td class="tabular">${fmtUSD(h.entryPrice)}</td>
+      <td class="tabular">${fmtUSD(h.exitPrice)}</td>
+      <td class="tabular ${pnlClass}">${h.pnlPct >= 0 ? '+' : ''}${fmtNum(h.pnlPct, 2)}%</td>
+    </tr>`;
+  }).join('');
+
+  const historyHtml = history.length
+    ? `<table style="margin-top:8px"><thead><tr><th>Vaxt</th><th>Coin</th><th>İst.</th><th>Giriş</th><th>Çıxış</th><th>PnL</th></tr></thead><tbody>${historyRows}</tbody></table>`
+    : '<div class="dim" style="margin-top:8px">Hələ bağlanmış virtual əməliyyat yoxdur.</div>';
+
+  body.innerHTML = `
+    <div style="padding:14px">
+      <div class="kv">
+        <span class="k">Başlanğıc Balans</span><span class="v">${fmtUSD(p.startingBalance)}</span>
+        <span class="k">Ümumi Kapital</span><span class="v ${balanceColor}">${fmtUSD(equity)}</span>
+        <span class="k">Sərbəst / Mövqedə</span><span class="v">${fmtUSD(p.balance)} / ${fmtUSD(invested)}</span>
+        <span class="k">Ümumi PnL</span><span class="v ${returnColor}">${Number.isFinite(returnPct) ? (returnPct >= 0 ? '+' : '') + fmtNum(returnPct, 2) + '%' : '—'}</span>
+      </div>
+
+      <h3 style="margin-top:14px">▸ Açıq Mövqələr (${positions.length}/3)</h3>
+      ${positionHtml}
+
+      <h3 style="margin-top:14px">▸ Performans</h3>
+      <div class="kv">
+        <span class="k">Ümumi Əməliyyat</span><span class="v">${s.totalTrades ?? 0}</span>
+        <span class="k">Win Rate</span><span class="v">${Number.isFinite(s.winRatePct) ? fmtNum(s.winRatePct, 1) + '%' : '—'}</span>
+        <span class="k">Orta Mənfəət</span><span class="v">${Number.isFinite(s.avgProfitPct) ? (s.avgProfitPct >= 0 ? '+' : '') + fmtNum(s.avgProfitPct, 2) + '%' : '—'}</span>
+        <span class="k">Qazanan / İtirən</span><span class="v">${s.wins ?? 0} / ${s.losses ?? 0}</span>
+      </div>
+
+      <h3 style="margin-top:14px">▸ Trade History</h3>
+      ${historyHtml}
+    </div>`;
+}
+
+function renderExecuted() {
+  const body = document.getElementById('exec-body');
+  const signals = state.log.trades
+    .map((t, idx) => ({ t, idx }))
+    .filter(({ t }) => t.allPass)
+    .reverse();
+
+  document.getElementById('exec-count').textContent = signals.length + ' qeyd';
+
+  if (signals.length === 0) {
+    body.innerHTML = `<div class="empty"><div>HƏLƏ SİQNAL YOXDUR</div>
+      <pre class="ascii">  ░░░░░░░░░░░░░░░
+  SİQNAL GÖZLƏNİLİR
+  ░░░░░░░░░░░░░░░</pre>
+      <div><code>node bot.js</code> işə sal — təhlükəsizlik yoxlamasından keçən hər siqnal bura yazılacaq.</div></div>`;
+    return;
+  }
+
+  const rows = signals.map(({ t, idx }) => {
+    const ts = fmtTime(t.timestamp);
+    const sideClass = t.side === 'SHORT' ? 'side-sell' : 'side-buy';
+    const move = t.expectedMove
+      ? `${fmtUSD(t.expectedMove.target)} <span class="dim">(${t.expectedMove.pct >= 0 ? '+' : ''}${fmtNum(t.expectedMove.pct, 1)}%)</span>`
+      : '—';
+    return `<tr data-idx="${idx}">
+      <td class="dim tabular">${ts}</td>
+      <td>${t.symbol || '—'}</td>
+      <td class="${sideClass}">${t.side || '—'}</td>
+      <td class="tabular">${fmtUSD(t.price)}</td>
+      <td class="tabular">${fmtUSD(t.tradeSize)}</td>
+      <td class="tabular">${move}</td>
+      <td><button class="chip" data-open-symbol="${t.symbol}" data-open-side="${t.side}" data-open-price="${t.price}" data-open-size="${t.tradeSize}" data-open-atr="${(t.indicators && t.indicators.atr) || ''}">MÖVQƏ AÇ</button></td>
+    </tr>`;
+  }).join('');
+
+  body.innerHTML = `<table>
+    <thead><tr>
+      <th>Vaxt</th><th>Coin</th><th>İstiqamət</th><th>Qiymət</th><th>Təklif Ölçü</th><th>Gözlənilən Hədəf</th><th></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+
+  body.querySelectorAll('tr[data-idx]').forEach(row => {
+    row.addEventListener('click', () => selectDecision(parseInt(row.dataset.idx, 10)));
+  });
+
+  body.querySelectorAll('button[data-open-symbol]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openPosition(btn.dataset.openSymbol, btn.dataset.openSide, parseFloat(btn.dataset.openPrice), parseFloat(btn.dataset.openSize), parseFloat(btn.dataset.openAtr));
+    });
+  });
+}
+
+function renderPositions() {
+  const body = document.getElementById('positions-body');
+  const positions = (state.positions || []).filter(p => p.status === 'open');
+
+  document.getElementById('pos-count').textContent = positions.length + ' mövqə';
+
+  if (positions.length === 0) {
+    body.innerHTML = '<div class="empty">AÇIQ MÖVQƏ YOXDUR</div>';
+    return;
+  }
+
+  const rows = positions.map(p => {
+    const sideClass = p.side === 'SHORT' ? 'side-sell' : 'side-buy';
+    const statusHtml = p.exitRecommended
+      ? `<span class="tag-block">SAT TÖVSİYƏSİ</span>`
+      : `<span class="tag-pass">DAVAM EDİR</span>`;
+    return `<tr>
+      <td>${p.symbol}</td>
+      <td class="${sideClass}">${p.side}</td>
+      <td class="tabular">${fmtUSD(p.entryPrice)}</td>
+      <td class="tabular">${fmtUSD(p.currentPrice)}</td>
+      <td>${statusHtml}</td>
+      <td><button class="chip" data-close-id="${p.id}">BAĞLA</button></td>
+    </tr>
+    ${p.exitRecommended ? `<tr><td colspan="6" class="dim" style="white-space:normal;font-size:11px;padding-top:0">${p.exitReason || ''}</td></tr>` : ''}`;
+  }).join('');
+
+  body.innerHTML = `<table>
+    <thead><tr><th>Coin</th><th>İstiqamət</th><th>Giriş</th><th>Cari</th><th>Status</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+
+  body.querySelectorAll('button[data-close-id]').forEach(btn => {
+    btn.addEventListener('click', () => closePosition(btn.dataset.closeId));
+  });
+}
+
+async function openPosition(symbol, side, price, tradeSize, atr) {
+  await fetch('/api/positions/open', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ symbol, side, entryPrice: price, tradeSize, atr: Number.isFinite(atr) ? atr : null }),
+  });
+  fetchAll();
+}
+
+async function closePosition(id) {
+  await fetch('/api/positions/close', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  });
+  fetchAll();
+}
+
+function updateSymbolFilterOptions() {
+  const select = document.getElementById('symbol-filter');
+  const symbols = (state.env.symbols && state.env.symbols.length)
+    ? state.env.symbols
+    : Array.from(new Set(state.log.trades.map(t => t.symbol))).sort();
+
+  const current = select.value || 'all';
+  const optionsHtml = ['<option value="all">BÜTÜN COİNLƏR</option>']
+    .concat(symbols.map(s => `<option value="${s}">${s}</option>`))
+    .join('');
+
+  if (select.innerHTML !== optionsHtml) {
+    select.innerHTML = optionsHtml;
+    select.value = symbols.includes(current) || current === 'all' ? current : 'all';
+  }
+}
+
+function renderFeed() {
+  updateSymbolFilterOptions();
+  const symbolFilter = document.getElementById('symbol-filter').value;
+
+  const body = document.getElementById('feed-body');
+  const filtered = state.log.trades
+    .map((t, idx) => ({ t, idx }))
+    .filter(({ t }) => state.filter === 'all' || (state.filter === 'pass' && t.allPass) || (state.filter === 'block' && !t.allPass))
+    .filter(({ t }) => symbolFilter === 'all' || t.symbol === symbolFilter)
+    .reverse();
+
+  if (filtered.length === 0) {
+    body.innerHTML = '<div class="empty">FİLTRƏ UYĞUN QƏRAR YOXDUR</div>';
+    return;
+  }
+
+  const rows = filtered.map(({ t, idx }) => {
+    const ts = fmtTime(t.timestamp).slice(11);
+    const tag = t.allPass
+      ? '<span class="tag-pass">SİQNAL</span>'
+      : '<span class="tag-block">GÖZLƏ</span>';
+    let summary;
+    if (t.allPass) {
+      const move = t.expectedMove ? ` <span class="dim">(${t.expectedMove.pct >= 0 ? '+' : ''}${fmtNum(t.expectedMove.pct, 1)}%)</span>` : '';
+      summary = `${t.side || 'Siqnal'} — təklif ${fmtUSD(t.tradeSize)}${move}`;
+    } else {
+      summary = t.waitReason || 'Şərtlər ödənmədi';
+    }
+    const sel = idx === state.selectedIdx ? 'selected' : '';
+    return `<tr class="${sel}" data-idx="${idx}">
+      <td class="dim tabular">${ts}</td>
+      <td class="dim">${t.symbol || '—'}</td>
+      <td>${tag}</td>
+      <td class="tabular">${fmtUSD(t.price)}</td>
+      <td style="white-space:normal">${summary}</td>
+    </tr>`;
+  }).join('');
+
+  body.innerHTML = `<table>
+    <thead><tr><th>Vaxt</th><th>Coin</th><th>Nəticə</th><th>Qiymət</th><th>Xülasə</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+
+  body.querySelectorAll('tr[data-idx]').forEach(row => {
+    row.addEventListener('click', () => selectDecision(parseInt(row.dataset.idx, 10)));
+  });
+}
+
+function renderDetail() {
+  const body = document.getElementById('detail-body');
+  const tsEl = document.getElementById('detail-ts');
+  if (state.selectedIdx === null || !state.log.trades[state.selectedIdx]) {
+    tsEl.textContent = '—';
+    body.innerHTML = '<div class="empty">YOXLAMAQ ÜÇÜN BİR QƏRAR SEÇ</div>';
+    return;
+  }
+  const t = state.log.trades[state.selectedIdx];
+  tsEl.textContent = fmtTime(t.timestamp);
+
+  const indicators = t.indicators || {};
+  const conditions = (t.conditions || []).map(c => {
+    const cls = c.pass ? 'pass' : 'fail';
+    const marker = c.pass ? '✓' : '✗';
+    const v = c.actual !== undefined ? ` <span class="val">${typeof c.actual === 'number' ? fmtNum(c.actual, 2) : c.actual}</span>` : '';
+    return `<div class="cond ${cls}">
+      <span class="marker">${marker}</span>
+      <span class="label">${c.label || '—'}</span>
+      ${v}
+    </div>`;
+  }).join('') || '<div class="dim">Heç bir şərt qeydə alınmayıb.</div>';
+
+  const decisionRows = t.allPass
+    ? `<span class="k">Tövsiyə</span><span class="v side-${t.side === 'SHORT' ? 'sell' : 'buy'}">${t.side || '—'}</span>
+       <span class="k">Təklif Olunan Ölçü</span><span class="v">${fmtUSD(t.tradeSize)}</span>
+       <span class="k">Gözlənilən Hədəf</span><span class="v">${t.expectedMove ? fmtUSD(t.expectedMove.target) : '—'}</span>
+       <span class="k">Gözlənilən Dəyişim</span><span class="v">${t.expectedMove ? (t.expectedMove.pct >= 0 ? '+' : '') + fmtNum(t.expectedMove.pct, 2) + '%' : '—'}</span>
+       <span class="k">Risk/Reward</span><span class="v">${Number.isFinite(t.riskReward) ? fmtNum(t.riskReward, 2) : '—'}</span>`
+    : `<span class="k">Tövsiyə</span><span class="v">— heç nə etmə —</span>`;
+
+  body.innerHTML = `
+    <div class="detail">
+      <div>
+        <h3>▸ Şərtlər (${t.conditions ? t.conditions.length : 0})</h3>
+        ${conditions}
+      </div>
+      <div>
+        <h3>▸ İndikatorlar</h3>
+        <div class="kv">
+          <span class="k">Qiymət</span><span class="v">${fmtUSD(t.price)}</span>
+          <span class="k">EMA(200) trend</span><span class="v">${Number.isFinite(indicators.ema200) ? fmtUSD(indicators.ema200) + (t.price > indicators.ema200 ? ' ▲' : ' ▼') : '—'}</span>
+          <span class="k">EMA(8)</span><span class="v">${fmtUSD(indicators.ema8)}</span>
+          <span class="k">VWAP</span><span class="v">${fmtUSD(indicators.vwap)}</span>
+          <span class="k">RSI(3)</span><span class="v">${fmtNum(indicators.rsi3, 2)}</span>
+          <span class="k">ATR(14)</span><span class="v">${Number.isFinite(indicators.atr) ? fmtUSD(indicators.atr) : '—'}</span>
+          ${indicators.orderFlow ? `<span class="k">Order flow (CVD)</span><span class="v">${indicators.orderFlow.bias} ${(indicators.orderFlow.cvdRatio * 100).toFixed(1)}%</span>` : ''}
+        </div>
+
+        <h3 style="margin-top:14px">▸ Qərar</h3>
+        <div class="kv">
+          <span class="k">Nəticə</span><span class="v ${t.allPass ? 'tag-pass' : 'tag-block'}">${t.allPass ? 'SİQNAL' : 'GÖZLƏ'}</span>
+          ${Number.isFinite(t.qualityScore) ? `<span class="k">Keyfiyyət balı</span><span class="v">${t.qualityScore}/100 ${t.qualityScore >= 85 ? '🟢🟢🟢' : t.qualityScore >= 70 ? '🟢🟢⚪' : '🟢⚪⚪'}</span>` : ''}
+          ${decisionRows}
+        </div>
+        ${!t.allPass && t.waitReason ? `<div class="dim" style="margin-top:8px;white-space:normal;line-height:1.5">${t.waitReason}</div>` : ''}
+
+        <h3 style="margin-top:14px">▸ Limitlər</h3>
+        <div class="kv">
+          <span class="k">Maks. ölçü</span><span class="v">${fmtUSD(t.limits && t.limits.maxTradeSizeUSD)}</span>
+          <span class="k">Maks. gündə</span><span class="v">${(t.limits && t.limits.maxTradesPerDay) || '—'}</span>
+          <span class="k">Bu gün istifadə</span><span class="v">${(t.limits && t.limits.tradesToday) ?? '—'}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function selectDecision(idx) {
+  state.selectedIdx = idx;
+  renderFeed();
+  renderDetail();
+}
+
+document.querySelectorAll('button.chip[data-filter]').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('button.chip[data-filter]').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    state.filter = chip.dataset.filter;
+    renderFeed();
+  });
+});
+
+document.getElementById('symbol-filter').addEventListener('change', () => renderFeed());
+
+// initial + auto refresh
+fetchAll();
+setInterval(fetchAll, 20000);
+</script>
+</body>
+</html>

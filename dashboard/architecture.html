@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>CLAUDE EXECUTE :: ARCHITECTURE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #030803;
+  --green: #00ff7a;
+  --green-mid: #1aaa55;
+  --green-dim: #0a6a35;
+  --green-faint: #082818;
+  --green-glow: rgba(0,255,122,0.55);
+  --red: #ff4466;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--green);
+  font-family: var(--mono);
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  font-feature-settings: "ss02", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Soft radial vignette + dot grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(0,255,122,0.06), transparent 65%),
+    radial-gradient(circle at 50% 50%, transparent 0%, var(--bg) 90%);
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(0,255,122,0.08) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.35;
+  z-index: 0;
+  mask-image: radial-gradient(circle at 50% 50%, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, black 30%, transparent 80%);
+}
+
+.stage {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: 50px 80px 40px;
+}
+
+/* ─── HEADER ─── */
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  letter-spacing: 0.32em;
+  color: var(--green-dim);
+  text-transform: uppercase;
+}
+.head .brand { color: var(--green); font-weight: 700; }
+
+/* ─── CAPTION ─── */
+.caption-wrap {
+  text-align: center;
+  margin-top: 20px;
+  height: 64px;
+  position: relative;
+}
+.caption {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  color: var(--green);
+  text-shadow: 0 0 14px var(--green-glow);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.caption.show {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.5s ease 0.3s, transform 0.5s ease 0.3s;
+}
+.caption b { font-weight: 700; }
+.caption.warn { color: var(--red); text-shadow: 0 0 14px rgba(255,68,102,0.5); }
+
+/* ─── DIAGRAM ─── */
+.diagram {
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin-top: 20px;
+}
+.frame {
+  position: relative;
+  width: min(1280px, 92vw);
+  height: 540px;
+}
+
+.svg-wrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.svg-wrap svg { width: 100%; height: 100%; overflow: visible; }
+
+/* ─── NODE ─── */
+.node {
+  position: absolute;
+  width: 260px;
+  height: 200px;
+  background: rgba(8, 14, 9, 0.85);
+  border: 1px solid var(--green-faint);
+  border-radius: 4px;
+  padding: 22px 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  backdrop-filter: blur(2px);
+}
+.node.active {
+  border-color: var(--green);
+  box-shadow:
+    0 0 0 1px var(--green),
+    0 0 60px rgba(0,255,122,0.25),
+    0 0 30px rgba(0,255,122,0.10) inset;
+  transform: scale(1.03);
+}
+.node.dim { opacity: 0.32; }
+.node .icon {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 14px;
+  color: var(--green-mid);
+  transition: color 0.6s ease, filter 0.6s ease;
+}
+.node.active .icon {
+  color: var(--green);
+  filter: drop-shadow(0 0 8px var(--green-glow));
+}
+.node .icon svg { width: 100%; height: 100%; stroke-width: 1.5; }
+.node .label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  color: var(--green);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.node .desc {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--green-dim);
+  letter-spacing: 0.04em;
+  line-height: 1.45;
+}
+.node.active .desc { color: var(--green-mid); }
+
+/* Node positions (frame is 1280x540) */
+.node-tv  { left: 0;        top: 60px; }
+.node-cx  { left: 510px;    top: 60px; width: 260px; }
+.node-ex  { right: 0;       top: 60px; }
+.node-log { left: 510px;    top: 360px; width: 260px; }
+
+/* ─── CONDITIONS inside Claude (overlay, only visible at peak) ─── */
+.cond-stack {
+  position: absolute;
+  left: 510px;
+  top: 280px;
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--green-mid);
+  letter-spacing: 0.04em;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.cond-stack.show { opacity: 1; }
+.cond {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: baseline;
+  background: rgba(8, 14, 9, 0.9);
+  padding: 7px 12px;
+  border: 1px solid var(--green-faint);
+  border-radius: 3px;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.cond.lit { opacity: 1; transform: translateY(0); }
+.cond .marker { font-weight: 700; color: var(--green); }
+.cond .name { color: var(--green); font-size: 12px; }
+.cond .v { color: var(--green-mid); font-size: 11px; }
+
+/* ─── PHASE COUNTER ─── */
+.foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  color: var(--green-dim);
+  text-transform: uppercase;
+}
+.dots { display: flex; gap: 8px; }
+.dots .d {
+  width: 22px;
+  height: 3px;
+  background: var(--green-faint);
+  transition: background 0.5s ease, box-shadow 0.5s ease;
+}
+.dots .d.on {
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green-glow);
+}
+
+/* ─── SVG line styling ─── */
+.line-base {
+  stroke: var(--green-faint);
+  stroke-width: 1.4;
+  fill: none;
+  stroke-dasharray: 4 6;
+}
+.line-active {
+  stroke: var(--green);
+  stroke-width: 1.6;
+  fill: none;
+  stroke-dasharray: 6 8;
+  stroke-dashoffset: 0;
+  filter: drop-shadow(0 0 4px var(--green-glow));
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  animation: dash 1.6s linear infinite;
+}
+.line-active.on { opacity: 1; }
+@keyframes dash { to { stroke-dashoffset: -28; } }
+
+.pulse {
+  fill: var(--green);
+  filter: drop-shadow(0 0 10px var(--green-glow));
+  opacity: 0;
+  transition: opacity 0.2s linear;
+}
+.pulse.travel { opacity: 1; }
+
+/* Forbidden line (TV ↔ Exchange) */
+.forbidden {
+  stroke: var(--red);
+  stroke-width: 1.4;
+  stroke-dasharray: 4 6;
+  fill: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.forbidden.show { opacity: 0.9; }
+.forbidden-x {
+  stroke: var(--red);
+  stroke-width: 2;
+  fill: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.forbidden-x.show { opacity: 1; }
+
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <!-- HEADER -->
+  <div class="head">
+    <span class="brand">CLAUDE&nbsp;EXECUTE</span>
+    <span>ARCHITECTURE&nbsp;·&nbsp;HOW&nbsp;IT&nbsp;WORKS</span>
+    <span>SCENE&nbsp;02</span>
+  </div>
+
+  <!-- CAPTION -->
+  <div class="caption-wrap">
+    <div class="caption" id="cap-0">Three components.</div>
+    <div class="caption warn" id="cap-1">These two <b>never</b> talk to each other directly.</div>
+    <div class="caption" id="cap-2">Claude is the bridge between them.</div>
+    <div class="caption" id="cap-3">It reads the chart…</div>
+    <div class="caption" id="cap-4">…checks every rule in your strategy…</div>
+    <div class="caption" id="cap-5">…and only then sends the order.</div>
+    <div class="caption" id="cap-6">Every decision is logged. Pass or block.</div>
+    <div class="caption" id="cap-7">That log is your tax record.</div>
+  </div>
+
+  <!-- DIAGRAM -->
+  <div class="diagram">
+    <div class="frame" id="frame">
+
+      <!-- TRADINGVIEW -->
+      <div class="node node-tv" id="n-tv">
+        <div class="icon" aria-hidden>
+          <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="10" width="52" height="40" rx="2"/>
+            <path d="M6 50 L18 36 L26 42 L36 24 L46 32 L58 18"/>
+            <circle cx="36" cy="24" r="2.4" fill="currentColor"/>
+            <path d="M6 56 L58 56" opacity="0.5"/>
+          </svg>
+        </div>
+        <div class="label">TradingView</div>
+        <div class="desc">The chart.<br/>Price + indicators.</div>
+      </div>
+
+      <!-- CLAUDE -->
+      <div class="node node-cx" id="n-cx">
+        <div class="icon" aria-hidden>
+          <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="32,6 56,20 56,44 32,58 8,44 8,20"/>
+            <circle cx="32" cy="32" r="4" fill="currentColor"/>
+            <path d="M32 6 L32 28 M32 36 L32 58 M8 20 L28 30 M36 30 L56 20 M8 44 L28 34 M36 34 L56 44"/>
+          </svg>
+        </div>
+        <div class="label">Claude</div>
+        <div class="desc">The brain.<br/>Reads. Checks. Decides.</div>
+      </div>
+
+      <!-- EXCHANGE -->
+      <div class="node node-ex" id="n-ex">
+        <div class="icon" aria-hidden>
+          <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="8" y="14" width="48" height="38" rx="3"/>
+            <path d="M8 22 L56 22"/>
+            <circle cx="32" cy="36" r="9"/>
+            <path d="M32 30 L32 32 M32 40 L32 42"/>
+            <path d="M28 36 Q32 40 36 36" />
+            <path d="M14 52 L14 56 M50 52 L50 56" opacity="0.6"/>
+          </svg>
+        </div>
+        <div class="label">Exchange</div>
+        <div class="desc">Your money.<br/>Where trades fill.</div>
+      </div>
+
+      <!-- LOG (downstream) -->
+      <div class="node node-log" id="n-log">
+        <div class="icon" aria-hidden>
+          <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="10" y="8" width="44" height="48" rx="2"/>
+            <path d="M18 20 L46 20 M18 28 L46 28 M18 36 L40 36 M18 44 L46 44"/>
+            <circle cx="14" cy="20" r="1.6" fill="currentColor"/>
+            <circle cx="14" cy="28" r="1.6" fill="currentColor"/>
+            <circle cx="14" cy="36" r="1.6" fill="currentColor"/>
+            <circle cx="14" cy="44" r="1.6" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="label">Decision Log</div>
+        <div class="desc">Every trade. Every block.<br/>Tax-ready.</div>
+      </div>
+
+      <!-- CONDITIONS -->
+      <div class="cond-stack" id="cond-stack">
+        <div class="cond" id="c1"><span class="marker">✓</span><span class="name">Price&nbsp;&gt;&nbsp;VWAP</span><span class="v">63,290 / 62,880</span></div>
+        <div class="cond" id="c2"><span class="marker">✓</span><span class="name">Price&nbsp;&gt;&nbsp;EMA(8)</span><span class="v">63,290 / 63,010</span></div>
+        <div class="cond" id="c3"><span class="marker">✓</span><span class="name">RSI(3)&nbsp;&lt;&nbsp;30</span><span class="v">24.10</span></div>
+      </div>
+
+      <!-- SVG OVERLAY -->
+      <div class="svg-wrap">
+        <svg viewBox="0 0 1280 540" preserveAspectRatio="none">
+          <!-- Base lines (always visible, dim) -->
+          <path class="line-base" d="M 260 160 L 510 160" />
+          <path class="line-base" d="M 770 160 L 1020 160" />
+          <path class="line-base" d="M 640 260 L 640 360" />
+
+          <!-- Active overlays (animated dashes) -->
+          <path id="al-tv"  class="line-active" d="M 260 160 L 510 160" />
+          <path id="al-cx"  class="line-active" d="M 770 160 L 1020 160" />
+          <path id="al-log" class="line-active" d="M 640 260 L 640 360" />
+
+          <!-- Pulses traveling along paths -->
+          <circle id="p-tv"  class="pulse" r="6" style="offset-path: path('M 260 160 L 510 160');"/>
+          <circle id="p-cx"  class="pulse" r="6" style="offset-path: path('M 770 160 L 1020 160');"/>
+          <circle id="p-log" class="pulse" r="6" style="offset-path: path('M 640 260 L 640 360');"/>
+
+          <!-- Arrowheads -->
+          <g fill="var(--green-mid)">
+            <polygon points="500,156 510,160 500,164"/>
+            <polygon points="1010,156 1020,160 1010,164"/>
+            <polygon points="636,352 640,360 644,352"/>
+          </g>
+
+          <!-- Forbidden direct line (TV ↔ Exchange) -->
+          <path id="forbidden-line" class="forbidden" d="M 200 60 Q 640 0 1080 60" />
+          <g id="forbidden-x">
+            <line class="forbidden-x" x1="620" y1="20" x2="660" y2="60"/>
+            <line class="forbidden-x" x1="660" y1="20" x2="620" y2="60"/>
+          </g>
+        </svg>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PHASE COUNTER -->
+  <div class="foot">
+    <span id="phase-tag">PHASE&nbsp;1&nbsp;/&nbsp;7</span>
+    <div class="dots" id="dots">
+      <span class="d"></span><span class="d"></span><span class="d"></span>
+      <span class="d"></span><span class="d"></span><span class="d"></span><span class="d"></span>
+    </div>
+    <span style="color:var(--green-dim)">LOOP&nbsp;·&nbsp;22s</span>
+  </div>
+
+</div>
+
+<script>
+// ═══ Animation timeline (22s loop, 7 phases) ════════════════════════════════
+//
+// We orchestrate via a JS scheduler — no CSS keyframe wars. Each phase sets
+// the state of nodes, captions, lines, pulses, and conditions.
+//
+// Phase 0 (0–2s):  Three nodes appear (Log dim).            "Three components."
+// Phase 1 (2–5s):  Forbidden line flashes red w/ cross.     "These two never talk directly."
+// Phase 2 (5–7s):  Claude lights up.                        "Claude is the bridge between them."
+// Phase 3 (7–10s): Pulse TV→Claude. TV+Claude active.       "It reads the chart…"
+// Phase 4 (10–14s): Conditions tick on ✓✓✓                  "…checks every rule…"
+// Phase 5 (14–17s): Pulse Claude→Exchange.                  "…then sends the order."
+// Phase 6 (17–20s): Pulse Claude→Log. Log lights up.        "Every decision is logged."
+// Phase 7 (20–22s): Hold all-glow.                          "That log is your tax record."
+
+const phases = [
+  { t: 0,    cap: 0, tag: 'PHASE 1 / 7', dotsOn: 1 },
+  { t: 2200, cap: 1, tag: 'PHASE 2 / 7', dotsOn: 2 },
+  { t: 5200, cap: 2, tag: 'PHASE 3 / 7', dotsOn: 3 },
+  { t: 7200, cap: 3, tag: 'PHASE 4 / 7', dotsOn: 4 },
+  { t: 10200,cap: 4, tag: 'PHASE 5 / 7', dotsOn: 5 },
+  { t: 14200,cap: 5, tag: 'PHASE 6 / 7', dotsOn: 6 },
+  { t: 17200,cap: 6, tag: 'PHASE 7 / 7', dotsOn: 7 },
+  { t: 20200,cap: 7, tag: 'PHASE 7 / 7', dotsOn: 7 },
+];
+const TOTAL = 22000;
+
+const $ = (id) => document.getElementById(id);
+const captions = [0,1,2,3,4,5,6,7].map(i => $('cap-' + i));
+const nodes = { tv: $('n-tv'), cx: $('n-cx'), ex: $('n-ex'), log: $('n-log') };
+const altv = $('al-tv'), alcx = $('al-cx'), allog = $('al-log');
+const ptv = $('p-tv'), pcx = $('p-cx'), plog = $('p-log');
+const forbidden = $('forbidden-line');
+const forbiddenX = document.querySelectorAll('#forbidden-x .forbidden-x');
+const cstack = $('cond-stack');
+const c1 = $('c1'), c2 = $('c2'), c3 = $('c3');
+const dots = document.querySelectorAll('#dots .d');
+const phaseTag = $('phase-tag');
+
+function setCaption(i) {
+  captions.forEach((el, idx) => el.classList.toggle('show', idx === i));
+}
+function setActive(node, on) {
+  if (!node) return;
+  node.classList.toggle('active', !!on);
+  node.classList.toggle('dim', !on && node._dimmable);
+}
+// Mark log as dimmable until phase 6
+nodes.log._dimmable = true;
+nodes.tv._dimmable = false;
+nodes.cx._dimmable = false;
+nodes.ex._dimmable = false;
+
+function setPhase(i) {
+  const p = phases[i];
+  setCaption(p.cap);
+  phaseTag.textContent = p.tag;
+  dots.forEach((d, idx) => d.classList.toggle('on', idx < p.dotsOn));
+}
+
+function travelPulse(pulseEl, durationMs) {
+  pulseEl.style.transition = 'none';
+  pulseEl.style.offsetDistance = '0%';
+  pulseEl.classList.remove('travel');
+  // force reflow
+  void pulseEl.offsetWidth;
+  pulseEl.style.transition = `offset-distance ${durationMs}ms cubic-bezier(0.4,0,0.6,1), opacity 0.2s linear`;
+  pulseEl.classList.add('travel');
+  pulseEl.style.offsetDistance = '100%';
+  setTimeout(() => {
+    pulseEl.classList.remove('travel');
+  }, durationMs + 100);
+}
+
+function reset() {
+  // dim all nodes
+  Object.values(nodes).forEach(n => { n.classList.remove('active'); });
+  nodes.log.classList.add('dim');
+  // reset lines & pulses
+  [altv, alcx, allog].forEach(l => l.classList.remove('on'));
+  [ptv, pcx, plog].forEach(p => {
+    p.classList.remove('travel');
+    p.style.transition = 'none';
+    p.style.offsetDistance = '0%';
+  });
+  // hide forbidden
+  forbidden.classList.remove('show');
+  forbiddenX.forEach(x => x.classList.remove('show'));
+  // hide conditions
+  cstack.classList.remove('show');
+  c1.classList.remove('lit');
+  c2.classList.remove('lit');
+  c3.classList.remove('lit');
+}
+
+// ═══ Master timeline ═══
+function runCycle() {
+  reset();
+
+  // Phase 0: 0–2s — Three components appear (Log dim)
+  setPhase(0);
+  setTimeout(() => {
+    setActive(nodes.tv, true);
+  }, 200);
+  setTimeout(() => setActive(nodes.cx, true), 600);
+  setTimeout(() => setActive(nodes.ex, true), 1000);
+  // Settle to all dim except outline
+  setTimeout(() => {
+    setActive(nodes.tv, false);
+    setActive(nodes.cx, false);
+    setActive(nodes.ex, false);
+  }, 1900);
+
+  // Phase 1: 2.2s — Forbidden line
+  setTimeout(() => {
+    setPhase(1);
+    setActive(nodes.tv, true);
+    setActive(nodes.ex, true);
+    forbidden.classList.add('show');
+    forbiddenX.forEach(x => x.classList.add('show'));
+  }, 2200);
+  setTimeout(() => {
+    forbidden.classList.remove('show');
+    forbiddenX.forEach(x => x.classList.remove('show'));
+    setActive(nodes.tv, false);
+    setActive(nodes.ex, false);
+  }, 4900);
+
+  // Phase 2: 5.2s — Claude is the bridge
+  setTimeout(() => {
+    setPhase(2);
+    setActive(nodes.cx, true);
+  }, 5200);
+  setTimeout(() => setActive(nodes.cx, false), 6900);
+
+  // Phase 3: 7.2s — Read chart (TV→Claude)
+  setTimeout(() => {
+    setPhase(3);
+    setActive(nodes.tv, true);
+    altv.classList.add('on');
+    travelPulse(ptv, 1600);
+  }, 7200);
+  setTimeout(() => {
+    setActive(nodes.cx, true);
+    altv.classList.remove('on');
+  }, 8900);
+
+  // Phase 4: 10.2s — Conditions evaluate
+  setTimeout(() => {
+    setPhase(4);
+    cstack.classList.add('show');
+  }, 10200);
+  setTimeout(() => c1.classList.add('lit'), 10700);
+  setTimeout(() => c2.classList.add('lit'), 11700);
+  setTimeout(() => c3.classList.add('lit'), 12700);
+
+  // Phase 5: 14.2s — Send order Claude→Exchange
+  setTimeout(() => {
+    setPhase(5);
+    cstack.classList.remove('show');
+    alcx.classList.add('on');
+    travelPulse(pcx, 1600);
+  }, 14200);
+  setTimeout(() => {
+    setActive(nodes.ex, true);
+    alcx.classList.remove('on');
+  }, 15900);
+
+  // Phase 6: 17.2s — Log the decision
+  setTimeout(() => {
+    setPhase(6);
+    nodes.log.classList.remove('dim');
+    allog.classList.add('on');
+    travelPulse(plog, 1400);
+  }, 17200);
+  setTimeout(() => {
+    setActive(nodes.log, true);
+    allog.classList.remove('on');
+  }, 18700);
+
+  // Phase 7: 20.2s — All glow / tax record
+  setTimeout(() => {
+    setPhase(7);
+    Object.values(nodes).forEach(n => setActive(n, true));
+  }, 20200);
+}
+
+runCycle();
+setInterval(runCycle, TOTAL);
+</script>
+</body>
+</html>

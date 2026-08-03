@@ -1,0 +1,12 @@
+# Linux runner-də bash skriptləri CRLF ilə pozulur — bu fayllar həmişə LF olmalıdır
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.sh    text eol=lf
+*.js    text eol=lf
+*.cjs   text eol=lf
+*.json  text eol=lf
+
+# Binar fayllar
+*.pdf   binary
+*.docx  binary
+*.ico   binary
