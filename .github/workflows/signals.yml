@@ -56,6 +56,11 @@ jobs:
       SP500: "1"
       US100: "1"
 
+      # ── Neft (Brent) günlük trend-following siqnalı — EKSPERİMENTAL, validasiya
+      # edilməyib (10 illik backtest: ADX həddinə görə nəticə +1.4%-dən -2.8%-ə
+      # sıçrayır, tarixdə tək əməliyyatda -18.8% itki). İstifadəçinin qərarı ilə aktivdir.
+      OIL: "1"
+
       # ── Xəbər analizi: RSS lentləri + Claude təsir qiymətləndirməsi ──
       NEWS: "1"
       NEWS_MODEL: "claude-sonnet-5"

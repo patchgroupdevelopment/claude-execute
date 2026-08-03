@@ -1853,6 +1853,7 @@ async function sendWeeklyReportIfDue() {
 
 const SPX_STATE_FILE = path.join(DATA_DIR, "sp500-state.json");
 const US100_STATE_FILE = path.join(DATA_DIR, "us100-state.json");
+const OIL_STATE_FILE = path.join(DATA_DIR, "oil-state.json");
 
 function nyParts(d = new Date()) {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -2025,6 +2026,141 @@ async function sendUs100DailyBriefIfDue() {
     envFlag: "US100", forceEnvFlag: "FORCE_US100", label: "US100 (Nasdaq 100)", emoji: "💻",
     yahooTicker: "%5ENDX", stateFile: US100_STATE_FILE, xmSymbol: "US100Cash", claudeAssetName: "US100",
   });
+}
+
+// ─── Neft (Brent) Günlük Trend-Following Siqnalı (OIL=1 olduqda aktivdir) ────
+//
+// ⚠️ EKSPERİMENTAL — S&P 500/US100-dən fərqli olaraq bu strategiya VALİDASİYA
+// EDİLMƏYİB. Qızılın canlı məntiqi ilə eyni qaydalar (EMA200 rejim + EMA9/20
+// kəsişməsi bağlanmış şamda + ADX(14)≥22 + təsdiq şamı) GÜNLÜK taymfreymdə
+// tətbiq olunur (neft üçün pulsuz 4H mənbəyi yoxdur — Yahoo Finance yalnız
+// günlük verir). 10 illik backtest (Brent BZ=F, WTI CL=F) nəticəsi:
+//   - ADX həddi dəyişəndə nəticə İŞARƏ DƏYİŞDİRİR: Brent-də ADX≥20-də +1.39%/
+//     əməliyyat, ADX≥25-də -2.78%/əməliyyat — qonşu parametrlər arasında bu
+//     qədər fərq real edge-dən çox təsadüfi uyğunluğa (overfitting) işarədir.
+//   - Nümunə sayı kiçikdir (12-23 siqnal/10 il) — statistik əhəmiyyəti azdır.
+//   - HƏR İKİ neft növündə tarixdə TƏK əməliyyatda -18.8% itki müşahidə
+//     olundu (2026 aprel) — ATR×2.5 stop bu sıçrayışı (gap) tutmadı.
+// İstifadəçinin açıq qərarı ilə YENƏ DƏ əlavə edilib — stop-loss ölçüsünü
+// (məbləğini) özü təyin edəcək. Telegram mesajında status açıq bildirilir və
+// ADX həddi (22) bu backtest-dən seçilməyib — qızılın öz həddidir (lookahead
+// qarşısı: eyni datadan seçib eyni datada "yaxşı görünən" ədədi istifadə etmək
+// nəticəni şişirdərdi).
+
+async function sendOilDailyBriefIfDue() {
+  if (process.env.OIL !== "1" || !process.env.TELEGRAM_BOT_TOKEN) return;
+  const force = process.env.FORCE_OIL === "1";
+  const ny = nyParts();
+  if (!force) {
+    if (ny.weekday === "Sat" || ny.weekday === "Sun") return;
+    if (ny.hour < 9 || (ny.hour === 9 && ny.minute < 30)) return;
+  }
+
+  let state = { lastBrief: null, position: null, history: [] };
+  if (existsSync(OIL_STATE_FILE)) {
+    try { state = JSON.parse(await readFile(OIL_STATE_FILE, "utf8")); } catch {}
+  }
+  if (!force && state.lastBrief === ny.date) return;
+
+  console.log("\n🛢️  Neft (Brent) günlük yoxlaması...");
+  const candles = await fetchYahooDaily("BZ=F");
+  if (candles.length < 205) { console.log("⚠️  Neft: kifayət qədər data yoxdur."); return; }
+  const closes = candles.map((c) => c.close);
+  const last = candles[candles.length - 1];
+  const ema200 = calcEMA(closes, 200);
+  const ema9 = calcEMA(closes, 9);
+  const ema20 = calcEMA(closes, 20);
+  const prevCloses = closes.slice(0, -1);
+  const prevEma9 = calcEMA(prevCloses, 9);
+  const prevEma20 = calcEMA(prevCloses, 20);
+  const adx = calcADX(candles);
+  const atr = calcATR(candles, 14);
+  const bull = last.close > ema200;
+  const side = bull ? "BUY" : "SHORT";
+
+  const fmtN = (v) => v.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  let msg =
+    `🛢️ <b>NEFT (BRENT) GÜNLÜK</b> — ⚠️ EKSPERİMENTAL, validasiya edilməyib\n\n` +
+    `Bağlanış: <b>$${fmtN(last.close)}</b> | EMA200: $${fmtN(ema200)}\n` +
+    `Rejim: ${bull ? "🟢 YÜKSƏLİŞ" : "🔴 DÜŞÜŞ"} | ADX(14): <b>${adx !== null ? adx.toFixed(1) : "N/A"}</b>\n\n`;
+
+  // 1. Açıq mövqe yoxlaması
+  if (state.position) {
+    const p = state.position;
+    let exitPrice = null, exitTag = null;
+    if (p.side === "BUY") {
+      if (last.low <= p.stop) { exitPrice = p.stop; exitTag = "stop"; }
+      else if (last.high >= p.tp) { exitPrice = p.tp; exitTag = "tp"; }
+    } else {
+      if (last.high >= p.stop) { exitPrice = p.stop; exitTag = "stop"; }
+      else if (last.low <= p.tp) { exitPrice = p.tp; exitTag = "tp"; }
+    }
+    if (exitPrice !== null) {
+      const pnlPct = (p.side === "BUY" ? (exitPrice - p.entry) / p.entry : (p.entry - exitPrice) / p.entry) * 100;
+      state.history.push({ ...p, exitPrice, exitDate: last.date, exitTag, pnlPct });
+      state.position = null;
+      msg += `${pnlPct >= 0 ? "✅" : "🔴"} <b>ÇIXIŞ TÖVSİYƏSİ</b> — ${exitTag === "stop" ? "stop-loss işlədi" : "hədəfə çatdı"}\n` +
+        `Giriş ${p.side} ${fmtN(p.entry)} (${p.entryDate}) → çıxış ${fmtN(exitPrice)} | <b>${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(2)}%</b>\n` +
+        `XM-də BrentCash mövqeyin varsa bağlamağı düşün.\n`;
+    } else {
+      const pnlPct = (p.side === "BUY" ? (last.close - p.entry) / p.entry : (p.entry - last.close) / p.entry) * 100;
+      msg += `⏳ Açıq tövsiyə: ${p.side} @ ${fmtN(p.entry)} (${p.entryDate}) — hazırkı ${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(2)}%\n` +
+        `SL ${fmtN(p.stop)} | TP ${fmtN(p.tp)}\n`;
+    }
+  }
+
+  // 2. Yeni giriş şərti (mövqe yoxdursa)
+  if (!state.position && ema9 !== null && ema20 !== null && prevEma9 !== null && prevEma20 !== null && adx !== null && atr) {
+    const crossedUp = ema9 > ema20 && prevEma9 <= prevEma20;
+    const crossedDown = ema9 < ema20 && prevEma9 >= prevEma20;
+    const crossed = side === "BUY" ? crossedUp : crossedDown;
+    const candleOk = side === "BUY" ? last.close > last.open : last.close < last.open;
+    if (crossed && adx >= CONFIG.adxThreshold && candleOk) {
+      const stop = side === "BUY" ? last.close - CONFIG.atrMultiplier * atr : last.close + CONFIG.atrMultiplier * atr;
+      const tp = side === "BUY" ? last.close + CONFIG.trendTakeProfitAtrMult * atr : last.close - CONFIG.trendTakeProfitAtrMult * atr;
+      state.position = { side, entry: last.close, entryDate: last.date, stop, tp };
+      const xmAccount = parseFloat(process.env.XM_ACCOUNT_USD || "500");
+      const xmRiskPct = parseFloat(process.env.XM_RISK_PCT || "1.5");
+      const riskUsd = xmAccount * (xmRiskPct / 100);
+      const units = riskUsd / Math.abs(last.close - stop);
+      msg += `🚨 <b>${side} SİQNALI</b> — EMA9/20 kəsişməsi, ADX ${adx.toFixed(1)}\n` +
+        `Giriş: ~$${fmtN(last.close)} | 🛑 SL: $${fmtN(stop)} | 🎯 TP: $${fmtN(tp)}\n` +
+        `📐 XM: <b>BrentCash</b> | Ölçü: ${units.toFixed(2)} vahid (SL itkisi ~$${riskUsd.toFixed(0)})\n` +
+        `\n⚠️ <b>Bu strategiya validasiya edilməyib.</b> 10 illik testdə nəticə ADX həddinə görə +1.4%-dən -2.8%-ə sıçrayırdı (qonşu parametrlər sabit deyil) və tarixdə tək əməliyyatda -18.8% itki olub (stop bu hərəkəti tutmadı — neftin sıçrayış riski adi ATR stopunu aşa bilər). Öz risk ölçünü diqqətlə özün təyin et.\n`;
+      const review = await reviewSignalWithClaude({
+        siqnal: {
+          symbol: "OIL(Brent)", side, qiymet: last.close,
+          strategiya: "EKSPERİMENTAL trend-following (EMA9/20 cross + ADX, validasiya edilməyib)",
+          tp, sl: stop, riskReward: CONFIG.trendTakeProfitAtrMult / CONFIG.atrMultiplier, sistemKeyfiyyetBali: null,
+        },
+        indikatorlar: { ema200, adx, atr },
+        son30BaglanmisGun: candles.slice(-30).map((c) => ({
+          t: c.date, o: c.open, h: c.high, l: c.low, c: c.close,
+        })),
+      });
+      if (review) {
+        const rIcon = review.qerar === "RAZIYAM" ? "🟢" : review.qerar === "RAZI DEYİLƏM" ? "🔴" : "🟡";
+        msg += `\n🧠 <b>Claude rəyi</b>: ${rIcon} ${review.qerar} — ${review.reyting}/100\n<i>${review.sebeb}</i>\n`;
+      }
+    } else {
+      msg += `⚪ Siqnal yoxdur — kəsişmə/ADX/təsdiq şərtləri hələ ödənmir.\n`;
+    }
+  }
+
+  if (state.history.length) {
+    const wins = state.history.filter((h) => h.pnlPct > 0).length;
+    const tot = state.history.reduce((s, h) => s + h.pnlPct, 0);
+    msg += `\n📊 İndiyədək: ${state.history.length} əməliyyat, ${wins}✅/${state.history.length - wins}❌, cəm ${tot >= 0 ? "+" : ""}${tot.toFixed(2)}%`;
+  }
+
+  const sent = await sendTelegram(msg);
+  if (!sent) {
+    console.log("⚠️  Neft brifinqi göndərilə bilmədi — növbəti dövrədə təkrar cəhd olunacaq.");
+    return;
+  }
+  state.lastBrief = ny.date;
+  await writeFile(OIL_STATE_FILE, JSON.stringify(state, null, 2));
+  console.log("🛢️  Neft brifinqi göndərildi.");
 }
 
 // ─── Xəbər Analizi (NEWS=1 olduqda aktivdir) ─────────────────────────────────
@@ -2372,6 +2508,11 @@ async function run() {
   } catch (err) {
     console.log(`⚠️  US100 yoxlaması xətası: ${err.message}`);
   }
+  try {
+    await sendOilDailyBriefIfDue();
+  } catch (err) {
+    console.log(`⚠️  Neft yoxlaması xətası: ${err.message}`);
+  }
 
   // Xəbər lentləri + Claude təsir analizi
   try {
@@ -2383,7 +2524,7 @@ async function run() {
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
-export { run, CONFIG, sendWeeklyReportIfDue, analyzeLongTermRegime, sendSp500DailyBriefIfDue, sendUs100DailyBriefIfDue, checkNewsAndNotify, checkPriceLevelAlerts };
+export { run, CONFIG, sendWeeklyReportIfDue, analyzeLongTermRegime, sendSp500DailyBriefIfDue, sendUs100DailyBriefIfDue, sendOilDailyBriefIfDue, checkNewsAndNotify, checkPriceLevelAlerts };
 
 if (isMain) {
   if (process.argv.includes("--tax-summary")) {
