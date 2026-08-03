@@ -59,6 +59,10 @@ jobs:
       NEWS: "1"
       NEWS_MODEL: "claude-sonnet-5"
 
+      # ── Manual qiymət səviyyəsi xəbərdarlıqları (Fuadın spot qərarı üçün) ──
+      # ETH: 1835-in altında bağlansa "düşəcək" siqnalı, 1860-ın üstündə bağlansa əks siqnal
+      PRICE_ALERTS: "ETHUSDT<1835,ETHUSDT>1860"
+
       # ── XM icra planı (siqnal mesajındakı lot hesabı) ──
       XM_ACCOUNT_USD: "2000"
       XM_RISK_PCT: "1.5"

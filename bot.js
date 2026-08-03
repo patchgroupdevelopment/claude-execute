@@ -146,6 +146,7 @@ const CONFIG = {
 const LOG_FILE = path.join(DATA_DIR, "safety-check-log.json");
 const POSITIONS_FILE = path.join(DATA_DIR, "positions.json");
 const PAPER_FILE = path.join(DATA_DIR, "paper-trading.json");
+const PRICE_ALERTS_STATE_FILE = path.join(DATA_DIR, "price-alerts-state.json");
 
 // Taymfreym → millisaniyə (intrabar SL/TP yoxlaması üçün şam sərhədləri lazımdır)
 const TF_MS = {
@@ -1223,6 +1224,57 @@ function generateTaxSummary() {
   console.log("─────────────────────────────────────────────────────────\n");
 }
 
+// ─── Manual Qiymət Səviyyəsi Xəbərdarlıqları (PRICE_ALERTS env dəyişəni) ─────
+//
+// Format: "ETHUSDT<1835,ETHUSDT>1860" (vergüllə ayrılmış SYMBOL<qiymət / SYMBOL>qiymət).
+// İstifadəçinin özü təyin etdiyi spot al-sat qərarı üçün müşahidə həddidir —
+// strategiya siqnalından TAM AYRIDIR, statistikaya düşmür. Yalnız BAĞLANMIŞ 4H
+// şam yoxlanılır və yalnız HƏDDİN TƏZƏ KEÇİLDİYİ anda (əvvəlki bağlanmış şam
+// hələ keçməmişdi) bir dəfə bildiriş gedir — qiymət o tərəfdə qalsa da 15 dəqiqədə
+// bir təkrarlanmır (candleTime ilə dedupe, RSI siqnalları ilə eyni məntiq).
+async function checkPriceLevelAlerts(symbol, candles, closes) {
+  const raw = process.env.PRICE_ALERTS;
+  if (!raw || !process.env.TELEGRAM_BOT_TOKEN) return;
+  const alerts = raw
+    .split(",")
+    .map((s) => s.trim())
+    .map((s) => {
+      const m = s.match(/^([A-Za-z0-9]+)([<>])([\d.]+)$/);
+      return m ? { symbol: m[1].toUpperCase(), op: m[2], threshold: parseFloat(m[3]) } : null;
+    })
+    .filter((a) => a && a.symbol === symbol);
+  if (!alerts.length || candles.length < 3) return;
+
+  const currClose = closes[closes.length - 2]; // son BAĞLANMIŞ şam
+  const prevClose = closes[closes.length - 3]; // ondan əvvəlki bağlanmış şam
+  const candleTime = candles[candles.length - 2].time;
+
+  let state = {};
+  if (existsSync(PRICE_ALERTS_STATE_FILE)) {
+    try { state = JSON.parse(await readFile(PRICE_ALERTS_STATE_FILE, "utf8")); } catch {}
+  }
+  let changed = false;
+  for (const a of alerts) {
+    const key = `${a.symbol}${a.op}${a.threshold}`;
+    const satisfiedNow = a.op === "<" ? currClose < a.threshold : currClose > a.threshold;
+    const satisfiedPrev = a.op === "<" ? prevClose < a.threshold : prevClose > a.threshold;
+    const fresh = satisfiedNow && !satisfiedPrev;
+    if (fresh && state[key] !== candleTime) {
+      state[key] = candleTime;
+      changed = true;
+      const label = symbol === "PAXGUSDT" ? "GOLD" : symbol.replace("USDT", "");
+      const dirText = a.op === "<" ? `$${a.threshold} həddinin ALTINDA` : `$${a.threshold} həddinin ÜSTÜNDƏ`;
+      await sendTelegram(
+        `⚠️ <b>${label} SƏVİYYƏ XƏBƏRDARLIĞI</b>\n\n` +
+        `4H şam ${dirText} bağlandı: $${fmtPrice(currClose)}\n` +
+        `Bu, sənin özün təyin etdiyin ${a.op === "<" ? "aşağı" : "yuxarı"} hədddir.`,
+      );
+      console.log(`⚠️  Qiymət səviyyəsi xəbərdarlığı: ${label} ${dirText} (bağlanış $${fmtPrice(currClose)})`);
+    }
+  }
+  if (changed) await writeFile(PRICE_ALERTS_STATE_FILE, JSON.stringify(state, null, 2));
+}
+
 // ─── Əsas ───────────────────────────────────────────────────────────────────
 
 async function analyzeSymbol(symbol, log, positions, canSignal, btcBias) {
@@ -1233,6 +1285,12 @@ async function analyzeSymbol(symbol, log, positions, canSignal, btcBias) {
   const closes = candles.map((c) => c.close);
   const price = closes[closes.length - 1];
   console.log(`  Cari qiymət: $${fmtPrice(price)}`);
+
+  try {
+    await checkPriceLevelAlerts(symbol, candles, closes);
+  } catch (err) {
+    console.log(`⚠️  Qiymət xəbərdarlığı yoxlaması xətası: ${err.message}`);
+  }
 
   const ema8 = calcEMA(closes, 8);
   const ema200 = closes.length >= CONFIG.trendEmaPeriod ? calcEMA(closes, CONFIG.trendEmaPeriod) : null;
@@ -2295,7 +2353,7 @@ async function run() {
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
-export { run, CONFIG, sendWeeklyReportIfDue, analyzeLongTermRegime, sendSp500DailyBriefIfDue, checkNewsAndNotify };
+export { run, CONFIG, sendWeeklyReportIfDue, analyzeLongTermRegime, sendSp500DailyBriefIfDue, checkNewsAndNotify, checkPriceLevelAlerts };
 
 if (isMain) {
   if (process.argv.includes("--tax-summary")) {
