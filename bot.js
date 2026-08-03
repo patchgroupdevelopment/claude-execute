@@ -1939,6 +1939,126 @@ async function fetchDxyContext() {
   return value;
 }
 
+// ─── Qızıl Günlük Donchian Breakout (GOLD=1 olduqda aktivdir) ────────────────
+//
+// 4H EMA9/20+ADX trend-following RƏDD EDİLDİ — 5.5 illik PAXGUSDT testində
+// bütün ADX həddləri (18-28) mənfi çıxdı, zaman-yarısı qeyri-sabit idi.
+// Əvəzinə 25 illik COMEX qızıl fyuçersi (GC=F) üzərində bir neçə strategiya
+// sərt robustluq testindən (tam dövr + zaman-yarısı + parametr qonşuları)
+// keçirildi:
+//   - Connors günlük mean-reversion: sabit, +46..+70% — AMMA 25 ildə 101
+//     əməliyyatın 101-i də BUY (0 SHORT) — sadəcə qızılın bilinən yüksəliş
+//     trendini əks etdirir, simmetrik edge deyil.
+//   - Donchian(20) kanal breakout + ATR trailing stop: BUY tərəfi +195%
+//     (151 əməliyyat, 55% win, hər iki yarıda sabit: +117%/+82%), AMMA SHORT
+//     tərəfi -70% (122 əməliyyat, 32% win) — SHORT xərcsiz belə zərərlidir.
+// NƏTİCƏ: yalnız BUY tərəfi həm ən yüksək, həm ən sabit nəticəni verir.
+// Ona görə bu strategiya BİLƏRƏKDƏN YALNIZ LONG-DUR (short axtarılmır).
+//
+// Qayda: son 20 gün daxilində olmayan yeni GÜNLÜK bağlanış zirvəsi (Donchian
+// kanalı yuxarı qırılması) → AL. Sabit TP yoxdur — mövqe ATR-əsaslı TRAILING
+// stop ilə "qazananı uzun saxla" məntiqi ilə idarə olunur (trend davam etdikcə
+// stop yuxarı çəkilir, heç vaxt aşağı enmir).
+
+const GOLD_STATE_FILE = path.join(DATA_DIR, "gold-state.json");
+const GOLD_DONCHIAN_PERIOD = 20;
+const GOLD_ATR_MULT = 2.0;
+
+async function sendGoldDailyBriefIfDue() {
+  if (process.env.GOLD !== "1" || !process.env.TELEGRAM_BOT_TOKEN) return;
+  const force = process.env.FORCE_GOLD === "1";
+  const ny = nyParts();
+  if (!force) {
+    if (ny.weekday === "Sat" || ny.weekday === "Sun") return;
+    if (ny.hour < 9 || (ny.hour === 9 && ny.minute < 30)) return;
+  }
+
+  let state = { lastBrief: null, position: null, history: [] };
+  if (existsSync(GOLD_STATE_FILE)) {
+    try { state = JSON.parse(await readFile(GOLD_STATE_FILE, "utf8")); } catch {}
+  }
+  if (!force && state.lastBrief === ny.date) return;
+
+  console.log("\n🥇 Qızıl (GC=F) günlük yoxlaması...");
+  const candles = await fetchYahooDaily("GC=F");
+  if (candles.length < GOLD_DONCHIAN_PERIOD + 20) { console.log("⚠️  Qızıl: kifayət qədər data yoxdur."); return; }
+  const last = candles[candles.length - 1];
+  const atr = calcATR(candles, 14);
+
+  const fmtN = (v) => v.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  let msg =
+    `🥇 <b>QIZIL GÜNLÜK — Donchian Breakout</b> (${last.date} bağlanışı ilə)\n\n` +
+    `Bağlanış: <b>$${fmtN(last.close)}</b>\n\n`;
+
+  if (state.position) {
+    const p = state.position;
+    if (last.low <= p.trailStop) {
+      const exitPrice = p.trailStop;
+      const pnlPct = ((exitPrice - p.entry) / p.entry) * 100;
+      state.history.push({ ...p, exitPrice, exitDate: last.date, pnlPct });
+      state.position = null;
+      msg += `${pnlPct >= 0 ? "✅" : "🔴"} <b>ÇIXIŞ TÖVSİYƏSİ</b> — trailing stop işlədi\n` +
+        `Giriş $${fmtN(p.entry)} (${p.entryDate}) → çıxış $${fmtN(exitPrice)} | <b>${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(2)}%</b>\n` +
+        `XM-də XAUUSD mövqeyin varsa bağlamağı düşün.\n`;
+    } else {
+      if (atr) {
+        const newTrail = last.close - GOLD_ATR_MULT * atr;
+        if (newTrail > p.trailStop) p.trailStop = newTrail; // trailing: yalnız yuxarı çəkilir
+      }
+      const pnlPct = ((last.close - p.entry) / p.entry) * 100;
+      msg += `⏳ Açıq tövsiyə: BUY @ $${fmtN(p.entry)} (${p.entryDate}) — hazırkı ${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(2)}%\n` +
+        `🛑 Trailing stop: $${fmtN(p.trailStop)} (qiymət yüksəldikcə stop da yüksəlir, heç vaxt enmir)\n`;
+    }
+  }
+
+  if (!state.position && atr) {
+    const priorCandles = candles.slice(-(GOLD_DONCHIAN_PERIOD + 1), -1);
+    const donchianHigh = Math.max(...priorCandles.map((c) => c.high));
+    if (last.close > donchianHigh) {
+      const trailStop = last.close - GOLD_ATR_MULT * atr;
+      state.position = { entry: last.close, entryDate: last.date, trailStop };
+      const xmAccount = parseFloat(process.env.XM_ACCOUNT_USD || "500");
+      const xmRiskPct = parseFloat(process.env.XM_RISK_PCT || "1.5");
+      const riskUsd = xmAccount * (xmRiskPct / 100);
+      const units = riskUsd / (last.close - trailStop);
+      msg += `🚨 <b>BUY SİQNALI</b> — ${GOLD_DONCHIAN_PERIOD} günlük kanal yuxarı qırıldı ($${fmtN(donchianHigh)})\n` +
+        `Giriş: ~$${fmtN(last.close)} | 🛑 Trailing stop: $${fmtN(trailStop)} (ATR×${GOLD_ATR_MULT})\n` +
+        `Sabit TP yoxdur — trend davam etdikcə stop yuxarı çəkiləcək, qazananı uzun saxla məntiqi.\n` +
+        `📐 XM: <b>XAUUSD</b> | Ölçü: ${units.toFixed(4)} vahid (SL itkisi ~$${riskUsd.toFixed(0)})\n`;
+      const review = await reviewSignalWithClaude({
+        siqnal: {
+          symbol: "GOLD", side: "BUY", qiymet: last.close,
+          strategiya: "Donchian(20) günlük kanal breakout + ATR trailing stop (yalnız long)",
+          tp: null, sl: trailStop, riskReward: null, sistemKeyfiyyetBali: null,
+        },
+        indikatorlar: { donchianHigh, atr },
+        son30BaglanmisGun: candles.slice(-30).map((c) => ({ t: c.date, o: c.open, h: c.high, l: c.low, c: c.close })),
+      });
+      if (review) {
+        const rIcon = review.qerar === "RAZIYAM" ? "🟢" : review.qerar === "RAZI DEYİLƏM" ? "🔴" : "🟡";
+        msg += `\n🧠 <b>Claude rəyi</b>: ${rIcon} ${review.qerar} — ${review.reyting}/100\n<i>${review.sebeb}</i>\n`;
+      }
+    } else {
+      msg += `⚪ Siqnal yoxdur — ${GOLD_DONCHIAN_PERIOD} günlük zirvə ($${fmtN(donchianHigh)}) qırılmayıb.\n`;
+    }
+  }
+
+  if (state.history.length) {
+    const wins = state.history.filter((h) => h.pnlPct > 0).length;
+    const tot = state.history.reduce((s, h) => s + h.pnlPct, 0);
+    msg += `\n📊 İndiyədək: ${state.history.length} əməliyyat, ${wins}✅/${state.history.length - wins}❌, cəm ${tot >= 0 ? "+" : ""}${tot.toFixed(2)}%`;
+  }
+
+  const sent = await sendTelegram(msg);
+  if (!sent) {
+    console.log("⚠️  Qızıl brifinqi göndərilə bilmədi — növbəti dövrədə təkrar cəhd olunacaq.");
+    return;
+  }
+  state.lastBrief = ny.date;
+  await writeFile(GOLD_STATE_FILE, JSON.stringify(state, null, 2));
+  console.log("🥇 Qızıl brifinqi göndərildi.");
+}
+
 // Ümumi Connors günlük mean-reversion brifinqi — S&P 500 üçün qurulub, sonra
 // 10 illik testdən keçən Nasdaq 100 (US100) üçün də eyni funksiya istifadə olunur
 // (60 siqnal/10 il, 75% win rate, +0.92%/siqnal — S&P 500-ə çox yaxın profil).
@@ -2555,6 +2675,11 @@ async function run() {
   } catch (err) {
     console.log(`⚠️  Neft yoxlaması xətası: ${err.message}`);
   }
+  try {
+    await sendGoldDailyBriefIfDue();
+  } catch (err) {
+    console.log(`⚠️  Qızıl yoxlaması xətası: ${err.message}`);
+  }
 
   // Xəbər lentləri + Claude təsir analizi
   try {
@@ -2566,7 +2691,7 @@ async function run() {
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
-export { run, CONFIG, sendWeeklyReportIfDue, analyzeLongTermRegime, sendSp500DailyBriefIfDue, sendUs100DailyBriefIfDue, sendOilDailyBriefIfDue, checkNewsAndNotify, checkPriceLevelAlerts };
+export { run, CONFIG, sendWeeklyReportIfDue, analyzeLongTermRegime, sendSp500DailyBriefIfDue, sendUs100DailyBriefIfDue, sendOilDailyBriefIfDue, sendGoldDailyBriefIfDue, checkNewsAndNotify, checkPriceLevelAlerts };
 
 if (isMain) {
   if (process.argv.includes("--tax-summary")) {

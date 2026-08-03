@@ -40,8 +40,10 @@ jobs:
       DATA_DIR: data
       MAX_LOG_ENTRIES: "600"
 
-      # ── Ticarət konfiqurasiyası ──
-      SYMBOLS: BTCUSDT,ETHUSDT,PAXGUSDT
+      # ── Ticarət konfiqurasiyası (4H mean-reversion) ──
+      # PAXGUSDT çıxarıldı: qızıl indi GÜNLÜK Donchian breakout ilə işləyir (aşağıya bax) —
+      # 4H EMA9/20+ADX trend-following 25 illik testdə robust çıxmadı, Donchian daha yaxşı nəticə verdi.
+      SYMBOLS: BTCUSDT,ETHUSDT
       TIMEFRAME: "4H"
       PORTFOLIO_VALUE_USD: "1300"
       MAX_TRADE_SIZE_USD: "100"
@@ -49,12 +51,18 @@ jobs:
       PAPER_TRADING_BALANCE_USD: "1000"
 
       # ── Strategiya ──
-      FOCUS_SYMBOLS: ETHUSDT,PAXGUSDT
-      TREND_SYMBOLS: PAXGUSDT
+      FOCUS_SYMBOLS: ETHUSDT
+      TREND_SYMBOLS: ""
 
       # ── S&P 500 və US100 günlük siqnalı (NY açılışından sonra hər ticarət günü brifinq) ──
       SP500: "1"
       US100: "1"
+
+      # ── Qızıl günlük Donchian(20) breakout + ATR trailing stop (yalnız LONG) ──
+      # 25 illik GC=F testi: BUY tərəfi +195% (151 əməliyyat, 55% win, hər iki
+      # yarıda sabit). SHORT tərəfi -70% idi (32% win) — ona görə BİLƏRƏKDƏN
+      # yalnız long axtarılır. Əvəzlədiyi 4H trend-following-dən qat-qat sabitdir.
+      GOLD: "1"
 
       # ── Neft (Brent) günlük trend-following siqnalı — EKSPERİMENTAL, validasiya
       # edilməyib (10 illik backtest: ADX həddinə görə nəticə +1.4%-dən -2.8%-ə
