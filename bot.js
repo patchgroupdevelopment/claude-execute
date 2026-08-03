@@ -1550,9 +1550,13 @@ async function analyzeSymbol(symbol, log, positions, canSignal, btcBias) {
         const notional = units * price;
         const isGoldSig = symbol === "PAXGUSDT";
         const xmSymbol = isGoldSig ? "XAUUSD" : symbol.replace("USDT", "USD");
+        const baseAsset = symbol.replace("USDT", ""); // BTC, ETH, ...
         xmSection =
           `\n📐 <b>XM icra planı</b> (hesab $${xmAccount.toFixed(0)}, risk ${xmRiskPct}%):\n` +
-          `Alət: <b>${xmSymbol}</b> | Ölçü: ${units.toFixed(4)} vahid (~$${notional.toFixed(0)} notional${isGoldSig ? `, ≈${(units / 100).toFixed(2)} lot` : ""})\n` +
+          `Alət: <b>${xmSymbol}</b>\n` +
+          `⚠️ <b>XM sifariş biletinə DƏQİQ bu ölçünü yaz:</b>\n` +
+          `👉 <b>${units.toFixed(4)} ${baseAsset}</b> (~$${notional.toFixed(0)} notional${isGoldSig ? `, ≈${(units / 100).toFixed(2)} lot` : ""})\n` +
+          `Standart "1 Lot" ilə buraxma — bu, çox böyük mövqe deməkdir!\n` +
           `SL-ə dəysə itki: ~$${riskUsd.toFixed(2)}\n`;
         if (isGoldSig) {
           const day = new Date().getUTCDay();
@@ -2024,7 +2028,8 @@ async function sendGoldDailyBriefIfDue() {
       msg += `🚨 <b>BUY SİQNALI</b> — ${GOLD_DONCHIAN_PERIOD} günlük kanal yuxarı qırıldı ($${fmtN(donchianHigh)})\n` +
         `Giriş: ~$${fmtN(last.close)} | 🛑 Trailing stop: $${fmtN(trailStop)} (ATR×${GOLD_ATR_MULT})\n` +
         `Sabit TP yoxdur — trend davam etdikcə stop yuxarı çəkiləcək, qazananı uzun saxla məntiqi.\n` +
-        `📐 XM: <b>XAUUSD</b> | Ölçü: ${units.toFixed(4)} vahid (SL itkisi ~$${riskUsd.toFixed(0)})\n`;
+        `📐 XM: <b>XAUUSD</b>\n` +
+        `⚠️ <b>Sifariş biletinə DƏQİQ bu ölçünü yaz:</b> 👉 <b>${units.toFixed(4)}</b> (SL itkisi ~$${riskUsd.toFixed(0)}) — standart "1 Lot" ilə buraxma!\n`;
       const review = await reviewSignalWithClaude({
         siqnal: {
           symbol: "GOLD", side: "BUY", qiymet: last.close,
@@ -2135,7 +2140,8 @@ async function sendDailyEquityBriefIfDue(cfg) {
     const units = riskUsd / (last.close - stop);
     msg += `🚨 <b>AL SİQNALI</b> — bull rejimdə RSI(3) ${rsi3.toFixed(1)} (&lt; 15 oversold)\n` +
       `Giriş: ~${fmtN(last.close)} | 🛑 SL: ${fmtN(stop)} | 🎯 TP: ${fmtN(tp)}\n` +
-      `📐 XM: <b>${xmSymbol}</b> | Ölçü: ${units.toFixed(4)} vahid (SL itkisi ~$${riskUsd.toFixed(0)})\n`;
+      `📐 XM: <b>${xmSymbol}</b>\n` +
+      `⚠️ <b>Sifariş biletinə DƏQİQ bu ölçünü yaz:</b> 👉 <b>${units.toFixed(4)}</b> (SL itkisi ~$${riskUsd.toFixed(0)}) — standart "1 Lot" ilə buraxma!\n`;
     // Claude ikinci rəyi — yalnız AL siqnalında (gündəlik brifinqdə yox)
     const review = await reviewSignalWithClaude({
       siqnal: {
@@ -2287,7 +2293,8 @@ async function sendOilDailyBriefIfDue() {
       const units = riskUsd / Math.abs(last.close - stop);
       msg += `🚨 <b>${side} SİQNALI</b> — EMA9/20 kəsişməsi, ADX ${adx.toFixed(1)}\n` +
         `Giriş: ~$${fmtN(last.close)} | 🛑 SL: $${fmtN(stop)} | 🎯 TP: $${fmtN(tp)}\n` +
-        `📐 XM: <b>BrentCash</b> | Ölçü: ${units.toFixed(2)} vahid (SL itkisi ~$${riskUsd.toFixed(0)})\n` +
+        `📐 XM: <b>BrentCash</b>\n` +
+        `⚠️ <b>Sifariş biletinə DƏQİQ bu ölçünü yaz:</b> 👉 <b>${units.toFixed(2)}</b> (SL itkisi ~$${riskUsd.toFixed(0)}) — standart "1 Lot" ilə buraxma!\n` +
         `\n⚠️ <b>Bu strategiya validasiya edilməyib.</b> 10 illik testdə nəticə ADX həddinə görə +1.4%-dən -2.8%-ə sıçrayırdı (qonşu parametrlər sabit deyil) və tarixdə tək əməliyyatda -18.8% itki olub (stop bu hərəkəti tutmadı — neftin sıçrayış riski adi ATR stopunu aşa bilər). Öz risk ölçünü diqqətlə özün təyin et.\n`;
       const review = await reviewSignalWithClaude({
         siqnal: {
