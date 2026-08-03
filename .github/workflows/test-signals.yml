@@ -1,0 +1,26 @@
+name: Test Siqnalları (əl ilə)
+
+# Yalnız əl ilə işə salınır — heç bir cron yoxdur. State faylına toxunmur,
+# sadəcə hər aktiv üçün TEST etiketli nümunə siqnal göndərir ki, mesaj
+# formatının (xüsusən XM ölçüsünün) aydınlığı yoxlanıla bilsin.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      XM_ACCOUNT_USD: "2000"
+      XM_RISK_PCT: "1.5"
+    steps:
+      - name: Reponu yüklə
+        uses: actions/checkout@v4
+
+      - name: Test siqnallarını göndər
+        run: node scripts/test-all-signals.mjs
