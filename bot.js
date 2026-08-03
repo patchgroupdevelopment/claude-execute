@@ -2376,7 +2376,15 @@ function parseRssItems(xml, source) {
   return items;
 }
 
-async function analyzeNewsWithClaude(items) {
+// recentContext: son bir neçə analizin xülasəsi (state.analyses-dən) — Claude-un
+// "bu xəbər TAM YENİDİR, yoxsa artıq bildirdiyimiz şeyin təkrar təsdiqidir" sualına
+// cavab verə bilməsi üçün. Axia Futures videosundan (2026-08-03 analiz) öyrənilən
+// dərs: eyni xəbərin İLK dəfə görünməsi bazarda daha güclü, davamlı hərəkət yaradır;
+// artıq gözlənilən şeyin sadəcə TƏSDİQİ isə kəskin amma qısa reaksiya yaradır və
+// çox vaxt artıq qiymətə yazılıb (siqnal dəyəri aşağıdır). Bu ayrım "vacib" qərarına
+// təsir edir ki, eyni inkişaf edən xəbərə (məs. FED faiz müzakirəsi) hər addımda
+// eyni gücdə bildiriş getməsin.
+async function analyzeNewsWithClaude(items, recentContext) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return null;
   const model = process.env.NEWS_MODEL || "claude-sonnet-5";
@@ -2396,16 +2404,25 @@ async function analyzeNewsWithClaude(items) {
         max_tokens: 1000,
         system:
           "Sən makro-iqtisadiyyat və kripto bazar analitikisən. Sənə İNDİCƏ dərc olunmuş xəbər " +
-          "başlıqları verilir. Onların YAXINGƏLƏCƏK (bir neçə gün) bazar təsirini qiymətləndir. " +
+          "başlıqları verilir (VACIB) və son bir neçə saatda/gündə ARTIQ BİLDİRDİYİMİZ xəbərlərin " +
+          "qısa siyahısı (KONTEKST). Onların YAXINGƏLƏCƏK (bir neçə gün) bazar təsirini qiymətləndir. " +
           "4 aktiv üzrə təsir balı ver: -2 güclü SAT, -1 zəif SAT, 0 neytral, +1 zəif AL, +2 güclü AL. " +
           "Yalnız GERÇƏKDƏN əhəmiyyətli xəbərlərdə sıfırdan fərqli bal ver — adi gündəlik xəbərlər 0-dır. " +
+          "VACİB AYRIM: əgər bu başlıq KONTEKST-dəki bir xəbərin sadəcə TƏKRARI/TƏSDİQİDİR (eyni inkişaf " +
+          "edən hekayənin növbəti addımı, yeni məzmun yoxdur), təsir balını AŞAĞI SAL və ya 0 saxla — " +
+          "bazar bunu artıq gözləyirdi, siqnal dəyəri azdır. Yalnız HƏQİQƏTƏN YENİ məlumat (əvvəllər " +
+          "bilinməyən) və ya gözlənilənin ƏKSİNƏ çıxan inkişaf üçün güclü bal ver. " +
           'Cavab YALNIZ bu JSON: {"vacib": true/false, "esasXeber": "ən təsirli başlığın qısa Azərbaycanca xülasəsi", ' +
           '"esasIndex": <ən təsirli başlığın i nömrəsi>, "digerIndexler": [təsirə töhfə verən digər başlıqların i nömrələri, maks 2], ' +
+          '"yeniMelumatdirmi": true/false, ' +
           '"tesir": {"GOLD": n, "BTC": n, "ETH": n, "SP500": n}, "sebeb": "Azərbaycanca 1-2 cümlə"}. ' +
           '"vacib" yalnız hər hansı aktivdə |bal| >= 1 olduqda true olsun.',
         messages: [{
           role: "user",
-          content: JSON.stringify(items.map((it, i) => ({ i, menbe: it.source, basliq: it.title }))),
+          content: JSON.stringify({
+            kontekst_son_bildirisler: recentContext || [],
+            vacib_basliqlar: items.map((it, i) => ({ i, menbe: it.source, basliq: it.title })),
+          }),
         }],
       }),
     });
@@ -2479,7 +2496,12 @@ async function checkNewsAndNotify() {
   }
 
   state.analysesToday++;
-  const verdict = await analyzeNewsWithClaude(toAnalyze);
+  // Son bildirişlərin qısa xülasəsi — "bu YENİDİR, yoxsa təkrardır" ayrımı üçün
+  const recentContext = (state.analyses || [])
+    .filter((a) => Date.now() - new Date(a.at).getTime() < 24 * 3600 * 1000)
+    .slice(0, 8)
+    .map((a) => ({ vaxt: a.at, xeber: a.esas }));
+  const verdict = await analyzeNewsWithClaude(toAnalyze, recentContext);
 
   if (verdict) {
     // Ölçmə üçün hər analiz saxlanılır (son 200)
@@ -2509,9 +2531,16 @@ async function checkNewsAndNotify() {
     const mainItem = Number.isInteger(verdict.esasIndex) ? toAnalyze[verdict.esasIndex] : null;
     const headline = verdict.esasXeber || (mainItem ? mainItem.title : "Yeni bazar xəbərləri");
 
+    const freshnessTag = verdict.yeniMelumatdirmi === false
+      ? `🔁 <i>Artıq gözlənilən xəbərin təsdiqi — bazar bunu qismən qiymətə yazmış ola bilər.</i>\n`
+      : verdict.yeniMelumatdirmi === true
+        ? `🆕 <i>Tam yeni məlumat — bazarın tam reaksiyası hələ formalaşmayıb.</i>\n`
+        : "";
+
     await sendTelegram(
       `📰 <b>XƏBƏR SİQNALI</b> (məsləhət)\n\n` +
       `"${esc(headline)}"\n\n` +
+      freshnessTag +
       `${lines}\n\n` +
       (verdict.sebeb ? `Səbəb: ${esc(verdict.sebeb)}\n` : "") +
       (sourceLinks.length ? `\n${sourceLinks.join("\n")}\n` : "") +
