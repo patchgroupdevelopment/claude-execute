@@ -1980,10 +1980,17 @@ function parseRssItems(xml, source) {
       return m ? m[1].replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#x?\w+;/g, "'").trim() : null;
     };
     const title = pick("title");
-    const link = pick("link") || pick("guid");
+    const rawLink = pick("link") || pick("guid");
     const pub = pick("pubDate");
     if (!title) continue;
-    items.push({ source, title, id: (link || title).slice(0, 200), pubMs: pub ? Date.parse(pub) || 0 : 0 });
+    items.push({
+      source,
+      title,
+      id: (rawLink || title).slice(0, 200),
+      // Yalnız həqiqi URL-lər Telegram-da link kimi göstərilir (guid bəzən URL deyil)
+      link: rawLink && /^https?:\/\//.test(rawLink) ? rawLink : null,
+      pubMs: pub ? Date.parse(pub) || 0 : 0,
+    });
   }
   return items;
 }
@@ -2012,9 +2019,13 @@ async function analyzeNewsWithClaude(items) {
           "4 aktiv üzrə təsir balı ver: -2 güclü SAT, -1 zəif SAT, 0 neytral, +1 zəif AL, +2 güclü AL. " +
           "Yalnız GERÇƏKDƏN əhəmiyyətli xəbərlərdə sıfırdan fərqli bal ver — adi gündəlik xəbərlər 0-dır. " +
           'Cavab YALNIZ bu JSON: {"vacib": true/false, "esasXeber": "ən təsirli başlığın qısa Azərbaycanca xülasəsi", ' +
+          '"esasIndex": <ən təsirli başlığın i nömrəsi>, "digerIndexler": [təsirə töhfə verən digər başlıqların i nömrələri, maks 2], ' +
           '"tesir": {"GOLD": n, "BTC": n, "ETH": n, "SP500": n}, "sebeb": "Azərbaycanca 1-2 cümlə"}. ' +
           '"vacib" yalnız hər hansı aktivdə |bal| >= 1 olduqda true olsun.',
-        messages: [{ role: "user", content: JSON.stringify(items.map((i) => `[${i.source}] ${i.title}`)) }],
+        messages: [{
+          role: "user",
+          content: JSON.stringify(items.map((it, i) => ({ i, menbe: it.source, basliq: it.title }))),
+        }],
       }),
     });
     if (!res.ok) throw new Error(`Anthropic API ${res.status}`);
@@ -2022,7 +2033,8 @@ async function analyzeNewsWithClaude(items) {
     const text = (data.content || []).map((b) => b.text || "").join("");
     const m = text.match(/\{[\s\S]*\}/);
     if (!m) return null;
-    const r = JSON.parse(m[0]);
+    // Model bəzən "+1" yazır — JSON işarəli müsbət rəqəmi qəbul etmir
+    const r = JSON.parse(m[0].replace(/:\s*\+(\d)/g, ": $1"));
     if (typeof r.vacib !== "boolean" || !r.tesir) return null;
     return r;
   } catch (err) {
@@ -2095,18 +2107,36 @@ async function checkNewsAndNotify() {
 
   const anyImpact = verdict && Object.values(verdict.tesir).some((v) => Math.abs(v) >= 1);
   if (verdict && verdict.vacib && anyImpact) {
+    const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const icon = (v) => (v >= 2 ? "🟢🟢 GÜCLÜ AL" : v === 1 ? "🟢 AL meyli" : v <= -2 ? "🔴🔴 GÜCLÜ SAT" : v === -1 ? "🔴 SAT meyli" : "⚪ neytral");
     const lines = ["GOLD", "BTC", "ETH", "SP500"]
       .map((a) => `${a}: ${icon(verdict.tesir[a] ?? 0)}`)
       .join("\n");
+
+    // Mənbə linkləri — Claude yalnız başlıq NÖMRƏSİNİ qaytarır, URL bizim öz
+    // datamızdan gəlir (modelə URL yazdırmaq uydurma link riskidir)
+    const linkFor = (idx) => {
+      const it = Number.isInteger(idx) ? toAnalyze[idx] : null;
+      return it && it.link ? `📎 <a href="${esc(it.link)}">${esc(it.source)}: ${esc(it.title.slice(0, 90))}</a>` : null;
+    };
+    const sourceLinks = [
+      linkFor(verdict.esasIndex),
+      ...(Array.isArray(verdict.digerIndexler) ? verdict.digerIndexler.slice(0, 2).map(linkFor) : []),
+    ].filter(Boolean);
+
+    // Model bəzən xülasə sahəsini buraxır — o halda seçdiyi xəbərin öz başlığı göstərilir
+    const mainItem = Number.isInteger(verdict.esasIndex) ? toAnalyze[verdict.esasIndex] : null;
+    const headline = verdict.esasXeber || (mainItem ? mainItem.title : "Yeni bazar xəbərləri");
+
     await sendTelegram(
       `📰 <b>XƏBƏR SİQNALI</b> (məsləhət)\n\n` +
-      `"${verdict.esasXeber}"\n\n` +
+      `"${esc(headline)}"\n\n` +
       `${lines}\n\n` +
-      `Səbəb: ${verdict.sebeb}\n\n` +
-      `⚠️ Qiymət bu xəbərə qismən reaksiya vermiş ola bilər — girişdən əvvəl qrafikdə təsdiq axtar. Bu, yaxın günlərin meylidir, anlıq scalping siqnalı deyil.`,
+      (verdict.sebeb ? `Səbəb: ${esc(verdict.sebeb)}\n` : "") +
+      (sourceLinks.length ? `\n${sourceLinks.join("\n")}\n` : "") +
+      `\n⚠️ Qiymət bu xəbərə qismən reaksiya vermiş ola bilər — girişdən əvvəl qrafikdə təsdiq axtar. Bu, yaxın günlərin meylidir, anlıq scalping siqnalı deyil.`,
     );
-    console.log(`📰 Xəbər siqnalı göndərildi: ${verdict.esasXeber}`);
+    console.log(`📰 Xəbər siqnalı göndərildi: ${headline}`);
   } else if (verdict) {
     console.log(`📰 Yeni xəbərlər analiz olundu — nəzərəçarpan bazar təsiri yoxdur.`);
   }
