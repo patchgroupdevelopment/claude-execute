@@ -93,7 +93,8 @@ async function classifySignal(rawMessage, label) {
     `kimi ARTIQ BAĞLANMIŞ əməliyyatın nəticə elanları YENİ SİQNAL DEYİL — isSignal:false.\n\n` +
     `Yalnız bu JSON formatında cavab ver, başqa heç nə yazma:\n` +
     `{"isSignal":true/false,"asset":"...","direction":"BUY"/"SELL"/null,"entry":number/null,"sl":number/null,` +
-    `"tp":number/null,"consistencyIssue":"izah və ya null","tövsiyə":"GİR"/"EHTİYATLI"/"GİRMƏ"/null,"səbəb":"qısa izah"}`;
+    `"tp":number/null,"consistencyIssue":"qısa izah (maks 8 söz) və ya null","tövsiyə":"GİR"/"EHTİYATLI"/"GİRMƏ"/null,` +
+    `"səbəb":"çox qısa izah, maks 10 söz"}`;
   return askClaude(system, `Mesaj:\n"""${rawMessage}"""`);
 }
 
@@ -107,7 +108,7 @@ async function classifyNews(rawMessage, label) {
     `böyük şirkət hesabatları, tənzimləmə qərarları və s.). Sıravi bülleten başlığı, artıq məlum olan ` +
     `köhnə məlumatın təkrarı, əhəmiyyətsiz təfərrüat ƏHƏMİYYƏTLİ DEYİL — isImportant:false qaytar.\n\n` +
     `Yalnız bu JSON formatında cavab ver, başqa heç nə yazma:\n` +
-    `{"isImportant":true/false,"affectedAssets":["BTC","Qızıl",...] və ya [],"təsirYönü":"müsbət"/"mənfi"/"qarışıq"/null,"səbəb":"qısa izah (1-2 cümlə)"}`;
+    `{"isImportant":true/false,"affectedAssets":["BTC","Qızıl",...] və ya [],"təsirYönü":"müsbət"/"mənfi"/"qarışıq"/null,"səbəb":"çox qısa izah, maks 12 söz"}`;
   return askClaude(system, `Bülleten:\n"""${rawMessage}"""`);
 }
 
@@ -127,17 +128,13 @@ async function processSignalSource(client, source, lastId) {
     const dirIcon = a.direction === "BUY" ? "🟢" : a.direction === "SELL" ? "🔴" : "⚪";
     const verdictIcon = a.tövsiyə === "GİR" ? "✅" : a.tövsiyə === "EHTİYATLI" ? "🟡" : "🚫";
     let text =
-      `📡 <b>XARİCİ SİQNAL</b> [EKSPERİMENTAL — ${esc(source.label)}]\n` +
-      `🕐 Orijinal mesaj: ${ageLabel(m.date)}\n\n` +
+      `📡 <b>SİQNAL</b> [EKSPERİMENTAL] · 🕐 ${ageLabel(m.date)}\n\n` +
       `${dirIcon} <b>${esc(a.asset || "?")} ${esc(a.direction || "")}</b>\n`;
-    if (a.entry != null) text += `Giriş: ${a.entry}\n`;
-    if (a.sl != null) text += `SL: ${a.sl}\n`;
-    if (a.tp != null) text += `TP: ${a.tp}\n`;
-    if (a.consistencyIssue) text += `\n⚠️ <b>Uyğunsuzluq tapıldı:</b> ${esc(a.consistencyIssue)}\n`;
-    text +=
-      `\n${verdictIcon} <b>Tövsiyə: ${esc(a.tövsiyə || "?")}</b>\n<i>${esc(a.səbəb || "")}</i>\n` +
-      `\n📝 Orijinal mesaj:\n<i>${esc(m.message.slice(0, 500))}</i>\n` +
-      `\n⚠️ Bu mənbə validasiya edilməyib — öz risk qərarını özün ver.`;
+    if (a.entry != null) text += `Giriş: <b>${a.entry}</b>`;
+    if (a.sl != null) text += `  |  SL: <b>${a.sl}</b>`;
+    if (a.tp != null) text += `  |  TP: <b>${a.tp}</b>`;
+    text += `\n\n${verdictIcon} <b>${esc(a.tövsiyə || "?")}</b> — ${esc(a.səbəb || "")}`;
+    if (a.consistencyIssue) text += `\n⚠️ ${esc(a.consistencyIssue)}`;
 
     await sendTelegram(text);
     console.log(`[${source.label}] Göndərildi: msg ${m.id} — ${a.tövsiyə || "SİQNAL DEYİL"}`);
@@ -160,14 +157,9 @@ async function processNewsSource(client, source, lastId) {
 
     const dirIcon = a.təsirYönü === "müsbət" ? "📈" : a.təsirYönü === "mənfi" ? "📉" : "➖";
     let text =
-      `🆕 <b>XARİCİ XƏBƏR</b> [EKSPERİMENTAL — ${esc(source.label)}]\n` +
-      `🕐 Orijinal mesaj: ${ageLabel(m.date)}\n\n` +
-      `${dirIcon} Təsir: ${esc(a.təsirYönü || "naməlum")}\n`;
-    if (a.affectedAssets?.length) text += `Aktivlər: ${a.affectedAssets.map(esc).join(", ")}\n`;
-    text +=
-      `\n<i>${esc(a.səbəb || "")}</i>\n` +
-      `\n📝 Orijinal:\n<i>${esc(m.message.slice(0, 500))}</i>\n` +
-      `\n⚠️ Bu mənbə validasiya edilməyib.`;
+      `🆕 <b>XƏBƏRLƏR</b> · 🕐 ${ageLabel(m.date)}\n\n` +
+      `${dirIcon} ${esc(a.səbəb || "")}`;
+    if (a.affectedAssets?.length) text += `\n<i>${a.affectedAssets.map(esc).join(", ")}</i>`;
 
     await sendTelegram(text);
     console.log(`[${source.label}] Göndərildi: msg ${m.id} — ${a.təsirYönü}`);
