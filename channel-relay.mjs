@@ -97,11 +97,14 @@ async function main() {
   const client = new TelegramClient(new StringSession(sessionStr), apiId, apiHash, { connectionRetries: 3 });
   await client.connect();
 
+  const MAX_PER_RUN = parseInt(process.env.MAX_PER_RUN || "12", 10);
+
   const entity = await client.getEntity(CHANNEL_ID);
   const messages = await client.getMessages(entity, { limit: 50, minId: state.lastMessageId });
-  const newOnes = messages.filter((m) => m.message && m.id > state.lastMessageId).reverse();
+  const allNew = messages.filter((m) => m.message && m.id > state.lastMessageId).reverse();
+  const newOnes = allNew.slice(0, MAX_PER_RUN);
 
-  console.log(`${newOnes.length} yeni mesaj tapıldı (son işlənən ID: ${state.lastMessageId}).`);
+  console.log(`${allNew.length} yeni mesaj tapıldı (son işlənən ID: ${state.lastMessageId}), bu dövrədə ${newOnes.length} işlənəcək.`);
 
   let maxId = state.lastMessageId;
   for (const m of newOnes) {
