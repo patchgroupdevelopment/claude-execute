@@ -9,7 +9,9 @@
     "dev": "node bot.js",
     "dashboard": "node dashboard/server.cjs"
   },
-  "dependencies": {},
+  "dependencies": {
+    "telegram": "^2.26.22"
+  },
   "engines": {
     "node": ">=18.0.0"
   }
