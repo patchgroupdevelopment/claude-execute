@@ -28,6 +28,14 @@ function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+function ageLabel(unixSeconds) {
+  const mins = Math.round((Date.now() / 1000 - unixSeconds) / 60);
+  if (mins < 1) return "indicə";
+  if (mins < 60) return `${mins} dəq əvvəl`;
+  const hours = (mins / 60).toFixed(1);
+  return `${hours} saat əvvəl ⚠️ köhnə ola bilər`;
+}
+
 async function sendTelegram(text) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return false;
   try {
@@ -119,7 +127,8 @@ async function processSignalSource(client, source, lastId) {
     const dirIcon = a.direction === "BUY" ? "🟢" : a.direction === "SELL" ? "🔴" : "⚪";
     const verdictIcon = a.tövsiyə === "GİR" ? "✅" : a.tövsiyə === "EHTİYATLI" ? "🟡" : "🚫";
     let text =
-      `📡 <b>XARİCİ SİQNAL</b> [EKSPERİMENTAL — ${esc(source.label)}]\n\n` +
+      `📡 <b>XARİCİ SİQNAL</b> [EKSPERİMENTAL — ${esc(source.label)}]\n` +
+      `🕐 Orijinal mesaj: ${ageLabel(m.date)}\n\n` +
       `${dirIcon} <b>${esc(a.asset || "?")} ${esc(a.direction || "")}</b>\n`;
     if (a.entry != null) text += `Giriş: ${a.entry}\n`;
     if (a.sl != null) text += `SL: ${a.sl}\n`;
@@ -151,7 +160,8 @@ async function processNewsSource(client, source, lastId) {
 
     const dirIcon = a.təsirYönü === "müsbət" ? "📈" : a.təsirYönü === "mənfi" ? "📉" : "➖";
     let text =
-      `🆕 <b>XARİCİ XƏBƏR</b> [EKSPERİMENTAL — ${esc(source.label)}]\n\n` +
+      `🆕 <b>XARİCİ XƏBƏR</b> [EKSPERİMENTAL — ${esc(source.label)}]\n` +
+      `🕐 Orijinal mesaj: ${ageLabel(m.date)}\n\n` +
       `${dirIcon} Təsir: ${esc(a.təsirYönü || "naməlum")}\n`;
     if (a.affectedAssets?.length) text += `Aktivlər: ${a.affectedAssets.map(esc).join(", ")}\n`;
     text +=
