@@ -39,6 +39,7 @@ const SOURCES = [
   { key: "ninjaNews", id: "-1001235684992", label: "Ninja News", mode: "news" },
   { key: "apexMarket", id: "-1003764251871", label: "APEX MARKET EXPERT", mode: "signal" },
   { key: "gulerTrade", id: "-1002147574500", label: "Borsa Workout Trade Academy", mode: "signal" },
+  { key: "campTradeVip", id: "-1002971990857", label: "VIP SIGNAL CAMP TRADE", mode: "signal" },
 ];
 
 function esc(s) {
