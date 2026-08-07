@@ -86,6 +86,10 @@ async function askClaude(system, userText) {
       }),
     });
     const data = await res.json();
+    if (!res.ok) {
+      console.log(`Claude API xətası (HTTP ${res.status}):`, JSON.stringify(data).slice(0, 300));
+      return null;
+    }
     const textBlock = data?.content?.find((c) => c.type === "text");
     if (!textBlock) return null;
     const match = textBlock.text.match(/\{[\s\S]*\}/);
