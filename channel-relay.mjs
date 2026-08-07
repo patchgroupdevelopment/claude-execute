@@ -306,6 +306,23 @@ async function processNewsSource(client, source, lastId) {
   return maxId;
 }
 
+async function runOnePass(client, state) {
+  for (const source of SOURCES) {
+    const lastId = state.sources[source.key]?.lastMessageId || 0;
+    try {
+      const newLastId = source.mode === "news"
+        ? await processNewsSource(client, source, lastId)
+        : await processSignalSource(client, source, lastId);
+      state.sources[source.key] = { lastMessageId: newLastId };
+    } catch (e) {
+      console.log(`[${source.label}] Xəta:`, e.message);
+    }
+  }
+}
+
+const LOOP_MINUTES = parseInt(process.env.LOOP_MINUTES || "13", 10);
+const PASS_INTERVAL_MS = parseInt(process.env.PASS_INTERVAL_MS || "30000", 10);
+
 async function main() {
   await mkdir(DATA_DIR, { recursive: true });
 
@@ -333,22 +350,27 @@ async function main() {
   const client = new TelegramClient(new StringSession(sessionStr), apiId, apiHash, { connectionRetries: 3 });
   await client.connect();
 
-  for (const source of SOURCES) {
-    const lastId = state.sources[source.key]?.lastMessageId || 0;
-    try {
-      const newLastId = source.mode === "news"
-        ? await processNewsSource(client, source, lastId)
-        : await processSignalSource(client, source, lastId);
-      state.sources[source.key] = { lastMessageId: newLastId };
-    } catch (e) {
-      console.log(`[${source.label}] Xəta:`, e.message);
-    }
+  // GitHub Actions-un öz cron-u tez-tez (5 dəq) etibarlı işləmir (müşahidə: faktiki
+  // saatda bir işə düşür). Bunun əvəzinə hər iş özü daxildən LOOP_MINUTES boyu,
+  // PASS_INTERVAL_MS aralıqlarla təkrar yoxlayır — beləliklə real tezlik xarici
+  // cron-un etibarlılığından asılı olmur.
+  const deadline = Date.now() + LOOP_MINUTES * 60 * 1000;
+  let passCount = 0;
+  while (Date.now() < deadline) {
+    passCount++;
+    console.log(`\n— dövrə ${passCount} (${new Date().toISOString()}) —`);
+    await runOnePass(client, state);
+    await writeFile(STATE_FILE, JSON.stringify(state, null, 2));
+
+    if (Date.now() + PASS_INTERVAL_MS >= deadline) break;
+    await new Promise((r) => setTimeout(r, PASS_INTERVAL_MS));
   }
+  console.log(`\nCəmi ${passCount} dövrə işlədi.`);
 
   await resolveTrackedOutcomes();
   await sendWeeklySummaryIfDue(state);
-
   await writeFile(STATE_FILE, JSON.stringify(state, null, 2));
+
   await client.disconnect();
 }
 

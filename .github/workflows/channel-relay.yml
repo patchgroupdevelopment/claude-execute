@@ -18,7 +18,7 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 16
 
     env:
       TG_API_ID: ${{ secrets.TG_API_ID }}
@@ -27,10 +27,12 @@ jobs:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      CLAUDE_MODEL: "claude-fable-5"
+      CLAUDE_MODEL: "claude-haiku-4-5"
       CHANNEL_ID: "-1002369027049"
       CHANNEL_LABEL: "CAMP TRADE"
       DATA_DIR: data
+      LOOP_MINUTES: "13"
+      PASS_INTERVAL_MS: "30000"
 
     steps:
       - name: Reponu yüklə
