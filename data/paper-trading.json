@@ -1,0 +1,36 @@
+{
+  "startingBalance": 1000,
+  "balance": 999.8734408005791,
+  "positions": [],
+  "history": [
+    {
+      "symbol": "ETHUSDT",
+      "side": "BUY",
+      "entryPrice": 1887.09,
+      "exitPrice": 1889.72,
+      "quantity": 0.15897492965359364,
+      "pnlPct": 0.13936802166298953,
+      "pnlUsd": 0.41810406498896857,
+      "openedAt": "2026-07-31T07:24:13.108Z",
+      "closedAt": "2026-07-31T08:23:43.724Z",
+      "exitReason": "ETHUSDT izlənilən coinlər siyahısından çıxarılıb — mövqe cari qiymətlə bağlandı."
+    },
+    {
+      "symbol": "ETHUSDT",
+      "side": "BUY",
+      "entryPrice": 1879.01,
+      "exitPrice": 1875.6,
+      "quantity": 0.15972529748085249,
+      "pnlPct": -0.18147854455272094,
+      "pnlUsd": -0.5446632644097201,
+      "openedAt": "2026-07-31T12:29:57.656Z",
+      "closedAt": "2026-08-02T06:19:31.073Z",
+      "exitReason": "RSI(3) 55-i keçdi (bağlanmış şamda 70.52) — gözlənilən geri sıçrayış tamamlandı sayılır. Mənfəəti qorumaq üçün SAT tövsiyə olunur."
+    }
+  ],
+  "alerts": {
+    "streak": 0,
+    "windowAt": 0,
+    "ddLevel": 0
+  }
+}
