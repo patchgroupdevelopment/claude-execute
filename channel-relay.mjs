@@ -184,6 +184,30 @@ async function trackSignal(source, m, a) {
   await writeFile(TRACKING_FILE, JSON.stringify(tracking, null, 2));
 }
 
+const STREAK_THRESHOLD = parseInt(process.env.STREAK_THRESHOLD || "3", 10);
+
+// "Circuit breaker": son N nəticələnmiş siqnalın hamısı SL-ə düşübsə, xəbərdarlıq
+// mətni qaytarır. Heç nəyi bloklamır — yalnız gözə çarpan xəbərdarlıq əlavə edir.
+async function checkCircuitBreaker() {
+  if (!existsSync(TRACKING_FILE)) return null;
+  let tracking;
+  try { tracking = JSON.parse(await readFile(TRACKING_FILE, "utf8")); } catch { return null; }
+
+  const resolved = tracking
+    .filter((t) => t.status === "TP_HIT" || t.status === "SL_HIT")
+    .sort((a, b) => (b.resolvedAt || 0) - (a.resolvedAt || 0));
+  if (resolved.length < STREAK_THRESHOLD) return null;
+
+  const lastN = resolved.slice(0, STREAK_THRESHOLD);
+  if (lastN.every((t) => t.status === "SL_HIT")) {
+    return `🚨 <b>DİQQƏT — ard-arda ${STREAK_THRESHOLD} itki:</b> bu mənbələrdən son ${STREAK_THRESHOLD} nəticələnmiş siqnal SL-ə düşüb. Ehtiyatlı ol, ölçünü azalt və ya bu dövrə keç.`;
+  }
+  return null;
+}
+
+const DISCIPLINE_REMINDER =
+  `\n\n☑️ <i>Girməzdən əvvəl yoxla: Stop-loss QOYDUN? Ölçü DƏQİQ yazılıb (standart "1 Lot" yox)?</i>`;
+
 // Açıq izlənən siqnalların TP/SL-ə çatıb-çatmadığını real qiymət datası ilə yoxlayır.
 async function resolveTrackedOutcomes() {
   if (!existsSync(TRACKING_FILE)) return;
@@ -273,6 +297,10 @@ async function processSignalSource(client, source, lastId) {
     if (a.tp != null) text += `  |  TP: <b>${a.tp}</b>`;
     text += `\n\n${verdictIcon} <b>${esc(a.tövsiyə || "?")}</b> — ${esc(a.səbəb || "")}`;
     if (a.consistencyIssue) text += `\n⚠️ ${esc(a.consistencyIssue)}`;
+
+    const breakerWarning = await checkCircuitBreaker();
+    if (breakerWarning) text += `\n\n${breakerWarning}`;
+    text += DISCIPLINE_REMINDER;
 
     await sendTelegram(text);
     await trackSignal(source, m, a);
