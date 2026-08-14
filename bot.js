@@ -2454,6 +2454,85 @@ async function analyzeNewsWithClaude(items, recentContext) {
   }
 }
 
+// ── İqtisadi təqvim (FMP, pulsuz tier) — yüksək-təsirli xəbərlərdən əvvəl xəbərdarlıq ──
+const ECON_STATE_FILE = path.join(DATA_DIR, "econ-calendar-state.json");
+const ECON_ALERT_MINUTES_BEFORE = 35;
+const ECON_COUNTRIES = new Set(["US"]);
+
+async function fetchEconomicCalendarFmp(fromDate, toDate) {
+  const apiKey = process.env.FMP_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const url = `https://financialmodelingprep.com/stable/economic-calendar?from=${fromDate}&to=${toDate}&apikey=${apiKey}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.log(`⚠️  FMP təqvim xətası: HTTP ${res.status}`);
+      return null;
+    }
+    const data = await res.json();
+    if (!Array.isArray(data)) {
+      console.log(`⚠️  FMP təqvim gözlənilməyən cavab: ${JSON.stringify(data).slice(0, 200)}`);
+      return null;
+    }
+    return data;
+  } catch (err) {
+    console.log(`⚠️  FMP təqvim şəbəkə xətası: ${err.message}`);
+    return null;
+  }
+}
+
+async function checkEconomicCalendarAlerts() {
+  if (process.env.ECON_CALENDAR !== "1" || !process.env.TELEGRAM_BOT_TOKEN || !process.env.FMP_API_KEY) return;
+
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+
+  let state = { fetchedDate: null, events: [], alerted: [] };
+  if (existsSync(ECON_STATE_FILE)) {
+    try { state = JSON.parse(await readFile(ECON_STATE_FILE, "utf8")); } catch {}
+  }
+
+  if (state.fetchedDate !== today) {
+    const tomorrow = new Date(now.getTime() + 86400000).toISOString().slice(0, 10);
+    const raw = await fetchEconomicCalendarFmp(today, tomorrow);
+    if (raw) {
+      state.events = raw.filter(
+        (e) => ECON_COUNTRIES.has(e.country) && String(e.impact).toLowerCase() === "high"
+      );
+      state.fetchedDate = today;
+      state.alerted = [];
+      console.log(`📅 İqtisadi təqvim yükləndi: ${state.events.length} yüksək-təsirli hadisə (${today}).`);
+    } else {
+      console.log("⚠️  İqtisadi təqvim yüklənə bilmədi, növbəti dövrədə yenidən cəhd olunacaq.");
+    }
+  }
+
+  let changed = false;
+  for (const e of state.events || []) {
+    const eventId = `${e.event}_${e.date}`;
+    if (state.alerted.includes(eventId)) continue;
+    const eventTime = new Date(e.date);
+    const minutesUntil = (eventTime - now) / 60000;
+    if (minutesUntil > 0 && minutesUntil <= ECON_ALERT_MINUTES_BEFORE) {
+      const text =
+        `⏰ <b>YÜKSƏK-TƏSİRLİ XƏBƏR ~${Math.round(minutesUntil)} DƏQİQƏ SONRA</b>\n\n` +
+        `📊 ${e.event} (${e.country})\n` +
+        `Gözlənti: ${e.estimate ?? "?"} | Əvvəlki: ${e.previous ?? "?"}\n\n` +
+        `⚠️ Bu, qızıl/dollar/indekslərdə kəskin hərəkət yarada bilər — açıq mövqelərinə diqqət et.`;
+      const sent = await sendTelegram(text);
+      if (sent) {
+        state.alerted.push(eventId);
+        changed = true;
+        console.log(`📅 Xəbərdarlıq göndərildi: ${e.event}`);
+      }
+    }
+  }
+
+  if (changed || state.fetchedDate === today) {
+    await writeFile(ECON_STATE_FILE, JSON.stringify(state, null, 2));
+  }
+}
+
 async function checkNewsAndNotify() {
   if (process.env.NEWS !== "1" || !process.env.TELEGRAM_BOT_TOKEN || !process.env.ANTHROPIC_API_KEY) return;
   const force = process.env.FORCE_NEWS === "1";
@@ -2727,11 +2806,18 @@ async function run() {
   } catch (err) {
     console.log(`⚠️  Xəbər analizi xətası: ${err.message}`);
   }
+
+  // İqtisadi təqvim (FMP) — yüksək-təsirli xəbərlərdən əvvəl xəbərdarlıq
+  try {
+    await checkEconomicCalendarAlerts();
+  } catch (err) {
+    console.log(`⚠️  İqtisadi təqvim xətası: ${err.message}`);
+  }
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
-export { run, CONFIG, sendWeeklyReportIfDue, analyzeLongTermRegime, sendSp500DailyBriefIfDue, sendUs100DailyBriefIfDue, sendOilDailyBriefIfDue, sendGoldDailyBriefIfDue, checkNewsAndNotify, checkPriceLevelAlerts };
+export { run, CONFIG, sendWeeklyReportIfDue, analyzeLongTermRegime, sendSp500DailyBriefIfDue, sendUs100DailyBriefIfDue, sendOilDailyBriefIfDue, sendGoldDailyBriefIfDue, checkNewsAndNotify, checkPriceLevelAlerts, checkEconomicCalendarAlerts };
 
 if (isMain) {
   if (process.argv.includes("--tax-summary")) {

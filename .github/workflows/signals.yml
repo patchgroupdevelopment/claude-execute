@@ -73,6 +73,12 @@ jobs:
       NEWS: "1"
       NEWS_MODEL: "claude-sonnet-5"
 
+      # ── İqtisadi təqvim (FMP, pulsuz tier — 250 sorğu/gün) ──
+      # Yüksək-təsirli ABŞ göstəricilərindən (NFP, CPI, Fed və s.) 35 dəqiqə əvvəl
+      # xəbərdarlıq göndərir. FMP_API_KEY qoyulmayana qədər səssizcə keçir.
+      ECON_CALENDAR: "1"
+      FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+
       # ── Manual qiymət səviyyəsi xəbərdarlıqları (Fuadın spot qərarı üçün) ──
       # ETH: 1835-in altında bağlansa "düşəcək" siqnalı, 1860-ın üstündə bağlansa əks siqnal
       PRICE_ALERTS: "ETHUSDT<1835,ETHUSDT>1860"
