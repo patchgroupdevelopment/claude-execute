@@ -742,6 +742,24 @@ function calcADX(candles, period = 14) {
   return adx;
 }
 
+// Mövqe ölçüsü təhlükəsizlik tavanı — SL məsafəsi data anomaliyası (məs. ATR sıfıra
+// yaxın, dayanmış/qırıq şam) ucbatından qeyri-adi dar çıxarsa, risk-əsaslı düstur
+// (riskUsd / stopDistance) mövqeni sükutla nəhəng göstərə bilər. Burda hesablanan ədəd
+// birbaşa Telegram mesajına və oradan XM sifariş biletinə köçürülür — düsturun özünə
+// güvənmək kifayət deyil, nəticə də ağlabatan diapazonda olmalıdır. Bax:
+// nofx (github.com/NoFxAiOS/nofx) "hard risk limits the model cannot override" —
+// eyni fikir, burda modelə yox, öz arifmetikamıza qarşı tətbiq olunur.
+function computeXmUnits(riskUsd, price, stopDistance, xmAccount, maxLeverage = 10) {
+  if (!(stopDistance > 0) || !(price > 0)) return null;
+  const rawUnits = riskUsd / stopDistance;
+  const maxNotional = xmAccount * maxLeverage;
+  const rawNotional = rawUnits * price;
+  if (rawNotional > maxNotional) {
+    return { units: maxNotional / price, capped: true, rawUnits };
+  }
+  return { units: rawUnits, capped: false, rawUnits };
+}
+
 // Həcm təsdiqi — ən son TAMAMLANMIŞ şamın həcmi əvvəlki N şamın orta həcmindən kifayət qədər
 // yüksək olmalıdır. Hazırda formalaşan şam (son element) yarımçıqdır — hər 30 dəqiqədə
 // yoxlamada 4H şamın həcmi natural olaraq aşağı görünür, buna görə -2 indeksli (tamamlanmış) şam istifadə olunur.
@@ -1545,8 +1563,9 @@ async function analyzeSymbol(symbol, log, positions, canSignal, btcBias) {
       const xmRiskPct = parseFloat(process.env.XM_RISK_PCT || "1.5");
       const riskUsd = xmAccount * (xmRiskPct / 100);
       const stopDist = Math.abs(price - stopPrice);
-      if (stopDist > 0) {
-        const units = riskUsd / stopDist;
+      const sizing = computeXmUnits(riskUsd, price, stopDist, xmAccount);
+      if (sizing) {
+        const { units } = sizing;
         const notional = units * price;
         const isGoldSig = symbol === "PAXGUSDT";
         const xmSymbol = isGoldSig ? "XAUUSD" : symbol.replace("USDT", "USD");
@@ -1558,6 +1577,7 @@ async function analyzeSymbol(symbol, log, positions, canSignal, btcBias) {
           `👉 <b>${units.toFixed(4)} ${baseAsset}</b> (~$${notional.toFixed(0)} notional${isGoldSig ? `, ≈${(units / 100).toFixed(2)} lot` : ""})\n` +
           `Standart "1 Lot" ilə buraxma — bu, çox böyük mövqe deməkdir!\n` +
           `SL-ə dəysə itki: ~$${riskUsd.toFixed(2)}\n` +
+          (sizing.capped ? `⚠️ <b>Ölçü təhlükəsizlik tavanına endirildi</b> — SL məsafəsi qeyri-adi dar çıxdı (data anomaliyası ehtimalı ola bilər), xam düstur ${sizing.rawUnits.toFixed(4)} ${baseAsset} verirdi.\n` : "") +
           `\n☑️ <i>Girməzdən əvvəl yoxla: Stop-loss QOYDUN? Ölçü DƏQİQ yazılıb?</i>\n`;
         if (isGoldSig) {
           const day = new Date().getUTCDay();
@@ -2025,12 +2045,14 @@ async function sendGoldDailyBriefIfDue() {
       const xmAccount = parseFloat(process.env.XM_ACCOUNT_USD || "500");
       const xmRiskPct = parseFloat(process.env.XM_RISK_PCT || "1.5");
       const riskUsd = xmAccount * (xmRiskPct / 100);
-      const units = riskUsd / (last.close - trailStop);
+      const sizing = computeXmUnits(riskUsd, last.close, last.close - trailStop, xmAccount);
+      const units = sizing ? sizing.units : 0;
       msg += `🚨 <b>BUY SİQNALI</b> — ${GOLD_DONCHIAN_PERIOD} günlük kanal yuxarı qırıldı ($${fmtN(donchianHigh)})\n` +
         `Giriş: ~$${fmtN(last.close)} | 🛑 Trailing stop: $${fmtN(trailStop)} (ATR×${GOLD_ATR_MULT})\n` +
         `Sabit TP yoxdur — trend davam etdikcə stop yuxarı çəkiləcək, qazananı uzun saxla məntiqi.\n` +
         `📐 XM: <b>XAUUSD</b>\n` +
         `⚠️ <b>Sifariş biletinə DƏQİQ bu ölçünü yaz:</b> 👉 <b>${units.toFixed(4)}</b> (SL itkisi ~$${riskUsd.toFixed(0)}) — standart "1 Lot" ilə buraxma!\n` +
+        (sizing && sizing.capped ? `⚠️ <b>Ölçü təhlükəsizlik tavanına endirildi</b> — ATR qeyri-adi kiçik çıxdı, xam düstur ${sizing.rawUnits.toFixed(4)} verirdi.\n` : "") +
         `\n☑️ <i>Girməzdən əvvəl yoxla: Stop-loss QOYDUN? Ölçü DƏQİQ yazılıb?</i>\n`;
       const review = await reviewSignalWithClaude({
         siqnal: {
@@ -2139,11 +2161,13 @@ async function sendDailyEquityBriefIfDue(cfg) {
     const xmAccount = parseFloat(process.env.XM_ACCOUNT_USD || "500");
     const xmRiskPct = parseFloat(process.env.XM_RISK_PCT || "1.5");
     const riskUsd = xmAccount * (xmRiskPct / 100);
-    const units = riskUsd / (last.close - stop);
+    const sizing = computeXmUnits(riskUsd, last.close, last.close - stop, xmAccount);
+    const units = sizing ? sizing.units : 0;
     msg += `🚨 <b>AL SİQNALI</b> — bull rejimdə RSI(3) ${rsi3.toFixed(1)} (&lt; 15 oversold)\n` +
       `Giriş: ~${fmtN(last.close)} | 🛑 SL: ${fmtN(stop)} | 🎯 TP: ${fmtN(tp)}\n` +
       `📐 XM: <b>${xmSymbol}</b>\n` +
       `⚠️ <b>Sifariş biletinə DƏQİQ bu ölçünü yaz:</b> 👉 <b>${units.toFixed(4)}</b> (SL itkisi ~$${riskUsd.toFixed(0)}) — standart "1 Lot" ilə buraxma!\n` +
+      (sizing && sizing.capped ? `⚠️ <b>Ölçü təhlükəsizlik tavanına endirildi</b> — SL məsafəsi qeyri-adi dar çıxdı, xam düstur ${sizing.rawUnits.toFixed(4)} verirdi.\n` : "") +
       `\n☑️ <i>Girməzdən əvvəl yoxla: Stop-loss QOYDUN? Ölçü DƏQİQ yazılıb?</i>\n`;
     // Claude ikinci rəyi — yalnız AL siqnalında (gündəlik brifinqdə yox)
     const review = await reviewSignalWithClaude({
@@ -2293,11 +2317,13 @@ async function sendOilDailyBriefIfDue() {
       const xmAccount = parseFloat(process.env.XM_ACCOUNT_USD || "500");
       const xmRiskPct = parseFloat(process.env.XM_RISK_PCT || "1.5");
       const riskUsd = xmAccount * (xmRiskPct / 100);
-      const units = riskUsd / Math.abs(last.close - stop);
+      const oilSizing = computeXmUnits(riskUsd, last.close, Math.abs(last.close - stop), xmAccount);
+      const units = oilSizing ? oilSizing.units : 0;
       msg += `🚨 <b>${side} SİQNALI</b> — EMA9/20 kəsişməsi, ADX ${adx.toFixed(1)}\n` +
         `Giriş: ~$${fmtN(last.close)} | 🛑 SL: $${fmtN(stop)} | 🎯 TP: $${fmtN(tp)}\n` +
         `📐 XM: <b>BrentCash</b>\n` +
         `⚠️ <b>Sifariş biletinə DƏQİQ bu ölçünü yaz:</b> 👉 <b>${units.toFixed(2)}</b> (SL itkisi ~$${riskUsd.toFixed(0)}) — standart "1 Lot" ilə buraxma!\n` +
+        (oilSizing && oilSizing.capped ? `⚠️ <b>Ölçü təhlükəsizlik tavanına endirildi</b> — SL məsafəsi qeyri-adi dar çıxdı, xam düstur ${oilSizing.rawUnits.toFixed(2)} verirdi.\n` : "") +
         `\n⚠️ <b>Bu strategiya validasiya edilməyib.</b> 10 illik testdə nəticə ADX həddinə görə +1.4%-dən -2.8%-ə sıçrayırdı (qonşu parametrlər sabit deyil) və tarixdə tək əməliyyatda -18.8% itki olub (stop bu hərəkəti tutmadı — neftin sıçrayış riski adi ATR stopunu aşa bilər). Öz risk ölçünü diqqətlə özün təyin et.\n` +
         `\n☑️ <i>Girməzdən əvvəl yoxla: Stop-loss QOYDUN? Ölçü DƏQİQ yazılıb?</i>\n`;
       const review = await reviewSignalWithClaude({
