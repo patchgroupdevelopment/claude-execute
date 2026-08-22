@@ -1,0 +1,452 @@
+//@version=6
+// ════════════════════════════════════════════════════════════════════════════
+//  XAU KILL ZONE SNIPER — DXY Aware (Bakı vaxtı)
+//  Qızıl (XAUUSD) üçün seans / kill-zone əsaslı likidite-sweep sistemi.
+//
+//  FƏLSƏFƏ (vacibdir):
+//   • SİQNAL verir, əməliyyat AÇMIR. Son qərar səndədir.
+//   • Hər siqnalın SABİT stop-loss-u var. Martingale / "zərərdə ekleme" YOXDUR.
+//   • TP1 ən azı 1:1 RR — input minimumu 1.0, aşağı düşə bilmir.
+//   • TP1 vurulanda stop girişə çəkilir (breakeven).
+//   • Script öz nəticəsini ÖZÜ SAYIR (cədvəldə). Uydurma "100% win rate" yox —
+//     real şam datası ilə, SL TP-dən ƏVVƏL yoxlanmaqla (konservativ).
+//
+//  Keçmiş nəticə gələcəyi zəmanət etmir. Yatırım məsləhəti deyil.
+// ════════════════════════════════════════════════════════════════════════════
+
+indicator("XAU Kill Zone Sniper — DXY Aware (AZ)", "XAU KZ Sniper", overlay = true,
+     max_lines_count = 500, max_boxes_count = 500, max_labels_count = 500)
+
+// ────────────────────────────────────────────────────────────────────────────
+//  1. INPUT
+// ────────────────────────────────────────────────────────────────────────────
+var string G_MODE = "⚙️  Rejim və Risk"
+mode     = input.string("Scalp", "Rejim", options = ["Scalp", "Swing"], group = G_MODE,
+             tooltip = "Scalp: kill-zone məcburi, bias yumşaq, hədəf yaxın.\nSwing: HTF bias məcburi, hədəf uzaq.")
+tp1RR    = input.float(1.0, "TP1 — minimum RR", minval = 1.0, step = 0.1, group = G_MODE,
+             tooltip = "1.0-dan aşağı düşmür: hər əməliyyatda ən azı riskə bərabər qazanc hədəflənir.")
+tp2RR    = input.float(2.0, "TP2 — RR", minval = 1.0, step = 0.1, group = G_MODE)
+atrLen   = input.int(14, "ATR uzunluğu", minval = 5, group = G_MODE)
+slBufAtr = input.float(0.25, "SL bufferi (×ATR)", minval = 0.0, step = 0.05, group = G_MODE)
+minSlAtr = input.float(0.60, "Minimum SL məsafəsi (×ATR)", minval = 0.1, step = 0.05, group = G_MODE,
+             tooltip = "Qızılda spread+sürüşmə 20-40 pips ola bilir. Bundan dar stop qoymuruq.")
+beOnTp1  = input.bool(true, "TP1-dən sonra stopu girişə çək (breakeven)", group = G_MODE)
+
+var string G_ACC = "💰  Hesab və Lot"
+accSize    = input.float(1000, "Hesab ($)", minval = 10, group = G_ACC)
+riskPct    = input.float(1.5, "Əməliyyat başına risk (%)", minval = 0.1, maxval = 10, step = 0.1, group = G_ACC,
+               tooltip = "Lot RİSKDƏN hesablanır, əksinə YOX.\nSabit 0.1 lot $1000 hesabda ~10-13% risk deməkdir — təhlükəlidir.")
+contractSz = input.float(100, "1 lot = neçə ons", minval = 1, group = G_ACC,
+               tooltip = "XAUUSD standart: 100 ons. Micro hesabda 10.")
+
+var string G_SESS = "🕐  Seanslar və Kill Zone"
+showSessBox = input.bool(true, "Seans qutuları", group = G_SESS)
+showKZ      = input.bool(true, "Kill Zone fonu", group = G_SESS)
+showLevels  = input.bool(true, "Seans High/Low xətləri (likidite)", group = G_SESS)
+kzFilter    = input.bool(true, "Yalnız Kill Zone-da siqnal ver", group = G_SESS)
+// Seanslar NEW YORK vaxtı ilə təyin olunur — yay/qış saatı (DST) avtomatik
+// düzəlir. Cədvəldə Bakı qarşılığı canlı hesablanır.
+asiaSess = input.session("1900-0400", "Asiya seansı (NY vaxtı)",    group = G_SESS)
+lonSess  = input.session("0300-1130", "London seansı (NY vaxtı)",   group = G_SESS)
+nySess   = input.session("0800-1700", "New York seansı (NY vaxtı)", group = G_SESS)
+kzAsia   = input.session("2000-0000", "Asiya Kill Zone",  group = G_SESS)
+kzLon    = input.session("0200-0500", "London Kill Zone", group = G_SESS)
+kzNyAm   = input.session("0830-1100", "NY AM Kill Zone",  group = G_SESS,
+             tooltip = "ABŞ makro datası (NFP, CPI, Home Sales) burada çıxır — qızılın ən sərt hərəkəti.")
+kzNyPm   = input.session("1330-1600", "NY PM Kill Zone",  group = G_SESS)
+
+var string G_BIAS = "📈  Trend / Bias"
+htfTf      = input.timeframe("60", "Üst taymfreym (bias)", group = G_BIAS)
+htfEmaLen  = input.int(50, "HTF EMA", minval = 10, group = G_BIAS)
+emaFastLen = input.int(21, "Sürətli EMA (təsdiq)", minval = 5, group = G_BIAS)
+
+var string G_DXY = "💵  DXY — tərs korrelyasiya"
+useDxy    = input.bool(true, "DXY filtrini işlət", group = G_DXY,
+             tooltip = "Qızıl BUY üçün DXY düşən tərəfdə olmalıdır (və əksinə).")
+dxySym    = input.symbol("TVC:DXY", "DXY simvolu", group = G_DXY)
+dxyEmaLen = input.int(21, "DXY EMA", minval = 5, group = G_DXY)
+corrLen   = input.int(20, "Korrelyasiya pəncərəsi", minval = 5, group = G_DXY)
+corrBreak = input.float(-0.20, "Korrelyasiya qopma həddi", minval = -1, maxval = 1, step = 0.05, group = G_DXY,
+             tooltip = "Korrelyasiya bundan yuxarı olarsa, qızıl-DXY tərs əlaqəsi POZULUB sayılır və xəbərdarlıq verilir.")
+
+var string G_UI = "🎨  Görünüş"
+showTable = input.bool(true, "Məlumat cədvəli", group = G_UI)
+tblPos    = input.string("Sağ üst", "Cədvəl mövqeyi", options = ["Sağ üst", "Sağ alt", "Sol üst", "Sol alt"], group = G_UI)
+showStats = input.bool(true, "Nəticə statistikası", group = G_UI)
+
+SESS_TZ = "America/New_York"
+
+// ────────────────────────────────────────────────────────────────────────────
+//  2. KÖMƏKÇİ FUNKSİYALAR
+// ────────────────────────────────────────────────────────────────────────────
+f_pad(float v) =>
+    (v < 10 ? "0" : "") + str.tostring(v, "#")
+
+// NY ilə Bakı arasındakı saat fərqi — DST-yə görə dəyişir, canlı hesablanır.
+f_offsetToBaku() =>
+    hSrc  = nz(str.tonumber(str.format_time(timenow, "HH", SESS_TZ)))
+    hBaku = nz(str.tonumber(str.format_time(timenow, "HH", "Asia/Baku")))
+    d = hBaku - hSrc
+    d > 12 ? d - 24 : d < -12 ? d + 24 : d
+
+f_hhmmToBaku(float hhmm, float off) =>
+    h = math.floor(hhmm / 100)
+    m = hhmm % 100
+    nh = (h + off + 24) % 24
+    f_pad(nh) + ":" + f_pad(m)
+
+// "0830-1100" → "16:30–19:00"
+f_sessToBaku(string s, float off) =>
+    clean = array.get(str.split(s, ":"), 0)
+    parts = str.split(clean, "-")
+    string res = "—"
+    if array.size(parts) == 2
+        a = nz(str.tonumber(array.get(parts, 0)))
+        b = nz(str.tonumber(array.get(parts, 1)))
+        res := f_hhmmToBaku(a, off) + "–" + f_hhmmToBaku(b, off)
+    res
+
+f_inSess(string s) =>
+    not na(time(timeframe.period, s, SESS_TZ))
+
+// Seans ərzində high/low izləyir. Funksiya daxilindəki `var` hər çağırış
+// nöqtəsi üçün AYRI saxlanılır — ona görə bu təhlükəsizdir.
+f_track(bool active) =>
+    var float hi  = na
+    var float lo  = na
+    var float pHi = na
+    var float pLo = na
+    started = active and not active[1]
+    ended   = not active and active[1]
+    if started
+        hi := high
+        lo := low
+    else if active
+        hi := math.max(hi, high)
+        lo := math.min(lo, low)
+    if ended
+        pHi := hi
+        pLo := lo
+    [hi, lo, pHi, pLo, started, active]
+
+// Likidite sweep: fitil səviyyəni DƏLİR, amma şam o tayda BAĞLANIR.
+f_sweepUp(float lvl) =>
+    not na(lvl) and low < lvl and close > lvl and close > open
+
+f_sweepDn(float lvl) =>
+    not na(lvl) and high > lvl and close < lvl and close < open
+
+// ────────────────────────────────────────────────────────────────────────────
+//  3. SEANSLAR
+// ────────────────────────────────────────────────────────────────────────────
+inAsia = f_inSess(asiaSess)
+inLon  = f_inSess(lonSess)
+inNy   = f_inSess(nySess)
+
+inKzAsia = f_inSess(kzAsia)
+inKzLon  = f_inSess(kzLon)
+inKzNyAm = f_inSess(kzNyAm)
+inKzNyPm = f_inSess(kzNyPm)
+inAnyKz  = inKzAsia or inKzLon or inKzNyAm or inKzNyPm
+
+kzName = inKzNyAm ? "NY AM" : inKzLon ? "LONDON" : inKzNyPm ? "NY PM" : inKzAsia ? "ASİYA" : "—"
+
+[asiaHi, asiaLo, asiaPHi, asiaPLo, asiaStart, asiaOn] = f_track(inAsia)
+[lonHi,  lonLo,  lonPHi,  lonPLo,  lonStart,  lonOn]  = f_track(inLon)
+[nyHi,   nyLo,   nyPHi,   nyPLo,   nyStart,   nyOn]   = f_track(inNy)
+
+pdHigh = request.security(syminfo.tickerid, "D", high[1], lookahead = barmerge.lookahead_on)
+pdLow  = request.security(syminfo.tickerid, "D", low[1],  lookahead = barmerge.lookahead_on)
+
+// ────────────────────────────────────────────────────────────────────────────
+//  4. TREND / BIAS və DXY
+// ────────────────────────────────────────────────────────────────────────────
+atr     = ta.atr(atrLen)
+emaFast = ta.ema(close, emaFastLen)
+htfEma  = request.security(syminfo.tickerid, htfTf, ta.ema(close, htfEmaLen), lookahead = barmerge.lookahead_off)
+
+bullBias = not na(htfEma) and close > htfEma
+bearBias = not na(htfEma) and close < htfEma
+
+[dxyC, dxyE] = request.security(dxySym, timeframe.period, [close, ta.ema(close, dxyEmaLen)],
+                 lookahead = barmerge.lookahead_off, ignore_invalid_symbol = true)
+
+dxyOk   = not na(dxyC) and not na(dxyE)
+dxyDown = dxyOk and dxyC < dxyE
+dxyUp   = dxyOk and dxyC > dxyE
+gdCorr  = dxyOk ? ta.correlation(close, dxyC, corrLen) : na
+// Normalda MƏNFİ olmalıdır. Müsbətə keçirsə əlaqə qopub — qrupun da
+// müşahidə etdiyi hal: "dxy - altın doğru orantılı gidiyor".
+corrHealthy = not na(gdCorr) and gdCorr <= corrBreak
+corrBroken  = not na(gdCorr) and gdCorr > corrBreak
+
+// ────────────────────────────────────────────────────────────────────────────
+//  5. LİKİDİTE SWEEP AŞKARLAMASI
+// ────────────────────────────────────────────────────────────────────────────
+swAsiaLo = f_sweepUp(asiaPLo)
+swAsiaHi = f_sweepDn(asiaPHi)
+swLonLo  = f_sweepUp(lonPLo)
+swLonHi  = f_sweepDn(lonPHi)
+swNyLo   = f_sweepUp(nyPLo)
+swNyHi   = f_sweepDn(nyPHi)
+swPdLo   = f_sweepUp(pdLow)
+swPdHi   = f_sweepDn(pdHigh)
+
+bullSweep = swAsiaLo or swLonLo or swNyLo or swPdLo
+bearSweep = swAsiaHi or swLonHi or swNyHi or swPdHi
+
+sweptName = swAsiaLo or swAsiaHi ? "Asiya" : swLonLo or swLonHi ? "London" : swNyLo or swNyHi ? "NY" : swPdLo or swPdHi ? "Dünənki" : "—"
+
+// ────────────────────────────────────────────────────────────────────────────
+//  6. GİRİŞ ŞƏRTLƏRİ
+// ────────────────────────────────────────────────────────────────────────────
+isScalp = mode == "Scalp"
+kzOk    = not kzFilter or inAnyKz
+biasL   = isScalp ? (close > emaFast or bullBias) : bullBias
+biasS   = isScalp ? (close < emaFast or bearBias) : bearBias
+dxyOkL  = not useDxy or not dxyOk or dxyDown
+dxyOkS  = not useDxy or not dxyOk or dxyUp
+
+rawLong  = bullSweep and biasL and kzOk and dxyOkL
+rawShort = bearSweep and biasS and kzOk and dxyOkS
+
+// ────────────────────────────────────────────────────────────────────────────
+//  7. ƏMƏLİYYAT VƏZİYYƏTİ + NƏTİCƏNİN ÖZ-ÖZÜNƏ SAYILMASI
+// ────────────────────────────────────────────────────────────────────────────
+var int   sigTotal = 0
+var int   cntTp1   = 0
+var int   cntTp2   = 0
+var int   cntSl    = 0
+var int   cntBe    = 0
+var bool  inTrade  = false
+var int   tDir     = 0
+var float tEntry   = na
+var float tSl      = na
+var float tTp1     = na
+var float tTp2     = na
+var bool  tTp1Hit  = false
+var int   tBar     = na
+
+// SIRA VACİBDİR: əvvəl SL, sonra TP. Eyni şamda hər ikisinə toxunubsa
+// konservativ olaraq SL sayılır (bot.js-dəki qayda ilə eyni).
+if inTrade
+    slHit  = tDir == 1 ? low <= tSl : high >= tSl
+    tp1Hit = tDir == 1 ? high >= tTp1 : low <= tTp1
+    tp2Hit = tDir == 1 ? high >= tTp2 : low <= tTp2
+    if slHit
+        if tTp1Hit
+            cntBe += 1
+        else
+            cntSl += 1
+        inTrade := false
+    else if tp2Hit
+        if not tTp1Hit
+            cntTp1 += 1
+            tTp1Hit := true
+        cntTp2 += 1
+        inTrade := false
+    else if tp1Hit and not tTp1Hit
+        cntTp1 += 1
+        tTp1Hit := true
+        if beOnTp1
+            tSl := tEntry
+
+newLong  = rawLong and not inTrade and barstate.isconfirmed
+newShort = rawShort and not inTrade and barstate.isconfirmed
+
+float sigEntry = na
+float sigSl    = na
+float sigTp1   = na
+float sigTp2   = na
+float sigRisk  = na
+
+if newLong or newShort
+    dir   = newLong ? 1 : -1
+    ent   = close
+    rawSl = dir == 1 ? math.min(low, low[1]) - atr * slBufAtr : math.max(high, high[1]) + atr * slBufAtr
+    minD  = atr * minSlAtr
+    sl    = dir == 1 ? math.min(rawSl, ent - minD) : math.max(rawSl, ent + minD)
+    risk  = math.abs(ent - sl)
+    if risk > 0
+        sigTotal += 1
+        inTrade := true
+        tDir    := dir
+        tEntry  := ent
+        tSl     := sl
+        tTp1    := dir == 1 ? ent + risk * tp1RR : ent - risk * tp1RR
+        tTp2    := dir == 1 ? ent + risk * tp2RR : ent - risk * tp2RR
+        tTp1Hit := false
+        tBar    := bar_index
+        sigEntry := ent
+        sigSl    := sl
+        sigTp1   := tTp1
+        sigTp2   := tTp2
+        sigRisk  := risk
+
+hasNewSig = not na(sigEntry)
+
+// ────────────────────────────────────────────────────────────────────────────
+//  8. LOT HESABI (risk-əsaslı — sabit lot YOX)
+// ────────────────────────────────────────────────────────────────────────────
+riskUsd = accSize * riskPct / 100
+lotSize = hasNewSig and sigRisk > 0 ? riskUsd / (sigRisk * contractSz) : na
+
+// ────────────────────────────────────────────────────────────────────────────
+//  9. QRAFİKDƏ ÇƏKİLİŞ
+// ────────────────────────────────────────────────────────────────────────────
+cAsia = color.new(color.blue, 88)
+cLon  = color.new(color.orange, 88)
+cNy   = color.new(color.green, 88)
+cKz   = color.new(color.purple, 93)
+
+bgcolor(showKZ and inAnyKz ? cKz : na, title = "Kill Zone")
+
+f_box(bool started, bool active, float hi, float lo, color c, string txt) =>
+    var box b = na
+    if started and showSessBox
+        b := box.new(bar_index, hi, bar_index, lo, border_color = color.new(c, 50), bgcolor = c,
+             text = txt, text_color = color.new(color.gray, 20), text_size = size.tiny,
+             text_halign = text.align_left, text_valign = text.align_top)
+    if active and showSessBox and not na(b)
+        box.set_right(b, bar_index + 1)
+        box.set_top(b, hi)
+        box.set_bottom(b, lo)
+    b
+
+bxA = f_box(asiaStart, asiaOn, asiaHi, asiaLo, cAsia, "ASİYA")
+bxL = f_box(lonStart,  lonOn,  lonHi,  lonLo,  cLon,  "LONDON")
+bxN = f_box(nyStart,   nyOn,   nyHi,   nyLo,   cNy,   "NEW YORK")
+
+f_lvl(float p, color c, string txt) =>
+    var line l   = na
+    var label lb = na
+    if showLevels and not na(p)
+        if na(l)
+            l  := line.new(bar_index - 1, p, bar_index + 12, p, color = c, style = line.style_dotted)
+            lb := label.new(bar_index + 13, p, txt, style = label.style_none, textcolor = c, size = size.tiny)
+        else
+            line.set_xy1(l, bar_index - 1, p)
+            line.set_xy2(l, bar_index + 12, p)
+            label.set_xy(lb, bar_index + 13, p)
+    l
+
+lvA1 = f_lvl(asiaPHi, color.new(color.blue, 40),   "Asiya H")
+lvA2 = f_lvl(asiaPLo, color.new(color.blue, 40),   "Asiya L")
+lvL1 = f_lvl(lonPHi,  color.new(color.orange, 40), "London H")
+lvL2 = f_lvl(lonPLo,  color.new(color.orange, 40), "London L")
+lvP1 = f_lvl(pdHigh,  color.new(color.gray, 30),   "PDH")
+lvP2 = f_lvl(pdLow,   color.new(color.gray, 30),   "PDL")
+
+plotshape(hasNewSig and tDir == 1,  "AL siqnalı",  shape.triangleup,   location.belowbar, color.new(color.teal, 0), size = size.small)
+plotshape(hasNewSig and tDir == -1, "SAT siqnalı", shape.triangledown, location.abovebar, color.new(color.red, 0),  size = size.small)
+
+if hasNewSig
+    isL   = tDir == 1
+    right = bar_index + 25
+    box.new(bar_index, sigEntry, right, sigSl,  border_color = color.new(color.red, 60),  bgcolor = color.new(color.red, 90))
+    box.new(bar_index, sigEntry, right, sigTp1, border_color = color.new(color.teal, 60), bgcolor = color.new(color.teal, 90))
+    box.new(bar_index, sigTp1,   right, sigTp2, border_color = color.new(color.teal, 80), bgcolor = color.new(color.teal, 95))
+    warn = corrBroken ? "\n⚠️ DXY tərs əlaqəsi QOPUB (" + str.tostring(gdCorr, "#.00") + ") — etibar aşağıdır" : ""
+    txt = (isL ? "🟢 AL (LONG)" : "🔴 SAT (SHORT)") + "  ·  " + kzName +
+          "\nSweep: " + sweptName + " səviyyəsi" +
+          "\nGiriş: " + str.tostring(sigEntry, format.mintick) +
+          "\n🛑 SL: " + str.tostring(sigSl, format.mintick) + "  (" + str.tostring(math.abs(sigEntry - sigSl) * 10, "#") + " pips)" +
+          "\n🎯 TP1: " + str.tostring(sigTp1, format.mintick) + "  (" + str.tostring(tp1RR, "#.#") + "R)" +
+          "\n🎯 TP2: " + str.tostring(sigTp2, format.mintick) + "  (" + str.tostring(tp2RR, "#.#") + "R)" +
+          "\n📐 Lot: " + str.tostring(lotSize, "#.##") + "  (risk $" + str.tostring(riskUsd, "#") + ")" + warn
+    label.new(bar_index, isL ? sigSl : sigTp2, txt,
+         style = isL ? label.style_label_up : label.style_label_down,
+         color = color.new(isL ? color.teal : color.red, 15),
+         textcolor = color.white, size = size.small, textalign = text.align_left)
+
+var line lnE = na
+var line lnS = na
+var line lnT = na
+if inTrade
+    if na(lnE)
+        lnE := line.new(tBar, tEntry, bar_index + 3, tEntry, color = color.gray, style = line.style_solid)
+        lnS := line.new(tBar, tSl,    bar_index + 3, tSl,    color = color.red,  style = line.style_dashed)
+        lnT := line.new(tBar, tTp1,   bar_index + 3, tTp1,   color = color.teal, style = line.style_dashed)
+    else
+        line.set_xy1(lnE, tBar, tEntry)
+        line.set_xy2(lnE, bar_index + 3, tEntry)
+        line.set_xy1(lnS, tBar, tSl)
+        line.set_xy2(lnS, bar_index + 3, tSl)
+        line.set_xy1(lnT, tBar, tTp1)
+        line.set_xy2(lnT, bar_index + 3, tTp1)
+else
+    if not na(lnE)
+        line.delete(lnE)
+        line.delete(lnS)
+        line.delete(lnT)
+        lnE := na
+        lnS := na
+        lnT := na
+
+// ────────────────────────────────────────────────────────────────────────────
+//  10. MƏLUMAT CƏDVƏLİ (Bakı vaxtı)
+// ────────────────────────────────────────────────────────────────────────────
+tblPosition = tblPos == "Sağ üst" ? position.top_right : tblPos == "Sağ alt" ? position.bottom_right : tblPos == "Sol üst" ? position.top_left : position.bottom_left
+
+var table tb = table.new(tblPosition, 3, 17, border_width = 1, frame_width = 1, frame_color = color.new(color.gray, 60))
+
+f_row(table t, int r, string a, string b, string c, color bg) =>
+    table.cell(t, 0, r, a, text_color = color.white, text_size = size.small, bgcolor = bg, text_halign = text.align_left)
+    table.cell(t, 1, r, b, text_color = color.white, text_size = size.small, bgcolor = bg)
+    table.cell(t, 2, r, c, text_color = color.white, text_size = size.small, bgcolor = bg)
+
+if showTable and barstate.islast
+    off  = f_offsetToBaku()
+    cHdr = color.new(color.blue, 25)
+    cSub = color.new(color.gray, 55)
+    cRow = color.new(color.gray, 88)
+    cOn  = color.new(color.green, 30)
+    cOff = color.new(color.gray, 75)
+
+    f_row(tb, 0, "XAU KZ SNIPER", mode, "Bakı " + str.format_time(timenow, "HH:mm", "Asia/Baku"), cHdr)
+    f_row(tb, 1, "SEANS (Bakı vaxtı)", "Saatlar", "Vəziyyət", cSub)
+    f_row(tb, 2, "🌏 Asiya",     f_sessToBaku(asiaSess, off), inAsia ? "AÇIQ" : "bağlı", inAsia ? cOn : cOff)
+    f_row(tb, 3, "🇬🇧 London",   f_sessToBaku(lonSess, off),  inLon  ? "AÇIQ" : "bağlı", inLon  ? cOn : cOff)
+    f_row(tb, 4, "🇺🇸 New York", f_sessToBaku(nySess, off),   inNy   ? "AÇIQ" : "bağlı", inNy   ? cOn : cOff)
+    f_row(tb, 5, "📅 Həftəlik bazar", "B.e " + f_hhmmToBaku(1700, off) + " → Şən " + f_hhmmToBaku(1700, off), "", cRow)
+    f_row(tb, 6, "KILL ZONE", "Saatlar", inAnyKz ? "▶ " + kzName : "—", inAnyKz ? cOn : cSub)
+    f_row(tb, 7,  "· Asiya KZ",  f_sessToBaku(kzAsia, off), inKzAsia ? "▶" : "", inKzAsia ? cOn : cRow)
+    f_row(tb, 8,  "· London KZ", f_sessToBaku(kzLon, off),  inKzLon  ? "▶" : "", inKzLon  ? cOn : cRow)
+    f_row(tb, 9,  "· NY AM KZ",  f_sessToBaku(kzNyAm, off), inKzNyAm ? "▶" : "", inKzNyAm ? cOn : cRow)
+    f_row(tb, 10, "· NY PM KZ",  f_sessToBaku(kzNyPm, off), inKzNyPm ? "▶" : "", inKzNyPm ? cOn : cRow)
+
+    biasTxt = bullBias ? "🟢 YÜKSƏLİŞ" : bearBias ? "🔴 DÜŞÜŞ" : "⚪ qeyri-müəyyən"
+    f_row(tb, 11, "Bias (" + htfTf + " EMA" + str.tostring(htfEmaLen) + ")", biasTxt, "ATR " + str.tostring(atr, "#.##"), cRow)
+
+    dxyTxt  = not dxyOk ? "data yox" : dxyDown ? "🔻 düşür (qızıla +)" : "🔺 qalxır (qızıla −)"
+    corrTxt = na(gdCorr) ? "—" : str.tostring(gdCorr, "#.00") + (corrHealthy ? " ✅ tərs" : " ⚠️ QOPUB")
+    f_row(tb, 12, "DXY", dxyTxt, corrTxt, corrBroken ? color.new(color.orange, 45) : cRow)
+
+    posTxt = inTrade ? (tDir == 1 ? "🟢 LONG " : "🔴 SHORT ") + str.tostring(tEntry, format.mintick) : "— yoxdur —"
+    slTxt  = inTrade ? "SL " + str.tostring(tSl, format.mintick) + (tTp1Hit ? " (BE)" : "") : ""
+    f_row(tb, 13, "Açıq mövqe", posTxt, slTxt, inTrade ? color.new(color.blue, 65) : cRow)
+
+    if showStats
+        wr = sigTotal > 0 ? 100.0 * cntTp1 / sigTotal : na
+        f_row(tb, 14, "STATİSTİKA", "script özü sayır", "", cSub)
+        f_row(tb, 15, "Siqnal / TP1 / TP2", str.tostring(sigTotal) + " / " + str.tostring(cntTp1) + " / " + str.tostring(cntTp2),
+              na(wr) ? "—" : "TP1 " + str.tostring(wr, "#.0") + "%", cRow)
+        f_row(tb, 16, "SL (TP1-dən əvvəl) / BE", str.tostring(cntSl) + " / " + str.tostring(cntBe),
+              "risk $" + str.tostring(riskUsd, "#"), cRow)
+
+// ────────────────────────────────────────────────────────────────────────────
+//  11. ALERT-lər
+// ────────────────────────────────────────────────────────────────────────────
+alertcondition(hasNewSig and tDir == 1,  "XAU AL siqnalı",  "XAUUSD AL — kill zone likidite sweep")
+alertcondition(hasNewSig and tDir == -1, "XAU SAT siqnalı", "XAUUSD SAT — kill zone likidite sweep")
+
+if hasNewSig
+    dirTxt = tDir == 1 ? "AL (LONG)" : "SAT (SHORT)"
+    alert("XAUUSD " + dirTxt + " · " + kzName + " · Sweep: " + sweptName +
+          " · Giriş " + str.tostring(sigEntry, format.mintick) +
+          " · SL "    + str.tostring(sigSl, format.mintick) +
+          " · TP1 "   + str.tostring(sigTp1, format.mintick) +
+          " · TP2 "   + str.tostring(sigTp2, format.mintick) +
+          " · Lot "   + str.tostring(lotSize, "#.##") +
+          (corrBroken ? " · ⚠️ DXY korrelyasiyası qopub" : ""),
+          alert.freq_once_per_bar_close)
