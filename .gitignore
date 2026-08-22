@@ -1,19 +1,20 @@
-.env
-*.log
-node_modules/
-
-# Şəxsi sənədlər — public repoya düşməməlidir
-*.docx
-*.pdf
-
-# Vəziyyət `state` budağında saxlanılır, `main`-də yox (repo böyüməsin).
-# Workflow onu hər dövrədə oradan yükləyib ora geri yazır.
-/data/
 
 # Köhnə yerdə (kök qovluqda) qalan state faylları — indi data/ içindədir
-/safety-check-log.json
-/positions.json
+# Vəziyyət `state` budağında saxlanılır, `main`-də yox (repo böyüməsin).
+# Workflow onu hər dövrədə oradan yükləyib ora geri yazır.
+# Şəxsi sənədlər — public repoya düşməməlidir
+*.docx
+*.log
+*.pdf
+.env
+/data/
 /paper-trading.json
+/positions.json
 /regime-state.json
-/weekly-report-state.json
+/safety-check-log.json
 /trades.csv
+/weekly-report-state.json
+NASDAQ VIDEO/*/audio.mp3
+NASDAQ VIDEO/*/frames/
+NASDAQ VIDEO/*/video.mp4
+node_modules/
