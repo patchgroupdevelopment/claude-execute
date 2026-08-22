@@ -16,8 +16,13 @@
 
 const GOLD_SYMBOLS = ["GC=F", "XAUUSD=X"];
 const DXY_SYMBOL = "DX-Y.NYB";
-const RANGE = "60d";
-const INTERVAL = "15m";
+// Yahoo limitləri: 5m/15m/30m → maks 60 gün, 1h → 730 gün.
+// "Son 3 ay" tələbi yalnız 1H-də tam örtülür.
+const CONFIGS = [
+  { interval: "1h", range: "3mo", label: "1 SAAT · son 3 ay  ← sənin baxdığın qrafik" },
+  { interval: "15m", range: "60d", label: "15 DƏQİQƏ · son 60 gün" },
+  { interval: "5m", range: "60d", label: "5 DƏQİQƏ · son 60 gün" },
+];
 
 // ── Parametrlər (Pine default-ları ilə eyni) ──
 const P = {
@@ -247,8 +252,13 @@ function simulate(bars, dxyC, opts = {}) {
     const hb = htf[i];
     const bullBias = hb != null && b.c > hb;
     const bearBias = hb != null && b.c < hb;
-    const biasL = p.scalp ? (b.c > ema21[i] || bullBias) : bullBias;
-    const biasS = p.scalp ? (b.c < ema21[i] || bearBias) : bearBias;
+    // Diqqət: default Scalp rejimində "VƏ YA" işlədilir — yəni EMA21 və ya HTF
+    // biasdan BİRİ kifayətdir. Bu, praktikada demək olar heç nəyi süzmür.
+    // strictBias hər ikisini tələb edir (nə qədər sərt olduğunu ölçmək üçün).
+    const biasL = p.strictBias ? (b.c > ema21[i] && bullBias)
+                : p.scalp ? (b.c > ema21[i] || bullBias) : bullBias;
+    const biasS = p.strictBias ? (b.c < ema21[i] && bearBias)
+                : p.scalp ? (b.c < ema21[i] || bearBias) : bearBias;
 
     // ── DXY ──
     const dc = dxyC[i], de = dxyEma[i];
@@ -305,66 +315,69 @@ function report(label, trades) {
 }
 
 // ── Əsas ──────────────────────────────────────────────────────────────────
-let gold = null, goldSym = null;
-for (const s of GOLD_SYMBOLS) {
-  try {
-    const d = await fetchYahoo(s, INTERVAL, RANGE);
-    if (d.length > 500) { gold = d; goldSym = s; break; }
-    console.log(`  (${s}: cəmi ${d.length} şam — keçildi)`);
-  } catch (e) { console.log(`  (${s}: ${e.message})`); }
-}
-if (!gold) { console.error("Qızıl datası alınmadı."); process.exit(1); }
+async function loadPair(interval, range) {
+  let gold = null, goldSym = null;
+  for (const s of GOLD_SYMBOLS) {
+    try {
+      const d = await fetchYahoo(s, interval, range);
+      if (d.length > 300) { gold = d; goldSym = s; break; }
+    } catch { /* növbəti simvola keç */ }
+  }
+  if (!gold) return null;
 
-let dxyRaw = [];
-try { dxyRaw = await fetchYahoo(DXY_SYMBOL, INTERVAL, RANGE); }
-catch (e) { console.log(`  (DXY alınmadı: ${e.message} — filtr söndürüləcək)`); }
+  let dxyRaw = [];
+  try { dxyRaw = await fetchYahoo(DXY_SYMBOL, interval, range); } catch { /* filtr sönəcək */ }
 
-// DXY-ni qızıl barlarına vaxta görə uyğunlaşdır (son məlum dəyər)
-const dxyMap = new Map(dxyRaw.map((d) => [d.t, d.c]));
-const dxyC = [];
-let last = null;
-for (const b of gold) {
-  if (dxyMap.has(b.t)) last = dxyMap.get(b.t);
-  dxyC.push(last);
-}
-
-const days = (gold[gold.length - 1].t - gold[0].t) / 86_400_000;
-console.log(`\n═══ XAU KILL ZONE SNIPER — BACKTEST ═══`);
-console.log(`Simvol: ${goldSym} | ${INTERVAL} | ${gold.length} şam | ${days.toFixed(0)} gün`);
-console.log(`Dövr: ${new Date(gold[0].t).toISOString().slice(0, 10)} → ${new Date(gold[gold.length - 1].t).toISOString().slice(0, 10)}`);
-console.log(`DXY: ${dxyRaw.length} şam ${dxyRaw.length ? "✓" : "✗ (filtr işləməyəcək)"}\n`);
-
-const useDxy = dxyRaw.length > 100;
-
-console.log("── ƏSAS KONFİQURASİYA (Pine default) ──");
-const main = simulate(gold, dxyC, { useDxy });
-report("Tam dövr", main.trades);
-const mid = Math.floor(main.trades.length / 2);
-report("  1-ci yarı", main.trades.slice(0, mid));
-report("  2-ci yarı", main.trades.slice(mid));
-if (main.openAtEnd) console.log("  (1 mövqe dövrün sonunda hələ açıq idi — sayılmayıb)");
-
-console.log("\n── PARAMETR QONŞULARI (robustluq yoxlaması) ──");
-const variants = [
-  ["Kill zone filtri SÖNÜLÜ", { kzFilter: false, useDxy }],
-  ["DXY filtri SÖNÜLÜ", { useDxy: false }],
-  ["Swing rejim (sərt HTF bias)", { scalp: false, useDxy }],
-  ["TP2 = 3R", { tp2RR: 3.0, useDxy }],
-  ["SL bufferi 0.50×ATR", { slBufAtr: 0.5, useDxy }],
-  ["Min SL 0.40×ATR", { minSlAtr: 0.4, useDxy }],
-  ["Min SL 0.80×ATR", { minSlAtr: 0.8, useDxy }],
-  ["Min SL 1.20×ATR (geniş stop)", { minSlAtr: 1.2, useDxy }],
-  ["Spread SIFIR (ideal dünya)", { spread: 0, useDxy }],
-  ["Spread 0.50$ (xəbər vaxtı)", { spread: 0.5, useDxy }],
-];
-for (const [name, o] of variants) {
-  const r = simulate(gold, dxyC, o);
-  report(name, r.trades);
+  const dxyMap = new Map(dxyRaw.map((d) => [d.t, d.c]));
+  const dxyC = [];
+  let last = null;
+  for (const b of gold) {
+    if (dxyMap.has(b.t)) last = dxyMap.get(b.t);
+    dxyC.push(last);
+  }
+  return { gold, goldSym, dxyC, dxyBars: dxyRaw.length };
 }
 
-console.log("\n── İSTİQAMƏTƏ GÖRƏ ──");
-report("Yalnız LONG", main.trades.filter((t) => t.dir === 1));
-report("Yalnız SHORT", main.trades.filter((t) => t.dir === -1));
+console.log("\n╔══════════════════════════════════════════════════════════════════════╗");
+console.log("║   XAU KILL ZONE SNIPER — TAYMFREYMƏ GÖRƏ BACKTEST                   ║");
+console.log("╚══════════════════════════════════════════════════════════════════════╝");
 
-console.log("\nQeyd: 1R = əməliyyat başına riskə bərabər. $1000 hesabda 1.5% risk = $15,");
-console.log("yəni +10R ≈ +$150. Keçmiş nəticə gələcəyi zəmanət etmir.\n");
+for (const cfg of CONFIGS) {
+  const data = await loadPair(cfg.interval, cfg.range);
+  if (!data) { console.log(`\n### ${cfg.label}\n  Data alınmadı — keçildi.`); continue; }
+  const { gold, goldSym, dxyC, dxyBars } = data;
+  const useDxy = dxyBars > 100;
+  const days = (gold[gold.length - 1].t - gold[0].t) / 86_400_000;
+
+  console.log(`\n\n### ${cfg.label}`);
+  console.log(`    ${goldSym} · ${gold.length} şam · ${days.toFixed(0)} gün · ` +
+    `${new Date(gold[0].t).toISOString().slice(0, 10)} → ${new Date(gold[gold.length - 1].t).toISOString().slice(0, 10)}` +
+    ` · DXY ${useDxy ? "✓" : "✗"}`);
+
+  const main = simulate(gold, dxyC, { useDxy });
+  console.log("  ── Pine default konfiqurasiyası ──");
+  report("TAM DÖVR", main.trades);
+  const mid = Math.floor(main.trades.length / 2);
+  report("  1-ci yarı", main.trades.slice(0, mid));
+  report("  2-ci yarı", main.trades.slice(mid));
+  report("  Yalnız LONG", main.trades.filter((t) => t.dir === 1));
+  report("  Yalnız SHORT", main.trades.filter((t) => t.dir === -1));
+  if (main.openAtEnd) console.log("  (1 mövqe sonda açıq qalıb — sayılmayıb)");
+
+  console.log("  ── Dəyişikliklər ──");
+  const variants = [
+    ["Bias SƏRT (EMA21 VƏ HTF, 'və ya' yox)", { strictBias: true, useDxy }],
+    ["Swing rejim (yalnız HTF bias)", { scalp: false, useDxy }],
+    ["Kill zone filtri SÖNÜLÜ", { kzFilter: false, useDxy }],
+    ["DXY filtri SÖNÜLÜ", { useDxy: false }],
+    ["TP1 = 1.5R", { tp1RR: 1.5, tp2RR: 3.0, useDxy }],
+    ["Min SL 1.00×ATR (geniş stop)", { minSlAtr: 1.0, useDxy }],
+    ["Spread SIFIR", { spread: 0, useDxy }],
+  ];
+  for (const [name, o] of variants) {
+    report(name, simulate(gold, dxyC, o).trades);
+  }
+}
+
+console.log("\n\n1R = əməliyyat başına risk. $1000 hesab + 1.5% risk = $15 → +10R ≈ +$150.");
+console.log("t ≥ 2 olmayanda nəticə statistik olaraq təsadüfdən fərqlənmir.\n");
