@@ -20,7 +20,7 @@ indicator("XAU Kill Zone Sniper — DXY Aware (AZ)", "XAU KZ Sniper", overlay = 
 // ────────────────────────────────────────────────────────────────────────────
 //  1. INPUT
 // ────────────────────────────────────────────────────────────────────────────
-var string G_MODE = "⚙️  Rejim və Risk"
+string G_MODE = "⚙️  Rejim və Risk"
 mode     = input.string("Scalp", "Rejim", options = ["Scalp", "Swing"], group = G_MODE,
              tooltip = "Scalp: kill-zone məcburi, bias yumşaq, hədəf yaxın.\nSwing: HTF bias məcburi, hədəf uzaq.")
 tp1RR    = input.float(1.0, "TP1 — minimum RR", minval = 1.0, step = 0.1, group = G_MODE,
@@ -32,14 +32,14 @@ minSlAtr = input.float(0.60, "Minimum SL məsafəsi (×ATR)", minval = 0.1, step
              tooltip = "Qızılda spread+sürüşmə 20-40 pips ola bilir. Bundan dar stop qoymuruq.")
 beOnTp1  = input.bool(true, "TP1-dən sonra stopu girişə çək (breakeven)", group = G_MODE)
 
-var string G_ACC = "💰  Hesab və Lot"
+string G_ACC = "💰  Hesab və Lot"
 accSize    = input.float(1000, "Hesab ($)", minval = 10, group = G_ACC)
 riskPct    = input.float(1.5, "Əməliyyat başına risk (%)", minval = 0.1, maxval = 10, step = 0.1, group = G_ACC,
                tooltip = "Lot RİSKDƏN hesablanır, əksinə YOX.\nSabit 0.1 lot $1000 hesabda ~10-13% risk deməkdir — təhlükəlidir.")
 contractSz = input.float(100, "1 lot = neçə ons", minval = 1, group = G_ACC,
                tooltip = "XAUUSD standart: 100 ons. Micro hesabda 10.")
 
-var string G_SESS = "🕐  Seanslar və Kill Zone"
+string G_SESS = "🕐  Seanslar və Kill Zone"
 showSessBox = input.bool(true, "Seans qutuları", group = G_SESS)
 showKZ      = input.bool(true, "Kill Zone fonu", group = G_SESS)
 showLevels  = input.bool(true, "Seans High/Low xətləri (likidite)", group = G_SESS)
@@ -55,12 +55,12 @@ kzNyAm   = input.session("0830-1100", "NY AM Kill Zone",  group = G_SESS,
              tooltip = "ABŞ makro datası (NFP, CPI, Home Sales) burada çıxır — qızılın ən sərt hərəkəti.")
 kzNyPm   = input.session("1330-1600", "NY PM Kill Zone",  group = G_SESS)
 
-var string G_BIAS = "📈  Trend / Bias"
+string G_BIAS = "📈  Trend / Bias"
 htfTf      = input.timeframe("60", "Üst taymfreym (bias)", group = G_BIAS)
 htfEmaLen  = input.int(50, "HTF EMA", minval = 10, group = G_BIAS)
 emaFastLen = input.int(21, "Sürətli EMA (təsdiq)", minval = 5, group = G_BIAS)
 
-var string G_DXY = "💵  DXY — tərs korrelyasiya"
+string G_DXY = "💵  DXY — tərs korrelyasiya"
 useDxy    = input.bool(true, "DXY filtrini işlət", group = G_DXY,
              tooltip = "Qızıl BUY üçün DXY düşən tərəfdə olmalıdır (və əksinə).")
 dxySym    = input.symbol("TVC:DXY", "DXY simvolu", group = G_DXY)
@@ -69,7 +69,7 @@ corrLen   = input.int(20, "Korrelyasiya pəncərəsi", minval = 5, group = G_DXY
 corrBreak = input.float(-0.20, "Korrelyasiya qopma həddi", minval = -1, maxval = 1, step = 0.05, group = G_DXY,
              tooltip = "Korrelyasiya bundan yuxarı olarsa, qızıl-DXY tərs əlaqəsi POZULUB sayılır və xəbərdarlıq verilir.")
 
-var string G_UI = "🎨  Görünüş"
+string G_UI = "🎨  Görünüş"
 showTable = input.bool(true, "Məlumat cədvəli", group = G_UI)
 tblPos    = input.string("Sağ üst", "Cədvəl mövqeyi", options = ["Sağ üst", "Sağ alt", "Sol üst", "Sol alt"], group = G_UI)
 showStats = input.bool(true, "Nəticə statistikası", group = G_UI)
@@ -80,7 +80,7 @@ SESS_TZ = "America/New_York"
 //  2. KÖMƏKÇİ FUNKSİYALAR
 // ────────────────────────────────────────────────────────────────────────────
 f_pad(float v) =>
-    (v < 10 ? "0" : "") + str.tostring(v, "#")
+    (v < 10 ? "0" : "") + str.tostring(v, "0")
 
 // NY ilə Bakı arasındakı saat fərqi — DST-yə görə dəyişir, canlı hesablanır.
 f_offsetToBaku() =>
