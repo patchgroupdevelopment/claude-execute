@@ -1,0 +1,555 @@
+//@version=6
+// ════════════════════════════════════════════════════════════════════════════
+//  NAS100 ICT MODEL — Bootcamp strategiyası (Bakı vaxtı)
+//
+//  Mənbə: 43 videoluq ICT/SMC bootcamp (bax NASDAQ/OYRENDIKLERIM.md).
+//  Dərs 40-dakı 7 addımlıq strategiyanın mexaniki icrası.
+//
+//  ⚠️ ƏSAS FƏRQ (bizim əvvəlki uğursuz sistemimizdən):
+//  Müəllimin öz sözü: "Çoğunuzun en büyük yaptığı yanlış: likidite aldı,
+//  IFVG oluştu, ben giriyorum. Bu saçma sapan işler yapmayın."
+//  Likidite alımı TƏK BAŞINA siqnal DEYİL. Ardınca MÜTLƏQ:
+//     displacement (FVG buraxan enerjili hərəkət) → MSS (GÖVDƏ ilə qırılma)
+//     → FVG/IFVG-yə geri çəkilmə → yalnız ONDA giriş.
+//
+//  Addımlar (Dərs 40, ekranda yazılıb):
+//   1. Vacib likidite səviyyəsindən REAKSİYA (1H/4H/1D)
+//   2. Kiçik TF-də dönüş əlaməti (displacement / IFVG / Sharp Turn)
+//   3. MSS gözlə
+//   4. FVG/IFVG-dən gir (FVG-nin 50%-i)
+//   5. Stop: swing high/low (gövdə və ya fitil) / FVG şamı (aqressiv)
+//   6. 1:2 – 1:3 R
+//   7. Risk 0.5–1%
+//
+//  ⚠️ VALİDASİYA: bu strategiya HƏLƏ ÖLÇÜLMƏYİB. Videolardakı nümunələr
+//  keçmişə baxıb seçilmişdir, backtest deyil. Aşağıdakı cədvəl scriptin
+//  ÖZ saydığı real nəticədir — real pul qoymazdan əvvəl ona bax.
+// ════════════════════════════════════════════════════════════════════════════
+
+indicator("NAS100 ICT Model — Bootcamp (AZ)", "NAS ICT", overlay = true,
+     max_lines_count = 500, max_boxes_count = 500, max_labels_count = 500)
+
+// ────────────────────────────────────────────────────────────────────────────
+//  1. INPUT
+// ────────────────────────────────────────────────────────────────────────────
+string G_SET = "⚙️  Setup"
+useKz      = input.bool(true,  "Yalnız Kill Zone-da giriş", group = G_SET)
+useBias    = input.bool(true,  "Günlük bias filtri", group = G_SET,
+              tooltip = "Dərs 43: 'günlük bias çox vacibdir — bias-a uyğun hərəkət\nedəndə IFVG strategiyası möcüzələr yaradır'.")
+allowRev   = input.bool(true,  "Reversal setup-lara icazə ver", group = G_SET,
+              tooltip = "Bias-a ZİDD, amma vacib HTF səviyyəsindən dönüş. Dərs 43-də\nhər iki tətbiq göstərilir: reversal və continuation.")
+maxWaitMss = input.int(12, "Sweep→MSS maksimum gözləmə (şam)", minval = 2, maxval = 60, group = G_SET,
+              tooltip = "Sweep-dən sonra bu qədər şam içində MSS gəlməzsə setup ləğv olunur.")
+maxWaitFill= input.int(20, "MSS→giriş maksimum gözləmə (şam)", minval = 2, maxval = 60, group = G_SET)
+fvgLookback= input.int(10, "MSS-dən geriyə FVG axtarışı (şam)", minval = 3, maxval = 30, group = G_SET)
+minDispAtr = input.float(0.5, "Minimum displacement (×ATR)", minval = 0.1, step = 0.1, group = G_SET,
+              tooltip = "FVG-ni yaradan orta şamın diapazonu ən azı bu qədər olmalıdır —\n'enerjili hərəkət' şərti. Kiçik FVG-lər süzülür.")
+needSharp  = input.bool(false, "Sharp Turn məcburi olsun", group = G_SET,
+              tooltip = "Müəllimin ən yüksək win-rate patterni. Məcburi etsən siqnal\nsayı kəskin azalır, keyfiyyət artmalıdır — cədvəldə yoxla.")
+
+string G_RISK = "💰  Stop / Hədəf / Risk"
+slMode  = input.string("Swing fitili + bufer", "Stop yeri",
+           options = ["Swing fitili + bufer", "Swing gövdəsi", "FVG şamı (aqressiv)"], group = G_RISK,
+           tooltip = "Dərs 40: 'nəfəs alacaq yer buraxın' — fitil daha təhlükəsizdir.\nDərs 43: RR pisləşirsə gövdəyə keç.")
+slBufAtr= input.float(0.15, "Stop buferi (×ATR)", minval = 0, step = 0.05, group = G_RISK)
+tp1RR   = input.float(2.0, "TP1 (R)", minval = 1.0, step = 0.5, group = G_RISK)
+tp2RR   = input.float(3.0, "TP2 (R)", minval = 1.0, step = 0.5, group = G_RISK)
+beOnTp1 = input.bool(true, "TP1-dən sonra stop girişə (breakeven)", group = G_RISK)
+accSize = input.float(1000, "Hesab ($)", minval = 10, group = G_RISK)
+riskPct = input.float(1.0, "Risk (%)", minval = 0.1, maxval = 5, step = 0.1, group = G_RISK,
+           tooltip = "Bootcamp tövsiyəsi: 0.5–1%.")
+
+string G_SESS = "🕐  Seans / Kill Zone (NY vaxtı — DST avtomatik)"
+// ⚠️ Bu saatlar müəllimin ÖZ qrafiğindəki indikator ayarlarından götürülüb
+// (Video 02, kadr f_00021 @ 00:02:40 — parametr sətri tam oxunur).
+// Şifahi olaraq "08:30" dediyi yerlər var, amma qrafiğində 09:30 qurulub:
+//   08:30 NY = ABŞ makro datası (CPI/NFP) · 09:30 NY = NASDAQ nağd açılışı
+showKz    = input.bool(true, "Kill Zone fonu", group = G_SESS)
+kzAsia    = input.session("2000-0000", "Asiya KZ", group = G_SESS)
+kzLondon  = input.session("0200-0500", "London KZ", group = G_SESS)
+kzNyIndex = input.session("0930-1100", "NY AM KZ — İNDEKS", group = G_SESS,
+             tooltip = "09:30 = NASDAQ nağd bazar açılışı. Bakı: 16:30 (yay) / 17:30 (qış).")
+kzNyPm    = input.session("1330-1600", "NY PM KZ", group = G_SESS)
+sessLunch = input.session("1200-1300", "NY Lunch (nahar)", group = G_SESS,
+             tooltip = "Müəllimin indikatorunda AYRICA seans kimi var.\nKlassik olaraq zəif dövr — default olaraq siqnal verilmir.")
+skipLunch = input.bool(true, "Nahar saatında siqnal vermə", group = G_SESS)
+sessAsia  = input.session("2000-0200", "Asiya seansı", group = G_SESS)
+sessLon   = input.session("0200-0800", "London seansı", group = G_SESS)
+sessNy    = input.session("0930-1600", "NY seansı", group = G_SESS)
+tdoTime   = input.session("1200-1201", "True Day Open", group = G_SESS,
+             tooltip = "Müəllimin indikatorunda 12:00 NY-a qurulub.")
+showTdo   = input.bool(true, "True Day Open xətti", group = G_SESS)
+
+string G_UI = "🎨  Görünüş"
+showFvg   = input.bool(true, "FVG zonaları", group = G_UI)
+showLiq   = input.bool(true, "Likidite səviyyələri (PDH/PDL/PWH/PWL)", group = G_UI)
+showMss   = input.bool(true, "MSS işarələri", group = G_UI)
+maxSig    = input.int(4, "Qrafikdə saxlanılan siqnal", minval = 1, maxval = 20, group = G_UI)
+showTable = input.bool(true, "Cədvəl", group = G_UI)
+
+TZ = "America/New_York"
+pivLen = 3
+
+// ────────────────────────────────────────────────────────────────────────────
+//  2. KÖMƏKÇİLƏR
+// ────────────────────────────────────────────────────────────────────────────
+f_pad(float v) => (v < 10 ? "0" : "") + str.tostring(v, "0")
+
+f_offBaku() =>
+    hs = nz(str.tonumber(str.format_time(timenow, "HH", TZ)))
+    hb = nz(str.tonumber(str.format_time(timenow, "HH", "Asia/Baku")))
+    d = hb - hs
+    d > 12 ? d - 24 : d < -12 ? d + 24 : d
+
+f_hhmmBaku(float hhmm, float off) =>
+    h = math.floor(hhmm / 100)
+    m = hhmm % 100
+    f_pad((h + off + 24) % 24) + ":" + f_pad(m)
+
+f_sessBaku(string s, float off) =>
+    parts = str.split(array.get(str.split(s, ":"), 0), "-")
+    string r = "—"
+    if array.size(parts) == 2
+        r := f_hhmmBaku(nz(str.tonumber(array.get(parts, 0))), off) + "–" + f_hhmmBaku(nz(str.tonumber(array.get(parts, 1))), off)
+    r
+
+f_in(string s) => not na(time(timeframe.period, s, TZ))
+
+f_track(bool act) =>
+    var float hi = na
+    var float lo = na
+    var float pHi = na
+    var float pLo = na
+    st = act and not act[1]
+    en = not act and act[1]
+    if st
+        hi := high
+        lo := low
+    else if act
+        hi := math.max(hi, high)
+        lo := math.min(lo, low)
+    if en
+        pHi := hi
+        pLo := lo
+    [hi, lo, pHi, pLo, act]
+
+// ────────────────────────────────────────────────────────────────────────────
+//  3. SEANS / KILL ZONE
+// ────────────────────────────────────────────────────────────────────────────
+inKzA = f_in(kzAsia)
+inKzL = f_in(kzLondon)
+inKzN = f_in(kzNyIndex)
+inKzP = f_in(kzNyPm)
+inLunch = f_in(sessLunch)
+inAnyKz = inKzA or inKzL or inKzN or inKzP
+kzName = inKzN ? "NY AM" : inKzL ? "LONDON" : inKzP ? "NY PM" : inKzA ? "ASİYA" : "—"
+
+// Müəllimin indikatoru 5 seansın HƏR BİRİNİN high/low-unu işarələyir:
+// AS.H/L · LO.H/L · NYAM.H/L · NYL.H/L · NYPM.H/L
+[aHi, aLo, aPHi, aPLo, aOn] = f_track(f_in(sessAsia))
+[lHi, lLo, lPHi, lPLo, lOn] = f_track(f_in(sessLon))
+[nHi, nLo, nPHi, nPLo, nOn] = f_track(f_in(sessNy))
+[uHi, uLo, uPHi, uPLo, uOn] = f_track(inLunch)
+[pHi, pLo, pPHi, pPLo, pOn] = f_track(inKzP)
+
+// True Day Open — gündəlik açılış istinad xətti (premium/discount üçün)
+inTdo = f_in(tdoTime)
+var float tdo = na
+if inTdo and not inTdo[1]
+    tdo := open
+
+// ────────────────────────────────────────────────────────────────────────────
+//  4. LİKİDİTE SƏVİYYƏLƏRİ
+// ────────────────────────────────────────────────────────────────────────────
+pdh = request.security(syminfo.tickerid, "D", high[1], lookahead = barmerge.lookahead_on)
+pdl = request.security(syminfo.tickerid, "D", low[1],  lookahead = barmerge.lookahead_on)
+pwh = request.security(syminfo.tickerid, "W", high[1], lookahead = barmerge.lookahead_on)
+pwl = request.security(syminfo.tickerid, "W", low[1],  lookahead = barmerge.lookahead_on)
+
+// ────────────────────────────────────────────────────────────────────────────
+//  5. GÜNLÜK BIAS (Dərs 43 — mexaniki qayda)
+// ────────────────────────────────────────────────────────────────────────────
+// Müəllim: əvvəlki gün bir səviyyəni alıb ONUN O TAYINDA GÖVDƏ ilə bağlanıbsa
+// → həmin istiqamətdə davam (displacement oldu).
+// Yalnız FİTİL atıb geri içəri bağlanıbsa → "saygı duydu" = rədd, əks bias.
+dO = request.security(syminfo.tickerid, "D", open[1],  lookahead = barmerge.lookahead_on)
+dC = request.security(syminfo.tickerid, "D", close[1], lookahead = barmerge.lookahead_on)
+dPrevH = request.security(syminfo.tickerid, "D", high[2], lookahead = barmerge.lookahead_on)
+dPrevL = request.security(syminfo.tickerid, "D", low[2],  lookahead = barmerge.lookahead_on)
+
+tookHigh = not na(dPrevH) and pdh > dPrevH        // dünən əvvəlki günün high-ını aldı
+tookLow  = not na(dPrevL) and pdl < dPrevL
+closedAbove = not na(dPrevH) and dC > dPrevH      // və gövdə ilə üstündə bağlandı
+closedBelow = not na(dPrevL) and dC < dPrevL
+
+biasBull = (tookHigh and closedAbove) or (tookLow and not closedBelow)
+biasBear = (tookLow and closedBelow) or (tookHigh and not closedAbove)
+biasTxt = biasBull and not biasBear ? "🟢 BULLISH" : biasBear and not biasBull ? "🔴 BEARISH" : "⚪ neytral"
+
+// ────────────────────────────────────────────────────────────────────────────
+//  6. STRUKTUR (swing nöqtələri)
+// ────────────────────────────────────────────────────────────────────────────
+atr = ta.atr(14)
+ph = ta.pivothigh(high, pivLen, pivLen)
+pl = ta.pivotlow(low, pivLen, pivLen)
+
+var float lastSwH = na
+var float lastSwL = na
+var int   lastSwHBar = na
+var int   lastSwLBar = na
+var float lastSwHBody = na   // swing şamının gövdə zirvəsi
+var float lastSwLBody = na
+
+if not na(ph)
+    lastSwH := ph
+    lastSwHBar := bar_index - pivLen
+    lastSwHBody := math.max(open[pivLen], close[pivLen])
+if not na(pl)
+    lastSwL := pl
+    lastSwLBar := bar_index - pivLen
+    lastSwLBody := math.min(open[pivLen], close[pivLen])
+
+// ────────────────────────────────────────────────────────────────────────────
+//  7. LİKİDİTE ALIMI (sweep) — TƏK BAŞINA SİQNAL DEYİL
+// ────────────────────────────────────────────────────────────────────────────
+// Dərs 32: fitil səviyyəni dəlir, gövdə geri içəri bağlanır → likidite alımı.
+f_sweepLo(float L) => not na(L) and low < L and close > L
+f_sweepHi(float L) => not na(L) and high > L and close < L
+
+swLo = f_sweepLo(pdl) or f_sweepLo(pwl) or f_sweepLo(aPLo) or f_sweepLo(lPLo) or f_sweepLo(nPLo) or f_sweepLo(uPLo) or f_sweepLo(pPLo)
+swHi = f_sweepHi(pdh) or f_sweepHi(pwh) or f_sweepHi(aPHi) or f_sweepHi(lPHi) or f_sweepHi(nPHi) or f_sweepHi(uPHi) or f_sweepHi(pPHi)
+
+sweptWhat = f_sweepLo(pdl) or f_sweepHi(pdh) ? "PDH/L" : f_sweepLo(pwl) or f_sweepHi(pwh) ? "PWH/L" : f_sweepLo(aPLo) or f_sweepHi(aPHi) ? "AS" : f_sweepLo(lPLo) or f_sweepHi(lPHi) ? "LO" : f_sweepLo(uPLo) or f_sweepHi(uPHi) ? "NYL" : f_sweepLo(pPLo) or f_sweepHi(pPHi) ? "NYPM" : "NYAM"
+
+// ────────────────────────────────────────────────────────────────────────────
+//  8. FVG (3 şamlıq boşluq) + displacement şərti
+// ────────────────────────────────────────────────────────────────────────────
+// Bullish FVG (j offsetində): low[j] > high[j+2]. Orta şam (j+1) displacement.
+f_bullFvgAt(int j) =>
+    lo2 = high[j + 2]
+    hi0 = low[j]
+    gap = hi0 - lo2
+    disp = high[j + 1] - low[j + 1]
+    ok = gap > 0 and disp >= atr * minDispAtr and close[j + 1] > open[j + 1]
+    [ok, hi0, lo2]
+
+f_bearFvgAt(int j) =>
+    hi2 = low[j + 2]
+    lo0 = high[j]
+    gap = hi2 - lo0
+    disp = high[j + 1] - low[j + 1]
+    ok = gap > 0 and disp >= atr * minDispAtr and close[j + 1] < open[j + 1]
+    [ok, hi2, lo0]
+
+// Cari şamda FVG varmı (Sharp Turn üçün)
+[curBullFvg, _cbT, _cbB] = f_bullFvgAt(0)
+[curBearFvg, _csT, _csB] = f_bearFvgAt(0)
+
+// ────────────────────────────────────────────────────────────────────────────
+//  9. SHARP TURN (Dərs 26 / 40 — ən yüksək win-rate patterni)
+// ────────────────────────────────────────────────────────────────────────────
+// Likiditeni ALMAĞA gedərkən bir istiqamətdə FVG → likidite alınır →
+// DƏRHAL əks istiqamətdə FVG. "U dönüşü".
+var int lastBullFvgBar = na
+var int lastBearFvgBar = na
+if curBullFvg
+    lastBullFvgBar := bar_index
+if curBearFvg
+    lastBearFvgBar := bar_index
+
+// Bullish reversal üçün: əvvəl BEARISH FVG (aşağı gedərkən), indi BULLISH FVG
+sharpUp = curBullFvg and not na(lastBearFvgBar) and (bar_index - lastBearFvgBar) <= 8
+sharpDn = curBearFvg and not na(lastBullFvgBar) and (bar_index - lastBullFvgBar) <= 8
+
+// ────────────────────────────────────────────────────────────────────────────
+//  10. SETUP AVTOMATI:  sweep → MSS → FVG girişi
+// ────────────────────────────────────────────────────────────────────────────
+var int   stage      = 0    // 0=boş, 1=sweep oldu, 2=MSS oldu (giriş gözlənilir)
+var int   dir        = 0    // +1 long, -1 short
+var int   stageBar   = na
+var float swExtreme  = na   // sweep-in ekstremumu (stop üçün)
+var float swExtBody  = na
+var float fvgTop     = na
+var float fvgBot     = na
+var float entryPx    = na
+var bool  hadSharp   = false
+var string sweptName = ""
+
+var bool  inTrade  = false
+var float tEntry   = na
+var float tSl      = na
+var float tTp1     = na
+var float tTp2     = na
+var bool  tTp1Hit  = false
+var int   tDir     = 0
+
+// ── Nəticə sayğacı ──
+var int   nSig  = 0
+var int   nTp1  = 0
+var int   nTp2  = 0
+var int   nSl   = 0
+var int   nBe   = 0
+var float netR  = 0.0
+
+// ── Açıq mövqe idarəsi (SL əvvəl — konservativ) ──
+if inTrade
+    slHit  = tDir == 1 ? low <= tSl  : high >= tSl
+    tp2Hit = tDir == 1 ? high >= tTp2 : low <= tTp2
+    tp1Hit = tDir == 1 ? high >= tTp1 : low <= tTp1
+    if slHit
+        if tTp1Hit
+            nBe += 1
+        else
+            nSl += 1
+            netR -= 1.0
+        inTrade := false
+    else if tp2Hit
+        if not tTp1Hit
+            nTp1 += 1
+            tTp1Hit := true
+        nTp2 += 1
+        netR += tp2RR
+        inTrade := false
+    else if tp1Hit and not tTp1Hit
+        nTp1 += 1
+        tTp1Hit := true
+        if beOnTp1
+            tSl := tEntry
+
+// ── Mərhələ 1: likidite alımı qeydə alınır (SİQNAL DEYİL!) ──
+if not inTrade and stage == 0 and barstate.isconfirmed
+    if swLo
+        stage := 1
+        dir := 1
+        stageBar := bar_index
+        swExtreme := low
+        swExtBody := math.min(open, close)
+        hadSharp := false
+        sweptName := sweptWhat
+    else if swHi
+        stage := 1
+        dir := -1
+        stageBar := bar_index
+        swExtreme := high
+        swExtBody := math.max(open, close)
+        hadSharp := false
+        sweptName := sweptWhat
+
+// Sweep-dən sonra sweep ekstremumunu yenilə + Sharp Turn izlə
+if stage == 1
+    if dir == 1
+        swExtreme := math.min(swExtreme, low)
+        if sharpUp
+            hadSharp := true
+    else
+        swExtreme := math.max(swExtreme, high)
+        if sharpDn
+            hadSharp := true
+
+// ── Mərhələ 2: MSS (GÖVDƏ ilə struktur qırılması) + FVG tapılması ──
+if stage == 1 and barstate.isconfirmed
+    if bar_index - stageBar > maxWaitMss
+        stage := 0
+    else
+        mssUp = dir == 1 and not na(lastSwH) and close > lastSwH
+        mssDn = dir == -1 and not na(lastSwL) and close < lastSwL
+        if mssUp or mssDn
+            // MSS-i yaradan hərəkətin FVG-sini tap (ən yenisi).
+            // Qeyd: tuple destructuring hər budaqda ayrı ad tələb edir —
+            // Pine eyni scope-da eyni adı iki dəfə elan etməyə icazə vermir.
+            float ft = na
+            float fb = na
+            for j = 0 to fvgLookback
+                if na(ft)
+                    [okU, tU, bU] = f_bullFvgAt(j)
+                    [okD, tD, bD] = f_bearFvgAt(j)
+                    if dir == 1 and okU and bU < close
+                        ft := tU
+                        fb := bU
+                    else if dir == -1 and okD and tD > close
+                        ft := tD
+                        fb := bD
+            if not na(ft)
+                fvgTop := ft
+                fvgBot := fb
+                entryPx := (ft + fb) / 2   // Dərs 40: FVG-nin ORTA nöqtəsi
+                stage := 2
+                stageBar := bar_index
+
+// ── Mərhələ 3: FVG-yə geri çəkilmə → GİRİŞ ──
+float sigEntry = na
+float sigSl = na
+float sigTp1 = na
+float sigTp2 = na
+float sigRisk = na
+
+if stage == 2 and not inTrade and barstate.isconfirmed
+    if bar_index - stageBar > maxWaitFill
+        stage := 0
+    else
+        filled = dir == 1 ? low <= entryPx : high >= entryPx
+        kzOk = not useKz or inAnyKz
+        lunchOk = not skipLunch or not inLunch
+        biasOk = not useBias or (dir == 1 ? biasBull : biasBear) or allowRev
+        sharpOk = not needSharp or hadSharp
+        if filled and kzOk and lunchOk and biasOk and sharpOk
+            ent = entryPx
+            float sl = na
+            if slMode == "Swing gövdəsi"
+                sl := dir == 1 ? nz(lastSwLBody, swExtreme) : nz(lastSwHBody, swExtreme)
+            else if slMode == "FVG şamı (aqressiv)"
+                sl := dir == 1 ? fvgBot : fvgTop
+            else
+                sl := dir == 1 ? swExtreme - atr * slBufAtr : swExtreme + atr * slBufAtr
+            // Stop mütləq girişin əks tərəfində olmalıdır
+            if dir == 1 and sl >= ent
+                sl := ent - atr * 0.5
+            if dir == -1 and sl <= ent
+                sl := ent + atr * 0.5
+            risk = math.abs(ent - sl)
+            if risk > 0
+                nSig += 1
+                inTrade := true
+                tDir := dir
+                tEntry := ent
+                tSl := sl
+                tTp1 := dir == 1 ? ent + risk * tp1RR : ent - risk * tp1RR
+                tTp2 := dir == 1 ? ent + risk * tp2RR : ent - risk * tp2RR
+                tTp1Hit := false
+                sigEntry := ent
+                sigSl := sl
+                sigTp1 := tTp1
+                sigTp2 := tTp2
+                sigRisk := risk
+                stage := 0
+        else if filled
+            stage := 0   // dolduruldu, amma filtr keçmədi → setup bitdi
+
+hasSig = not na(sigEntry)
+riskUsd = accSize * riskPct / 100
+
+// ────────────────────────────────────────────────────────────────────────────
+//  11. ÇƏKİLİŞ
+// ────────────────────────────────────────────────────────────────────────────
+C_UP = #26a69a
+C_DN = #ef5350
+
+bgcolor(showKz and inAnyKz ? color.new(inKzN ? color.orange : color.purple, 94) : na, title = "Kill Zone")
+
+f_lvl(float p, color c, string t) =>
+    var line l = na
+    var label lb = na
+    if showLiq and not na(p)
+        if na(l)
+            l := line.new(bar_index - 1, p, bar_index + 6, p, color = c, style = line.style_dotted)
+            lb := label.new(bar_index + 7, p, t, style = label.style_none, textcolor = c, size = size.tiny)
+        else
+            line.set_xy1(l, bar_index - 1, p)
+            line.set_xy2(l, bar_index + 6, p)
+            label.set_xy(lb, bar_index + 7, p)
+    l
+
+x1 = f_lvl(pdh, color.new(color.gray, 35), "PDH")
+x2 = f_lvl(pdl, color.new(color.gray, 35), "PDL")
+x3 = f_lvl(pwh, color.new(color.blue, 45), "PWH")
+x4 = f_lvl(pwl, color.new(color.blue, 45), "PWL")
+// 5 seansın hər birinin H/L — müəllimin indikatorundakı ilə eyni adlar
+x5 = f_lvl(aPHi, color.new(color.blue, 55), "AS.H")
+x6 = f_lvl(aPLo, color.new(color.blue, 55), "AS.L")
+x7 = f_lvl(lPHi, color.new(color.red, 55), "LO.H")
+x8 = f_lvl(lPLo, color.new(color.red, 55), "LO.L")
+x9 = f_lvl(nPHi, color.new(color.green, 55), "NYAM.H")
+x10 = f_lvl(nPLo, color.new(color.green, 55), "NYAM.L")
+x11 = f_lvl(uPHi, color.new(color.yellow, 55), "NYL.H")
+x12 = f_lvl(uPLo, color.new(color.yellow, 55), "NYL.L")
+x13 = f_lvl(pPHi, color.new(color.purple, 55), "NYPM.H")
+x14 = f_lvl(pPLo, color.new(color.purple, 55), "NYPM.L")
+// Qeyd: f_lvl daxilində `var` var — Pine-da belə funksiya HƏR şamda
+// şərtsiz çağırılmalıdır. Ona görə şərt arqumentə köçürülüb, çağırışa yox.
+x15 = f_lvl(showTdo ? tdo : na, color.new(color.gray, 20), "True Day Open")
+
+// FVG zonaları (yalnız son bir neçəsi)
+var array<box> fvgBoxes = array.new<box>()
+if showFvg and barstate.isconfirmed
+    if curBullFvg
+        array.push(fvgBoxes, box.new(bar_index - 2, low, bar_index + 6, high[2], border_color = color.new(C_UP, 60), bgcolor = color.new(C_UP, 88)))
+    if curBearFvg
+        array.push(fvgBoxes, box.new(bar_index - 2, low[2], bar_index + 6, high, border_color = color.new(C_DN, 60), bgcolor = color.new(C_DN, 88)))
+    while array.size(fvgBoxes) > 12
+        box.delete(array.shift(fvgBoxes))
+
+// Sweep və MSS işarələri
+plotshape(showMss and stage == 1 and stage[1] == 0 and dir == 1,  "Sweep ↓", shape.xcross, location.belowbar, color.new(color.gray, 30), size = size.tiny)
+plotshape(showMss and stage == 1 and stage[1] == 0 and dir == -1, "Sweep ↑", shape.xcross, location.abovebar, color.new(color.gray, 30), size = size.tiny)
+plotshape(showMss and stage == 2 and stage[1] == 1 and dir == 1,  "MSS ↑", shape.triangleup,   location.belowbar, color.new(color.blue, 20), size = size.tiny, text = "mss")
+plotshape(showMss and stage == 2 and stage[1] == 1 and dir == -1, "MSS ↓", shape.triangledown, location.abovebar, color.new(color.blue, 20), size = size.tiny, text = "mss")
+
+// Giriş xətləri
+var array<line>  sLn = array.new<line>()
+var array<label> sLb = array.new<label>()
+if hasSig
+    isL = tDir == 1
+    xa = bar_index
+    xb = bar_index + 22
+    array.push(sLn, line.new(xa, sigEntry, xb, sigEntry, color = color.new(color.gray, 20)))
+    array.push(sLn, line.new(xa, sigSl,  xb, sigSl,  color = C_DN, width = 2))
+    array.push(sLn, line.new(xa, sigTp1, xb, sigTp1, color = C_UP, style = line.style_dashed))
+    array.push(sLn, line.new(xa, sigTp2, xb, sigTp2, color = color.new(C_UP, 45), style = line.style_dotted))
+    lot = sigRisk > 0 ? riskUsd / sigRisk : na
+    tag = (isL ? "▲ AL" : "▼ SAT") + (hadSharp ? " ⚡" : "") + "  " + sweptName
+    array.push(sLb, label.new(xb, sigEntry, tag + " " + str.tostring(sigEntry, format.mintick),
+         style = label.style_label_left, color = color.new(isL ? C_UP : C_DN, 10), textcolor = color.white, size = size.tiny))
+    array.push(sLb, label.new(xb, sigSl,  "SL " + str.tostring(sigSl, format.mintick),
+         style = label.style_label_left, color = color.new(C_DN, 25), textcolor = color.white, size = size.tiny))
+    array.push(sLb, label.new(xb, sigTp1, "TP1 " + str.tostring(sigTp1, format.mintick),
+         style = label.style_label_left, color = color.new(C_UP, 25), textcolor = color.white, size = size.tiny))
+    array.push(sLb, label.new(xb, sigTp2, "TP2 " + str.tostring(sigTp2, format.mintick),
+         style = label.style_label_left, color = color.new(C_UP, 55), textcolor = color.white, size = size.tiny))
+    while array.size(sLn) > maxSig * 4
+        line.delete(array.shift(sLn))
+    while array.size(sLb) > maxSig * 4
+        label.delete(array.shift(sLb))
+
+// ────────────────────────────────────────────────────────────────────────────
+//  12. CƏDVƏL
+// ────────────────────────────────────────────────────────────────────────────
+var table tb = table.new(position.top_right, 3, 10, border_width = 1, frame_width = 1, frame_color = color.new(color.gray, 60))
+
+f_row(table t, int r, string a, string b, string c, color bg) =>
+    table.cell(t, 0, r, a, text_color = color.white, text_size = size.tiny, bgcolor = bg, text_halign = text.align_left)
+    table.cell(t, 1, r, b, text_color = color.white, text_size = size.tiny, bgcolor = bg, text_halign = text.align_left)
+    table.cell(t, 2, r, c, text_color = color.white, text_size = size.tiny, bgcolor = bg, text_halign = text.align_right)
+
+if showTable and barstate.islast
+    table.clear(tb, 0, 0, 2, 9)
+    off = f_offBaku()
+    cH = color.new(color.blue, 25)
+    cR = color.new(color.gray, 88)
+    cO = color.new(color.green, 35)
+    stageTxt = stage == 0 ? "— gözləyir —" : stage == 1 ? "1️⃣ sweep oldu, MSS gözlənilir" : "2️⃣ MSS oldu, FVG-yə çəkilmə gözlənilir"
+    f_row(tb, 0, "NAS100 ICT MODEL", "", "Bakı " + str.format_time(timenow, "HH:mm", "Asia/Baku"), cH)
+    f_row(tb, 1, "Kill Zone", inAnyKz ? kzName : "— yoxdur —", inAnyKz ? "▶" : "", inAnyKz ? cO : cR)
+    f_row(tb, 2, "NY indeks KZ", f_sessBaku(kzNyIndex, off), inKzN ? "▶" : "", inKzN ? cO : cR)
+    f_row(tb, 3, "London KZ", f_sessBaku(kzLondon, off), inKzL ? "▶" : "", inKzL ? cO : cR)
+    f_row(tb, 4, "Günlük bias", biasTxt, "ATR " + str.tostring(atr, "#.#"), cR)
+    f_row(tb, 5, "Setup mərhələsi", stageTxt, stage > 0 ? sweptName : "", stage > 0 ? color.new(color.orange, 60) : cR)
+    posTxt = inTrade ? (tDir == 1 ? "🟢 LONG " : "🔴 SHORT ") + str.tostring(tEntry, format.mintick) : "— yoxdur —"
+    f_row(tb, 6, "Mövqe", posTxt, inTrade ? "SL " + str.tostring(tSl, format.mintick) + (tTp1Hit ? " BE" : "") : "", inTrade ? color.new(color.blue, 65) : cR)
+    wr = nSig > 0 ? 100.0 * nTp1 / nSig : na
+    f_row(tb, 7, "NƏTİCƏ (script sayır)", str.tostring(nSig) + " siqnal · TP1 " + (na(wr) ? "—" : str.tostring(wr, "#") + "%"), (netR >= 0 ? "+" : "") + str.tostring(netR, "#.#") + "R", color.new(color.gray, 55))
+    f_row(tb, 8, "TP2 / SL / BE", str.tostring(nTp2) + " / " + str.tostring(nSl) + " / " + str.tostring(nBe), "risk $" + str.tostring(riskUsd, "#"), cR)
+
+// ────────────────────────────────────────────────────────────────────────────
+//  13. ALERT
+// ────────────────────────────────────────────────────────────────────────────
+alertcondition(hasSig and tDir == 1,  "NAS AL",  "NAS100 AL — sweep+MSS+FVG")
+alertcondition(hasSig and tDir == -1, "NAS SAT", "NAS100 SAT — sweep+MSS+FVG")
+
+if hasSig
+    alert("NAS100 " + (tDir == 1 ? "AL" : "SAT") + " · " + kzName + " · sweep: " + sweptName +
+          (hadSharp ? " · ⚡Sharp Turn" : "") +
+          " · Giriş " + str.tostring(sigEntry, format.mintick) +
+          " · SL " + str.tostring(sigSl, format.mintick) +
+          " · TP1 " + str.tostring(sigTp1, format.mintick) +
+          " · TP2 " + str.tostring(sigTp2, format.mintick),
+          alert.freq_once_per_bar_close)
