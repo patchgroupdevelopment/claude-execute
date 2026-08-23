@@ -304,3 +304,48 @@ fitillər kənara çıxır.
 [00:08:30–00:09:15] Müəllim klassik pattern-lərə qarşı arqument gətirir:
 *"Sizcə market 'fincan-kulp' olduğu üçün mü hərəkət edir, yoxsa insanların
 stop-loss-larının tetiklənməsi və o pul ilə mi?"*
+
+---
+
+## Dərs 26 — Likiditenin əsası + ⚠️ SWING TƏRİFİ (kodumda SƏHV idi)
+
+### Swing High / Low — dəqiq tərif
+[00:01:56–00:02:26]:
+> *"**3 mum** alırıq. Sağına, soluna baxırıq. Ortadakı — solundakı və
+> sağındakından **daha alçaqda** olacaq. Bu bir **swing low**."*
+
+Yəni **pivot uzunluğu = 1** (sol 1 şam, sağ 1 şam), 3 deyil!
+
+⚠️ Mənim `NAS100_ICT_Model.pine`-da `pivLen = 3` qoyulmuşdu — bu, müəllimin
+tərifindən **xeyli sərtdir** və nəticədə:
+- swing nöqtələri az tapılır
+- MSS hadisələri az olur
+- siqnal sayı süni azalır
+
+**Düzəliş lazımdır: `pivLen = 1` (input kimi, default 1).**
+
+### Equal High / Equal Low
+[00:06:30–00:06:47] İki low/high bir-birinə çox yaxın (bərabər) olanda →
+**equal low/high**. Bu, adi swing-dən **daha güclü likidite hovuzudur**,
+çünki stoplar bir yerdə cəmlənir.
+
+### Nə üçün likidite işləyir (institusional məntiq)
+[00:00:48–00:01:45] Böyük oyunçular (banklar, hedge fondlar) bizim kimi
+"düymə basıb" girə bilmirlər — $100M-lıq əmr üçün bazarda o qədər dövriyyə
+lazımdır. Ona görə stopları partladıb likidite yaradırlar.
+Bank analogiyası: 20.000 lirə çəkmək üçün bankdan "sabah gəl" deyilir —
+o an o qədər nağd yoxdur.
+
+### 🔑 HANSI BAZARLARDA İŞLƏYİR (istifadəçinin sualına birbaşa cavab)
+[00:03:37–00:03:50]:
+> *"Bu dediyim şey **kriptoda da işə yarar, forexdə də, indekslərdə də** —
+> yəni **NASDAQ-da da**, EURUSD-də də, Bitcoin-də də. Hamısında."*
+
+[00:05:36–00:06:00] **İSTİSNA — harada İŞLƏMİR:**
+> *"Saçma-sapan coinlərdə və ya hisselərdə sınamayın. **Bankların diqqətini
+> çəkəcək** şeylər olmalıdır — **böyük pulun olduğu yerlərdə** işə yarayır.
+> Adamın kefinə görə qaldırıb endirdiyi hissədə texniki analiz etmə."*
+
+**Nəticə:** konseptlər NASDAQ-a xas deyil — likvid, institusional bazarlara
+xasdır. NASDAQ, qızıl, major forex cütləri, BTC — hamısı uyğundur.
+Kiçik kapitallı hisselər və az likvid altcoinlər — uyğun DEYİL.
