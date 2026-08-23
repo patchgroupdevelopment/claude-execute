@@ -554,3 +554,50 @@ Diaqnostikamızın rəqəmi (-0.331 ATR, t=-2.66) bunun riyazi təsdiqidir.
 (PDH/PDL/PWH/PWL/seans) yoxlanılır — bu, qismən HTF-dir. Amma müəllimin
 tələbi daha sərtdir: **qiymət HTF-in vacib zonasında (1H/4H FVG və ya
 əsas səviyyə) OLMALIDIR**. Bu filtri əlavə etmək lazımdır.
+
+---
+
+## Qalan dərslər (03-07, 10-15, 22, 28, 35, 38, 39, 45) — xülasə
+
+Bunlar əsas/təşkilati dərslərdir. Strategiyanı dəyişən yeni qayda **yoxdur**,
+amma bir neçə dizayn qeydi var:
+
+**D14 — mənbə:** Strategiya **ICT-nin "2022 modeli"nə** (41 videoluq seriya)
+əsaslanır + müəllimin öz şərhləri.
+
+**D11 — indikator siyasəti:** *"Biz Price Action etdiyimiz üçün **indikator
+çox işlətmirik**"*. İşlədilən yeganə şey: seans/killzone indikatoru + swing
+işarələmə. → Bizim indikatora EMA/RSI kimi klassik göstəricilər **əlavə
+etməmək** lazımdır.
+
+**D10 — fokus:** Yalnız Price Action mənbələrindən öyrən, indikator əsaslı
+kanallarla qarışdırma.
+
+**D28 — hədəf zənciri qaydası** [00:01:52–00:02:23]:
+> *"Bunu aldı — displacement varmı? Yox. Onda **növbəti likiditeye gedəcək**.
+> ... Yuxarı doğru displacement yox, market dəyişimi yox → **davam, növbəti
+> likiditeye baxacaqsınız**."*
+
+Alqoritm: səviyyə alınır → displacement/MSS yoxdursa → **növbəti səviyyə hədəf
+olur** → təkrarla. (D20-dəki tərs qayda ilə eynidir.)
+
+**D28 — səviyyə gücü:** [00:05:10] *"**Zaman dilimi artdıqca tepki daha çox
+olur**"* — HTF səviyyə = güclü reaksiya. Həftəlik FVG *"böyük hədəf"*dir.
+
+**D05 — kapital:** Sərmayə şərt deyil — fond hesabları (TopStep, MyFundedFutures).
+Aylıq hədəf realistik olaraq **%4–10**.
+
+**D45 — bağlanış tövsiyəsi:**
+1. Keçmiş datada **çox pratika** (backtest)
+2. Sonra **demo/paper trading** (irəli test)
+3. Yalnız sonra fond hesabı
+4. Psixologiya kitabı oxu (adı aydın deyil — *"Trading psikolojisi ilə bağlı
+   çox vacib kitab"*, çox güman **"Trading in the Zone" – Mark Douglas**)
+
+> *"Daha çox şey öyrənməyinizə **ehtiyac yoxdur**: sadə strategiya + yaxşı
+> risk idarəetməsi + sağlam psixologiya. Mən sizə **sadə, anlaşılması asan**
+> bir strategiya verdim — **detayı qəsdən çıxardım** ki sadə olsun."*
+
+---
+
+## ✅ TRANSKRİPT ƏHATƏSİ: 43/43 TAMAM
