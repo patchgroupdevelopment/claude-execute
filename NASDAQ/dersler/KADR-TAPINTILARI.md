@@ -90,3 +90,47 @@ Yəni:
 **Vizual iş axını (kadrlarda təkrarlanır):**
 `Asiya qutusu → London sweep → sarı FVG çəkilir → position tool qoyulur
 → stop FVG-nin o tayında → hədəf növbəti likiditeyə`
+
+---
+
+## Dərs 33 — IFVG-nin DƏQİQ qaydası (əvvəl bilmədiyim)
+
+### ⭐ FVG-nin ETİBARSIZ olma qaydası (50% / midpoint)
+[00:03:43–00:04:26] — bu, kodda **yox idi**:
+
+> *"Fiyat buraya kadar **iğne** atabilir, 50 noktasına kadar... ama **gövde**
+> burada, bu 50 noktasının **altında** kapattığı zaman — bilin ki o FVG'nin
+> hayrı yok."*
+
+**Qayda:**
+- FVG-yə **fitil** girməsi (hətta 50%-dən aşağı) → FVG **hələ də etibarlıdır**
+- FVG-nin **50% orta nöqtəsindən o tayda GÖVDƏ ilə bağlanış** → FVG **ölür**
+
+Bu, order block-dakı "min threshold" məntiqinin eynisidir.
+
+### IFVG bu ölmüş FVG-dir
+Ölmüş bullish FVG geri qayıdanda artıq **müqavimət** kimi işləyir (dəstək idi).
+Klassik "dəstək→müqavimətə çevrildi" məntiqi.
+
+**Giriş:** gövdə ilə bağlanışdan sonra qiymət ora geri çəkiləndə giriş.
+(Dərs 43-də əlavə edir: bəzən IFVG geri çəkilmə vermir — o halda gövdə
+bağlanışından **sonrakı şamda** girilir.)
+
+### 🔴 ƏN VACİB QAYDA — sıra pozulmamalıdır
+[00:16:02–00:16:46]:
+> *"FVG'leri nerede kullanacağız? **Likiditeyi aldıktan sonra kullanacaksınız.**
+> Birinci adım: likidite."*
+> *"Bir likiditeyi aldıktan sonra oluşması lazım. Yoxsa **random durduk yere
+> bir FVG'ye işleme girip çıkmayın lütfen.**"*
+
+Yəni məcburi ardıcıllıq: **LİKİDİTE ALINIR → sonra FVG/IFVG yaranır → giriş.**
+Boş yerdə yaranan FVG siqnal DEYİL.
+
+### RR seçimi — orta nöqtə girişin səbəbi
+[00:08:29–00:08:49] FVG-nin kənarından girsə **1.38 R** çıxır → *"olmaz ki"*.
+Orta nöqtədən (50%) girsə **3 R** çıxır. Yəni midpoint girişi estetik deyil,
+**RR-i 2 dəfə yaxşılaşdıran** riyazi qərardır.
+
+### Stop haqqında etiraf
+[00:12:00–00:12:08] *"Ben stopu kısa tutuyorum, tecrübeli olduğum için.
+Siz bu kadar kısa stop kullanmayın, biraz daha nefes alacak yer bırakın."*
