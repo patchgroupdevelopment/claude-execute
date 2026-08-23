@@ -601,3 +601,22 @@ Aylıq hədəf realistik olaraq **%4–10**.
 ---
 
 ## ✅ TRANSKRİPT ƏHATƏSİ: 43/43 TAMAM
+
+---
+
+## Kadr baxışı — davam edən qeydlər
+
+**D43 sheet_003 (00:04:16–00:05:20), NQ1! 5m:** FVG-nin necə çəkildiyi vizual
+olaraq təsdiqləndi — boz düzbucaqlı, **1-ci şamın fitilindən 3-cü şamın
+fitilinə**, üzərində "FVG" etiketi. Transkriptlə üst-üstə düşür.
+
+**D43 sheet_015 (00:20:32) — SMT işarəsi:** Ekran ikiyə bölünür —
+yuxarıda **NQ1!**, aşağıda **Gold (XAUUSD, FOREX.COM)**. Yəni korrelyasiyalı
+alətləri yan-yana müqayisə edir (SMT — Smart Money Technique divergensiyası).
+D40-da bunu "strategiyaya əlavə edilə bilən şey" kimi qeyd etmişdi, amma
+ayrıca izah etmir.
+
+**D29 sheet_004 (00:07:04–00:08:08) — uğursuzluq dərsinin vizual təsdiqi:**
+5 dəqiqədən **1 saatlığa qalxır**, orada "vacib səviyyəni" tapır və onu
+**qırmızı qutu ilə (1H FVG)** işarələyir. Sonra yenidən 5 dəqiqəyə enir.
+Bu, "əvvəlcə HTF-də vacib səviyyəni tap" qaydasının ekranda görünüşüdür.
