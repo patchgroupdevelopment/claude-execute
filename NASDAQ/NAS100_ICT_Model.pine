@@ -88,7 +88,9 @@ maxSig    = input.int(4, "Qrafikdə saxlanılan siqnal", minval = 1, maxval = 20
 showTable = input.bool(true, "Cədvəl", group = G_UI)
 
 TZ = "America/New_York"
-pivLen = 3
+// Dərs 26: müəllimin swing tərifi 3 şamlıqdır (sol 1, orta, sağ 1) → pivLen = 1.
+// Əvvəl 3 qoymuşdum — bu, süni olaraq swing sayını və deməli MSS-ləri azaldırdı.
+pivLen = input.int(1, "Swing pivot uzunluğu", minval = 1, maxval = 5, group = G_SET)
 
 // ────────────────────────────────────────────────────────────────────────────
 //  2. KÖMƏKÇİLƏR
