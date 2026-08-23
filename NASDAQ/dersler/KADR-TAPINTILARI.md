@@ -507,3 +507,50 @@ işlədilir**, kontekstə görə. İndikatorda hər iki variant seçim kimi var.
 ### Real nümunə rəqəmləri
 [00:16:35] 4R əməliyyat, 1% risk = **$500 risk → $2000 qazanc**
 ($50.000-lıq TopStep fond hesabında)
+
+---
+
+## 🔴🔴 Dərs 29 — MÜƏLLİM UĞURSUZ NÜMUNƏ GÖSTƏRİR VƏ SƏBƏBİNİ DEYİR
+
+Bu, bütün kursda bizim üçün ən dəyərli andır. Müəllim **qəsdən stop olan**
+bir order block əməliyyatı göstərir, sonra soruşur: *"Niyə belə oldu?
+Videonu dayandırın və düşünün."*
+
+### Cavab [00:05:11–00:05:56]
+> *"Order block olması üçün **önəmli bir səviyyəyə gəlməsi lazımdır**.
+> Önəmli səviyyə — bu nədir? **Bu bir önəmli səviyyədirmi? Heç nə, mənası
+> yoxdur.** Saatlığa getdiyimizdə... önəmli səviyyə haradadır? Burada.
+> **Biz oraya gəlmişikmi?** [Xeyr]"*
+
+### 🔑 Və birbaşa diaqnoz [00:06:25–00:06:46]
+> *"Bu order block-ların **İŞLƏMƏMƏSİNİN TƏK SƏBƏBİ budur** — **önəmli bir
+> səviyyəyə gəlmədən**. Hər swing high-ı aldı, sonra düşdü, displace oldu,
+> geri dönüşündə dərhal işləmə girim... **HEÇ BİR İŞƏ YARAMAZ.**
+> Çünki o, order block olmur."*
+
+[00:06:49] *"Türkiyədə SMC öyrədən çox adam bu şəkildə anladır. **Bu səbəbdən
+order block-lar heç işə yaramır.**"*
+
+### ⚠️ BİZİM SİSTEMİMİZİN ÖLÜM SƏBƏBİ MƏHZ BUDUR
+Bizim rədd edilmiş sistem tam olaraq bunu edirdi: *"hər swing/səviyyə alındı →
+dərhal gir"*. HTF-də **vacib səviyyədə olub-olmadığını yoxlamırdıq**.
+
+Diaqnostikamızın rəqəmi (-0.331 ATR, t=-2.66) bunun riyazi təsdiqidir.
+
+### Düzgün iş axını (müəllim göstərir) [00:07:44–00:09:24]
+```
+1. 1H-ə keç → vacib səviyyəni tap (swing high + 1H FVG)
+2. DOL müəyyən et (likidite harada — yuxarıda/aşağıda)
+3. Qeyd et: 1H FVG əvvəlcə doldurulmalıdır
+   ("market düz getmir, geri çəkiləcək")
+4. 5 dəqiqəyə en
+5. ⚠️ Qiymətin HƏMİN 1H səviyyəsinə ÇATMASINI GÖZLƏ
+6. Orada swing-in alınmasını gözlə
+7. Alan şam o tayda gövdə ilə bağlanmalı → etibarlı order block
+8. Geri çəkilmədə gir
+```
+
+**İndikator üçün nəticə:** hazırkı kodda sweep izlənilən səviyyələrdə
+(PDH/PDL/PWH/PWL/seans) yoxlanılır — bu, qismən HTF-dir. Amma müəllimin
+tələbi daha sərtdir: **qiymət HTF-in vacib zonasında (1H/4H FVG və ya
+əsas səviyyə) OLMALIDIR**. Bu filtri əlavə etmək lazımdır.
