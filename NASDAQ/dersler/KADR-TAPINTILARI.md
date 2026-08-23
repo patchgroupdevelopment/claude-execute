@@ -196,3 +196,36 @@ ehtimalla. Texniki analizdə %100 deyə bir şey yoxdur."*
 [00:13:38–00:14:14]:
 `1H FVG-ni yadda saxla → aşağıda sellside hədəfi var → 5m-ə en →
 5m-də displacement + FVG/OB → geri çəkilmə → giriş → hədəf: sellside`
+
+---
+
+## Dərs 24 — Low Resistance Liquidity Run (hədəf KEYFİYYƏTİ filtri)
+
+### Tərif
+- **Low Resistance Liquidity (LRL)** = **ALINMAMIŞ** likidite. Qiymət swing
+  high yapır, əvvəlkini ala bilmir, geri dönür → o səviyyədə likidite
+  **toxunulmamış yığılır**. Belə səviyyələr üst-üstə düzülübsə → **müqavimətsiz
+  yol**.
+- **High Resistance Liquidity (HRL)** = **ARTIQ ALINMIŞ** likidite (stoplar
+  artıq partladılıb). Oraya qayıtmaq az ehtimallıdır.
+
+### Qayda
+> Hədəf olaraq **daha çox ALINMAMIŞ likidite olan tərəfi** seç.
+> Artıq təmizlənmiş sahəyə doğru hədəf qoyma.
+
+[00:12:18] *"Belə gördüyünüz zaman bilin ki market bu nöqtələri yaxın vaxtda
+**parça-parça edəcək**."*
+
+**Vizual imza:** ardıcıl swing high-lar, hər biri əvvəlkindən yuxarı, amma
+heç biri alınmayıb — *"bir öncekinin üstünde, üstünde"*.
+
+### ⭐ Premium/Discount + Order Flow uyğunluğu (FVG SEÇİMİ filtri)
+[00:04:13–00:04:51] — bu da kodda yoxdur:
+
+- Bazarın istiqaməti (order flow) **BEARISH** isə → FVG-ni **PREMIUM**
+  (range-in yuxarı yarısı) hissəsində axtar
+- **BULLISH** isə → FVG-ni **DISCOUNT** (aşağı yarı) hissəsində axtar
+
+> *"Market yönü yukarı yönlü ise, **tam ters yönlü FVG aramayın**."*
+
+Yəni FVG-nin harada olduğu vacibdir: trend istiqamətinə uyğun yarıda olmalıdır.
