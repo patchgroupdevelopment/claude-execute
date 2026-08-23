@@ -61,3 +61,32 @@ qiymətləndirilir.
 - Qrafik saat qurşağı: **UTC-4 (Nyu-York)** — ekranın sağ altında görünür
 - Seans rəngləri: Asiya = **mavi**, London = **çəhrayı/qırmızı**,
   NY AM = **yaşıl**, NY Lunch = **sarı**, NY PM = **bənövşəyi**
+
+---
+
+## Video 40 — kadrlardan çıxan icra detalları
+
+**Sheet 4 (00:06:40–00:07:44), NAS100 5m:**
+Klassik quruluş vizual olaraq təsdiqləndi:
+Asiya (mavi qutu) yanakı konsolidasiya → **London (çəhrayı qutu)** açılışında
+qiymət AS.L-in altına düşüb **LO.L** yaradır (likidite alınır) → sonra sərt
+yuxarı displacement → LO.H-a qədər.
+Müəllim Asiya qutusunun altına ziqzaq çəkərək "kelde/konsolidasiya"nı göstərir.
+
+**Sheet 6 (00:09:20–00:10:24) — TradingView mövqe aləti ilə real ölçülər:**
+Ekranda long/short position tool açıqdır və dəqiq rəqəmlər oxunur:
+- `Stop: 27.4 (0.14%) 274 · Amount: 750`
+- `Open P&L: 11.0 · Qty: 9 · Risk/Reward Ratio: 3.1`
+- `Target: 74.6 · Amount: 1133.21`
+- Başqa kadrlarda RR: **2.02**, **1.5**, **3.1**
+
+Yəni:
+1. **Risk məbləği sabitdir (~$750)**, lot/qty ondan hesablanır (Qty 9 kontrakt)
+2. Stop məsafəsi qiymətin **~0.14%-i** — NAS100-də çox dar (≈27 punkt)
+3. RR ekranda canlı göstərilir və **2.0–3.1** arasında saxlanılır
+4. Rəng kodu: **sarı qutu = FVG giriş zonası**, **qırmızı = stop zonası**,
+   **yaşıl = hədəf zonası**
+
+**Vizual iş axını (kadrlarda təkrarlanır):**
+`Asiya qutusu → London sweep → sarı FVG çəkilir → position tool qoyulur
+→ stop FVG-nin o tayında → hədəf növbəti likiditeyə`
