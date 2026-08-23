@@ -458,3 +458,52 @@ Yəni Sharp Turn **müstəqil giriş siqnalıdır**, MSS olmadan da işləyir.
 
 **Bizim üçün qərar:** indikatorda Sharp Turn-u ayrıca giriş tipi kimi
 əlavə etmək olar, amma **default olaraq MSS tələbi qalsın** (mühafizəkar).
+
+---
+
+## Dərs 20 — FVG (detallı) — TEXNİKİ İNCƏLİKLƏR
+
+### ⚠️ FVG fitildən, Premium/Discount GÖVDƏDƏN çəkilir (fərqlidir!)
+- **FVG-nin özü:** [00:08:19] *"FVG 3 mumdan oluşur. Bak 1-2-3. **Bunun
+  iğnesinden bunun da iğnesini alıyorsun, çekiyorsun**"* → **fitillərdən**
+- **Premium/Discount aralığı:** [00:07:39] *"**Ben gövdeyi kullanıyorum**,
+  kimi wick'i de kullanıyor... gövde daha sağlıklı geliyor, **daha yüksək
+  ihtimallı**"* → **gövdələrdən**
+
+Yəni iki fərqli ölçmə. Kodda qarışdırmaq olmaz.
+
+### Etibarlı FVG-nin 3 şərti
+[00:09:58–00:10:16]:
+1. **Likidite alınmış olmalı**
+2. **Market yapısı dəyişməli** (MSS)
+3. **Displacement olmalı**
+
+[00:10:20] *"**Antin-kuntin boşluqlardan dalmayın işləmə.**"*
+[00:08:38] Etibarsız nümunə: *"Burada da FVG var, amma **niyə məntiqli deyil**?
+**Likiditeni almayıb, hədəf yoxdur.**"*
+
+### 🔑 TƏRS QAYDA — displacement YOXDURSA, davam deməkdir
+[00:17:26–00:17:36]:
+> *"Londranın low-unu aldıqdan sonra yuxarı doğru **displacement olmadısa**
+> nə olar? **Deməli market aşağı getmək istəyir.**"*
+
+Bu, çox faydalı əks-siqnaldır: sweep var, amma dönüş displacement-i yoxdursa
+→ **sweep istiqamətində davam** gözlənilir. (Bizim köhnə sistem məhz burada
+tərsinə girirdi!)
+
+### FVG hansı taymfreymdə axtarılır
+[00:18:17] 5 dəqiqədə görünməyən FVG **15 dəqiqədə görünür** — tapa
+bilmirsənsə bir üst taymfreymə bax.
+
+### Stop yeri — müəllim burada GÖVDƏ deyir
+[00:20:06] *"Stopu hara qoydun? Ən son low-a. **Mən gövdələrə qoyuram
+genəlliklə.**"*
+⚠️ Dərs 30-da isə *"biz sinka (fitilə) qoyacağıq"* demişdi — **hər ikisi
+işlədilir**, kontekstə görə. İndikatorda hər iki variant seçim kimi var.
+
+### NY saatı müşahidəsi
+[00:19:03] *"New York saatına yaxınlaşdığımız zaman gedir və buyside alır."*
+
+### Real nümunə rəqəmləri
+[00:16:35] 4R əməliyyat, 1% risk = **$500 risk → $2000 qazanc**
+($50.000-lıq TopStep fond hesabında)
