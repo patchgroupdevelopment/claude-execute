@@ -134,3 +134,65 @@ Orta nöqtədən (50%) girsə **3 R** çıxır. Yəni midpoint girişi estetik d
 ### Stop haqqında etiraf
 [00:12:00–00:12:08] *"Ben stopu kısa tutuyorum, tecrübeli olduğum için.
 Siz bu kadar kısa stop kullanmayın, biraz daha nefes alacak yer bırakın."*
+
+---
+
+## Dərs 30 — ORDER BLOCK (CISD) — indikatorumda YOX İDİ
+
+Müəllim: *"Türkçe kaynaklarda çok yanlış anlatılıyor. Mən ICT-nin öyrətdiyi
+kimi deyirəm."* Order Block = **Change in State of Delivery** (təhvil
+rejiminin dəyişməsi).
+
+### Bearish OB (aşağı gözləyirik) — addım-addım
+1. Qiymət **vacib likidite səviyyəsinə** gəlir
+2. Həmin likiditeni **ALIR** (sweep)
+3. Likiditeni **ALAN son YAŞIL şam** işarələnir
+   ⚠️ *"likiditeyi almadan əvvəlki yaşıl şam DEYİL"* — məhz alan şam
+4. Qiymət aşağı **displace** olur və həmin yaşıl şamın **altında GÖVDƏ ilə
+   bağlanır** ← bu şərt olmasa, order block **etibarsızdır**
+5. Bağlanış olan kimi → o yaşıl şam **etibarlı order block** olur
+6. **Giriş:** qiymət o şamın **açılışına (open)** geri qayıdanda
+7. **Stop:** gövdəyə və ya fitilə — müəllim *"biz sinka (fitilə) qoyacağıq"*
+8. **Hədəf:** növbəti likidite (məs. London low)
+
+Bullish OB: eyni şey, güzgü — likiditeni alan son **QIRMIZI** şam, yuxarı
+displacement, onun **üstündə** gövdə bağlanışı.
+
+### Bir neçə şam olarsa
+Likiditeni alan şamlar birdən çoxdursa, **likiditeni faktiki alanı** götür,
+ondan əvvəlkini yox.
+
+### Etibarsızlıq nümunəsi
+[00:07:44–00:08:13] Likidite alınır, displacement olur, **amma şamın altında
+bağlanmır** → bu order block DEYİL. Sonra bazar yeni high yapır, yeni
+likidite alır, bu dəfə bağlanır → **indi** etibarlıdır.
+
+---
+
+## Dərs 25 — IRL / ERL: HƏDƏFİN harada olduğunu deyən qayda
+
+- **ERL (External Range Liquidity)** = range-in **XARİCİNDƏKİ** likidite:
+  köhnə swing high/low-lar (buyside / sellside)
+- **IRL (Internal Range Liquidity)** = range-in **İÇİNDƏKİ** likidite:
+  FVG / imbalance
+
+### ⭐ Növbələşmə qaydası (hədəf seçimi)
+> **External → Internal → External → Internal → ...**
+
+[00:07:13] *"Likiditeyi alacak, ondan sonra bu dengesizlikleri kapatacak,
+ondan sonra bir daha likiditeyi alacak."*
+
+Praktik tətbiq:
+- İndicə swing high/low alındı (**ERL**) → **növbəti hədəf: range içindəki FVG (IRL)**
+- İndicə FVG dolduruldu (**IRL**) → **növbəti hədəf: növbəti swing (ERL)**
+
+Bu, bizim indikatorda **hədəf seçimini sabit RR-dən struktura keçirməyə**
+imkan verir: TP1 = 1:2 R yerinə "növbəti əks IRL/ERL".
+
+Müəllimin öz xəbərdarlığı: *"Hər zaman %100 belə işləmir, amma yüksək
+ehtimalla. Texniki analizdə %100 deyə bir şey yoxdur."*
+
+### Tam intraday iş axını (bu dərsdə xülasə edilir)
+[00:13:38–00:14:14]:
+`1H FVG-ni yadda saxla → aşağıda sellside hədəfi var → 5m-ə en →
+5m-də displacement + FVG/OB → geri çəkilmə → giriş → hədəf: sellside`
