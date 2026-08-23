@@ -229,3 +229,40 @@ heç biri alınmayıb — *"bir öncekinin üstünde, üstünde"*.
 > *"Market yönü yukarı yönlü ise, **tam ters yönlü FVG aramayın**."*
 
 Yəni FVG-nin harada olduğu vacibdir: trend istiqamətinə uyğun yarıda olmalıdır.
+
+---
+
+## Dərs 27 — Draw on Liquidity (DOL): HƏDƏFİN necə seçilməsi
+
+### Əsas prinsip
+[00:05:10] *"Fiyatın hareket etmesinin **TƏK səbəbi** budur: likidite.
+Başqa bir şey yoxdur."*
+
+**DOL = qiymətin maqnit kimi çəkildiyi yer = ən yaxın məntiqli likidite.**
+
+[00:04:36] *"TP nöqtən haradır, hara gedəcəyini necə bilirsən? Budur:
+draw on liquidity — **ən yaxın likidite haradadır**, onu düşünəcəksiniz."*
+
+### 🔴 ÜÇÜNCÜ dəfə təkrarlanan qayda (biz məhz bunu pozmuşduq)
+[00:02:06–00:02:38]:
+> *"Buradan **hemen bu aldığı anda işlem açmayın** arkadaşlar. Önce bekleyin —
+> yukarıya bir **displace** olacak mı diye. **Hareketi gördükten sonra**
+> işleme girebilirsiniz."*
+
+Bu qayda artıq 3 ayrı dərsdə (27, 32, 33) eyni sözlərlə təkrarlanır.
+
+### Fitil vs Displacement — və fitilin GİZLİ FUNKSİYASI
+[00:06:10–00:07:12]:
+- **Gövdə ilə keçmə** = displacement = real struktur dəyişikliyi
+- **Fitil atıb geri çəkilmə** = displacement DEYİL
+
+**Vacib əlavə:** uğursuz cəhd (fitil) **yeni likidite hədəfi YARADIR**:
+> *"Buraya iğne attı, burayı burada bıraktı — **burası daha sonra bizim için
+> likidite noktası**."*
+
+Yəni hər uğursuz cəhd gələcək hədəfə çevrilir. Bu, LRLR (Dərs 24) ilə
+birləşir: toxunulmamış səviyyələr yığılır və sonra "parça-parça" alınır.
+
+### DOL + IRL/ERL birləşməsi (hədəf ardıcıllığı)
+[00:12:18–00:12:46] Köhnə high-lar alındısa → range içindəki FVG-lərə;
+FVG-dədirsə → köhnə high/low-lara. Növbələşmə davam edir.
