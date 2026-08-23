@@ -411,3 +411,50 @@ Yəni HTF FVG hədəf deyil — **təhlükə zonasıdır**, orada qismən çıx�
 [00:33:29–00:33:34]:
 > *"Bu strategiyanı gördüyünüz an girəcəksiniz. **Olmadığı an
 > girməyəcəksiniz.** Başqa heç nə yoxdur."*
+
+---
+
+## Dərs 42 — IRL/ERL-in əsas funksiyası: FİLTR
+[00:00:12–00:00:40]:
+> *"Internal/external likiditeni anlamaq trade həyatınızda **çağ atladacaq**
+> bir şeydir. IFVG olsun, order block olsun — fərq etmir, internal/external
+> tətbiq etsəniz trade-iniz **2-3 dəfə yaxşı** olacaq. Ya da **almalısınız,
+> almamalısınız** — onu gözəl anlayacaqsınız."*
+
+Yəni IRL/ERL yalnız hədəf seçimi deyil — **əməliyyatı ALIB-ALMAMAQ qərarının
+filtridir**.
+
+**Range necə təyin olunur:** [00:06:13] son **swing low ↔ swing high** arası.
+Yeni swing yaranan kimi range **yenilənir**.
+
+---
+
+## Dərs 34 — SHARP TURN strategiyası (müəllimin ƏN ÇOX güvəndiyi)
+
+[00:00:07] *"Mənə **ən çox pul qazandıran**, ən çox güvəndiyim setup."*
+
+### Dəqiq mexanika (mən bunu sadəcə "təsdiq bayrağı" sanmışdım — səhv)
+1. Vacib likidite səviyyəsi / DOL müəyyən olunur
+2. Qiymət likiditeni **ALARKƏN displace olur** → **1-ci FVG** (sweep
+   istiqamətində) yaranır
+3. Aldıqdan **dərhal sonra U dönüşü**: əks istiqamətdə **displace** →
+   **2-ci FVG** yaranır
+4. **Hər iki FVG çəkilir. KƏSİŞDİKLƏRİ yerin orta nöqtəsindən girilir.**
+   [00:04:56] *"İkisinin kəsişdiyi yerdən, orta nöqtədən işləmə girirsiniz"*
+5. **Stop:** FVG-lərdən birinin sonuna; kəsişmirlərsə gövdəyə.
+   Dərində başqa FVG varsa → **onun da o tayına** (Dərs 41 ilə eyni qayda)
+6. **Hədəf:** yeni başlayan → 1:2; təcrübəli → növbəti DOL (likidite)
+
+### ⚠️ Vacib istisna
+[00:03:10]:
+> *"Bunda **Market Structure Shift gözləməyinizə elə də ehtiyac yoxdur**."*
+
+Yəni Sharp Turn **müstəqil giriş siqnalıdır**, MSS olmadan da işləyir.
+
+**Amma dərhal xəbərdarlıq edir** [00:03:13–00:03:24]:
+> *"Ancaq nə etdiyinizi bilirsinizsə. Bilmirsinizsə o cür şeylərə girməyin,
+> təcrübəniz yoxdursa riskli əməliyyatlara girməyin. 'MSS gözləyim' desəniz —
+> bax burada onsuz da MSS də olur."*
+
+**Bizim üçün qərar:** indikatorda Sharp Turn-u ayrıca giriş tipi kimi
+əlavə etmək olar, amma **default olaraq MSS tələbi qalsın** (mühafizəkar).
