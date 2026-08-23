@@ -266,3 +266,41 @@ birləşir: toxunulmamış səviyyələr yığılır və sonra "parça-parça" a
 ### DOL + IRL/ERL birləşməsi (hədəf ardıcıllığı)
 [00:12:18–00:12:46] Köhnə high-lar alındısa → range içindəki FVG-lərə;
 FVG-dədirsə → köhnə high/low-lara. Növbələşmə davam edir.
+
+---
+
+## Dərs 23 — Hansı likidite səviyyəsi ƏN vacibdir
+
+### Prioritet
+[00:10:45] *"Ən önəmli likidite səviyyəsi haradaydı? **New York seansında
+yaranmış PM session likiditesi**"* — yəni NY PM (13:30–16:00 NY) ərzində
+formalaşan high/low. Videoda indikatoru GMT-5-ə düzəldib *"tam 1.5 ilə 4
+arası"* deyir.
+
+### Günlük bias təyini — praktik axın
+[00:14:35–00:18:07]:
+1. **Günlük** qrafiğə keç
+2. Qiymət range-in harasındadır? (**premium / discount**)
+3. Günlükdə likidite hara yığılıb: swing high/low **+ günlük FVG-lər**
+4. Onlar **hədəf** olur
+5. Günlük hədəflər yuxarıdadırsa → aşağı taymfreymdə **bias = LONG**
+
+### 🔴 Vacib dürüstlük qeydi (müəllimin öz sözü)
+[00:16:04–00:16:30]:
+> *"Market günlükdə tam tərsinə gedir. Belə olanda **manipulyasiya** deyə
+> düşünə bilərsiniz. Market heç vaxt gözlədiyiniz şeyi əlinizə tepsi ilə
+> vermir. **Nə gözləyirsinizsə, market onun tam tərsini etməyi sevir** —
+> çünki stop partladır."*
+
+Yəni bias səhv çıxa bilər və bu **normaldır**. Ona görə MSS təsdiqi
+olmadan girməmək qaydası bu qədər vurğulanır.
+
+### Fitil/gövdə qaydası yenə təkrarlanır
+[00:13:15] *"İğnələr = manipulyasiya. **Gövdə heç bir şəkildə çöldə
+qalmır**."* — yəni real hərəkətdə gövdələr zonanın içində qalır, yalnız
+fitillər kənara çıxır.
+
+### Konseptin məntiqi əsaslandırması
+[00:08:30–00:09:15] Müəllim klassik pattern-lərə qarşı arqument gətirir:
+*"Sizcə market 'fincan-kulp' olduğu üçün mü hərəkət edir, yoxsa insanların
+stop-loss-larının tetiklənməsi və o pul ilə mi?"*
