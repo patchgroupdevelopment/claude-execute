@@ -349,3 +349,65 @@ o an o qədər nağd yoxdur.
 **Nəticə:** konseptlər NASDAQ-a xas deyil — likvid, institusional bazarlara
 xasdır. NASDAQ, qızıl, major forex cütləri, BTC — hamısı uyğundur.
 Kiçik kapitallı hisselər və az likvid altcoinlər — uyğun DEYİL.
+
+---
+
+## Dərs 41 — CANLI STRATEGİYA QURMA (1.5 saat, Discord) — ən dolğun qaydalar
+
+### 1. ⭐ HANSI FVG-dən girilir (əvvəl dəqiq bilmirdim)
+[00:35:46–00:36:08] və [00:39:54–00:39:58] — tamaşaçı məhz bunu soruşur:
+> *"Bir sürü FVG olur arxa-arxaya, hansı vacibdir?"*
+> **"Market yapısının DƏYİŞDİYİ YERDƏKİ FVG-dən girəcəksən."**
+> *"FVG-ni haradan çəkirsən? Market yapısının dəyişdiyi yer var ya — **o
+> tərəfdən** axtaracaqsan. Buradan yox."*
+
+Yəni FVG **MSS-i yaradan ayaqda** olmalıdır. Təsadüfi yaxın FVG yox.
+
+### 2. ⭐ İki FVG üst-üstə olanda stop qaydası
+[00:37:05–00:37:43]:
+> *"Stopu ya swing-ə, ya FVG dibinə qoya bilərsən. Amma **2 FVG üst-üstə
+> olanda oraya stop atmayın** — qiymət bir az geri çəkilib o biri FVG-də
+> əmr ala bilər. Biz **ilk (yaxın) FVG-yə girəcəyik** (əməliyyatı
+> qaçırmamaq üçün), amma **stop ikinci FVG-nin o tayında** olmalıdır."*
+
+Konkret qayda: **giriş yaxın FVG-də, stop dərin FVG-nin arxasında.**
+
+### 3. ⭐ ANTİ-MARTİNGALE ölçü qaydası (OTOBOT-un tam əksi!)
+[00:38:04–00:38:18]:
+> *"%1-in üstünə çıxmayın. %1-lik əməliyyat açdınız, %1-i itirdiniz →
+> **mövqeni %0.5-ə endirirsən**. 0.5-i də itirdin → **%0.25-ə** endirirsən,
+> **zərərin çıxana qədər**."*
+
+Yəni **itkidən sonra ölçü KİÇİLİR**, böyümür. Bu, martingale-in tam əksidir
+və bizim `checkCircuitBreaker` məntiqimizlə eyni fəlsəfədir.
+
+### 4. Hədəf
+[00:37:47–00:38:00] Default **1:2**. *"**1:1 də olar** — yeni başlayırsınızsa
+1:1 də gözəldir."*
+
+### 5. Tezlik gözləntisi (dəqiq rəqəm)
+[00:33:16–00:33:24]:
+> *"Bu strategiya **hər həftə 2-3 dəfə** rahat olur. Seanslarda — London, NY.
+> **Bəzən gündə iki dəfə** də olur."*
+
+### 6. HTF FVG = ehtiyat zonası (qismən çıxış nöqtəsi)
+[00:34:03–00:34:30]:
+> *"4 saatlikdə bir FVG var — onu yadda saxlayacaqsınız. Nə qədər bullish
+> olsanız da, bu FVG-yə çatanda tepki alıb aşağı ata bilər. Oradan ya
+> **yarısını bağlayacaqsan**, ya da stopu ona görə tənzimləyəcəksən."*
+
+Yəni HTF FVG hədəf deyil — **təhlükə zonasıdır**, orada qismən çıxış edilir.
+
+### 7. Tam ardıcıllıq (müəllimin öz xülasəsi)
+[00:38:55–00:39:08]:
+> *"Likidite alımı gözləyirsən → reversal gözləyirsən → **displacement ilə
+> market yapısının dəyişməsini** gözləyirsən → **FVG-yə geri çəkiləndə
+> girirsən** → 1:2 hədəfləyirsən → çıxırsan."*
+
+### 8. Taymfreymlər (üçüncü dəfə təsdiq)
+[00:33:48] **4 saat · 1 saat · 15 dəqiqə · 5 dəqiqə**
+
+### 9. Nə vaxt GİRİLMİR
+[00:33:29–00:33:34]:
+> *"Bu strategiyanı gördüyünüz an girəcəksiniz. **Olmadığı an
+> girməyəcəksiniz.** Başqa heç nə yoxdur."*
