@@ -620,3 +620,75 @@ ayrıca izah etmir.
 5 dəqiqədən **1 saatlığa qalxır**, orada "vacib səviyyəni" tapır və onu
 **qırmızı qutu ilə (1H FVG)** işarələyir. Sonra yenidən 5 dəqiqəyə enir.
 Bu, "əvvəlcə HTF-də vacib səviyyəni tap" qaydasının ekranda görünüşüdür.
+
+---
+
+## 🔴 D43 [00:35:37–00:36:05] — MÜƏLLİMİN ÖZ SÖZÜ İLƏ TAM KONFLUENS
+
+Bu, bütün kursda bizim üçün **ən dəyərli tək cümlədir**. Kadr `f_00268`–`f_00272`
+ilə birlikdə oxunur (orada ekranda boz **"4H FVG"** qutusu görünür):
+
+> *"Düşük dirençli de çox önəmli. Bax **high-lar necə toxunulmur**, görürsən mi?
+> ... Bax high-ların **heç biri toxunulmur** — **TA Kİ 4 saatlikdə, yüksək zaman
+> dilimində bir likidite alımımız olduğu zaman**... internal likiditeni aldığı
+> zaman — **4 saatlik FVG** — ondan sonra nə olur? **Ondan sonra SETUP VERİR
+> mənə. Və bunların hamısı KILLZONE-un içində olur.** Puzzle parçaları necə
+> oturur gördünüz mü?"*
+
+### Bundan çıxan MƏCBURİ konfluens siyahısı (4 şərt eyni anda)
+```
+1. LRLR    — hədəf tərəfdə toxunulmamış high/low silsiləsi var
+2. HTF     — qiymət 4 saatlik FVG-yə çatıb və oradakı likiditeni ALIB
+3. SETUP   — yalnız BUNDAN SONRA LTF-də displacement + MSS + FVG/IFVG
+4. KILLZONE— hər şey killzone pəncərəsinin içində baş verir
+```
+Bizim köhnə (uğursuz) sistemimizdə **yalnız 1 və 4** var idi.
+2 və 3 yox idi — ölçülmüş **-0.331 ATR** nəticəsinin səbəbi budur.
+
+### Kadr təsdiqi (`43/sheet_028`, 00:35:36–00:36:08)
+- Ekranda **boz böyük qutu**, sol altında etiket: **"4H FVG"**
+- Qiymət o qutunun içinə enir, ardıcıl low-ların altını süpürür
+  (hər low ayrıca qısa üfüqi boz xətlə işarələnib = sellside hovuzları)
+- Position tool: **çəhrayı (stop) AŞAĞIDA — 4H FVG-nin dibindən aşağı**,
+  **yaşıl (hədəf) YUXARIDA**
+- Yəni **stop HTF FVG-nin o tayına qoyulur**, LTF swing-ə yox
+
+## D43 — çıxış qaydası (əvvəl qeyd etməmişdim)
+[00:33:52–00:34:05]:
+> *"Market **PM seansının sonlarına doğru konsolidə** olmağa başlayır.
+> Nə edərsən? **Bağlayarsan əməliyyatı**, ya da stopu çəkərsən; icazə verirsə
+> overnight tutarsan — əgər nə etdiyini bilirsənsə."*
+
+→ Kodda: **NY PM bitişinə yaxın konsolidasiya başlayırsa mövqeyi bağla.**
+Standart davranış = gün sonunda bağla.
+
+## D43 — intermediate term high/low
+[00:35:18–00:35:30]: LTF-də yaranan swing-lər **"intermediate term high/low"**
+adlanır. Bullish ayaqdasan → **ITL-lərə hörmət ediləcəyini**, ITH-ların
+**qırılacağını** gözləyirsən. Bearish ayaqda əksi.
+
+## D43 [00:26:36–00:27:15] — SETUP-I QAÇIRDINSA
+> *"Bunu aldın amma **qaçırdın**. New York-a gəldin, qrafiki açdın, dedin ki
+> 'bunu qaçırmışam'. İndi nə gözləyəcəksən? Harada likidite var? Şurada var —
+> açılışda gəlsin, ora qədər düşsün, mən buradan girim."*
+> *"Sən buraya qədər düşəcəyini öngörürsənsə — **niyə short-a daxil olmursan,
+> niyə İLLA reversal gözləyirsən?**"*
+
+→ Bias aydındırsa, **davam (continuation) girişi** də etibarlıdır; hər dəfə
+dönüş quruluşu gözləmək lazım deyil. Növbəti killzone açılışında növbəti
+likidite hədəf götürülür.
+
+## D43 [00:24:01–00:25:20] — IFVG girişinin İKİ variantı və RR-ləri
+1. **Gövdə bağlanışından sonra geri çəkilmədə** gir → daha yaxşı qiymət
+2. Geri çəkilmə vermirsə → **gövdə bağlanışından sonrakı şamda** gir
+   → müəllim: *"1:3 alırsan"*, başqa nümunədə *"2.5 aldım"*
+
+Yəni gecikmiş giriş belə **1:2–1:3** verir. Bu, bizim TP1 = 1:2 seçimini
+təsdiqləyir.
+
+## D43 kadr `sheet_020` (00:25:36–00:26:40) — seans rənglərinin TƏSDİQİ
+Tam gün görüntüsündə (kadr `f_00201`) bütün seans qutuları eyni anda görünür.
+Etiketlərdən oxunur: **"Asia" = MAVİ**, **"PM" = BƏNÖVŞƏYİ**,
+London = **çəhrayı/qırmızı**, NY AM = **yaşıl**, NY Lunch = **sarı**,
+üstündə **"True Day Open"** üfüqi xətti.
+→ Əvvəl yazdığım rəng sxemi doğrudur, indi vizual təsdiqi var.
