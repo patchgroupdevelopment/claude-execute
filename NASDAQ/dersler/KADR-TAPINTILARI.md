@@ -692,3 +692,131 @@ Etiketlərdən oxunur: **"Asia" = MAVİ**, **"PM" = BƏNÖVŞƏYİ**,
 London = **çəhrayı/qırmızı**, NY AM = **yaşıl**, NY Lunch = **sarı**,
 üstündə **"True Day Open"** üfüqi xətti.
 → Əvvəl yazdığım rəng sxemi doğrudur, indi vizual təsdiqi var.
+
+---
+
+## 📏 D40 `sheet_010` (00:14:32–00:15:36) — NAS100-də REAL ÖLÇÜLƏR
+
+Ekrandakı TradingView position tool-larından oxunan dəqiq rəqəmlər
+(NAS100, 5 dəqiqə, qiymət ≈ 19,550):
+
+| Kadr | Stop | Hədəf | RR | Qty |
+|---|---|---|---|---|
+| `f_00111` | **-21.8 punkt (0.11%)** | +85.5 punkt (0.43%) | ~3.9 | 5 |
+| `f_00113` | **-38.7 punkt (0.20%)** | +104.5 punkt (0.53%) | **2.7** | 5 |
+| `f_00118` | — | +116.1 punkt (0.59%) | **2.06** | 5 |
+| (D41 `f_00281`) | -27.4 punkt (0.14%) | +74.6 punkt | **3.1** | 9 |
+
+**Nəticə — NAS100 üçün gözlənilən parametrlər:**
+- Stop məsafəsi: **20–40 punkt** = qiymətin **0.10%–0.20%**-i
+- Hədəf: **85–116 punkt** = **0.43%–0.59%**
+- RR: **2.0–3.9** (orta ≈ 2.7)
+- Qty riskdən hesablanır (5 və ya 9 kontrakt — hesab ölçüsündən asılı)
+
+Bu, bizim indikatorda `TP = 2R` seçiminin müəllimin praktikası ilə üst-üstə
+düşdüyünü göstərir. Stopun **çox dar** olduğunu da göstərir — 5 dəqiqəlik
+NAS100-də 20-40 punkt ≈ 1 ATR civarı. Bunu backtest-də yoxlamaq lazımdır.
+
+**Ekranda görünən səviyyə etiketləri (indikatorun çıxışı):**
+`AS.H · AS.L · LO.H · LO.L · NYAM.H · NYAM.L · NYL.H · NYL.L · NYPM.H ·
+NYPM.L · True Day Open` — 11 səviyyə. Bizim Pine faylında hamısı var. ✅
+Qrafikdə həmçinin **"mss"** mətn etiketi əl ilə yazılır.
+
+## 🔴 D40 [00:15:11–00:15:41] — RESEPTİN BİR CÜMLƏDƏ TƏKRARI
+> *"Neydi? **Yüksək zaman dilimində likidite var — alır. Reversal pattern
+> olaraq DISPLACEMENT. Market yapısı dəyişimi — MUM KAPANIŞI olduğu üçün.**
+> Market structure shift-lə olan yerin **altındakı** FVG-yə girirsiniz —
+> **ORTA NÖQTƏSİNDƏN**. Stopu **swing low**-a buraxırsınız. **1:3 / 1:2**
+> hədəfləyirsiniz. Zatən market onu da sizə verir."*
+
+Stop yeri dəqiqləşdi: **"ən son oluşan swing low"** [00:14:46–00:14:59].
+İki variant göstərir, ikisi də 1:2–1:3 verir.
+
+## D40 [00:13:44] — Sharp Turn-un tərifi (kod üçün)
+> *"Alırken **Sharp Turn dediyimiz pattern FVG bırakıyor**, aldıqdan sonra da
+> FVG bırakıyor."*
+
+İki FVG: biri likiditeni **alarkən**, biri **aldıqdan sonra**. Bizim Pine
+kodundakı iki-FVG kəsişməsi tərifi doğrudur. ✅
+
+## D40 [00:14:22–00:14:43] — MSS-in "yumşaq" variantı
+Müəllim etiraf edir: bəzən gövdə bağlanışı olmadan da pattern-ə görə MSS
+deyir. Amma **bizə tövsiyəsi**: *"Siz **düz qaydaya uyub** buraya **body**
+deyin və oradan, **orta nöqtəsindən** giriş edin."*
+→ Kodda **yalnız gövdə bağlanışı** qəbul edilməlidir. Müəllimin "göz qərarı"
+istisnası avtomatlaşdırıla bilməz.
+
+---
+
+## 🌍 BAZAR ƏHATƏSİ — kadrlardan çıxan faktiki sübut
+
+Müəllimin ekranda **hansı alətlərdə** eyni modeli tətbiq etdiyi:
+
+| Dərs | Alət | Qeyd |
+|---|---|---|
+| D40, D41 | **NAS100 / NQ1!** | əsas nümunə, killzone-larla |
+| D42 | **GC1! Gold Futures (COMEX)** | IRL/ERL nümunəsinin HAMISI qızıl üzərində |
+| D42 | **GBPUSD (FOREX.com)** | killzone qutuları forex-də də tətbiq olunur |
+| D43 | **NQ1! + XAUUSD yan-yana** | SMT korrelyasiya müqayisəsi |
+| D44 | **EURCAD, USDJPY, GBP, BTC, NQ** | "universal model" — hamısında eyni |
+
+→ Sualın cavabı: **SP500 / NASDAQ / GOLD / BTC — bəli**, müəllim özü
+göstərir. **ETH** üçün ayrıca nümunə yoxdur, amma BTC ilə eyni kateqoriyadır
+(likvid, institusional). Yeganə şərt: *"siko-siko coinlərin üstündə
+sınamayın"* (D44 @00:01:09).
+⚠️ Kriptoda **killzone hissəsi zəifləyir** (24/7 bazar) — orada yalnız
+likidite + FVG + struktur qalır.
+
+---
+
+## 🔴 D32 — "MSS-Mİ, YOXSA SADƏCƏ LİKİDİTE ALIMI?" — AYIRD ETMƏ QAYDASI
+
+Bu dərs bizim köhnə sistemin **məhz uğursuz olduğu nöqtəni** izah edir.
+Kadr `32/sheet_003` (00:02:32–00:03:36), NQ1! 5m, 11 Yanvar 2024.
+
+### ❌ SADƏCƏ likidite alımıdır (girmə!) [00:02:15–00:02:40]
+> *"Market gedir, bax buranın üstünə çıxır, bunun üstünə **iğnə atır**, daha
+> sonra **sərt şəkildə özünü aşağı atır**. Belə olduğu zaman anlayın ki market
+> **sadəcə likidite almağa çalışır**. Bax **displacement gəlməyib** yuxarı
+> doğru. Yuxarı gedib, orada **qapada bilməyib**, aşağı atdı özünü."*
+
+İmza: **uzun fitil + gövdə bağlanışı YOX + əks displacement YOX**.
+
+### ✅ HƏQİQİ market yapısı dəyişimidir [00:05:12–00:05:28]
+> *"Buraları **wick-lə** aşağı atsaydı, deyərdik ki yox, market yapısı
+> dəyişmədi. **Displacement-la bərabər GÖVDƏ KAPANIŞI yapıyorsa, GAP-i bıraka
+> bıraka, doldura doldura gidiyorsa — bilin ki market yapısı DƏYİŞMİŞDİR.**"*
+
+Üç şərt birlikdə:
+1. **Displacement** (enerjili, tək istiqamətli)
+2. **Gövdə bağlanışı** səviyyənin o tayında
+3. ⭐ **Ardıcıl FVG buraxıb-doldurma** — bir yox, **zəncirvari** boşluqlar
+
+Üçüncü şərt mənim üçün **yeni**: tək FVG kifayət deyil, hərəkət **davamlı
+olaraq** boşluq buraxıb onları geri doldura-doldura getməlidir.
+
+### ⭐ LİKİDİTE SAYI = ehtimal artırıcı [00:04:23–00:04:36]
+> *"Neden önemli? **Kaç tane likiditeyi aldı** burada? ... **Bir önceki günün
+> likiditesini de aldıysa, session likiditelerini de aldıysa**..."*
+
+→ Kodlanabilən filtr: **bir sweep-də neçə izlənən səviyyə süpürülüb?**
+(AS.L, LO.L, NYPM.L, əvvəlki gün low-u, equal low...) Say nə qədər çoxdursa,
+dönüş ehtimalı o qədər yüksəkdir. Bizim Pine-da **sweep konfluens sayğacı**
+əlavə edilməlidir.
+
+D34-də eyni şey praktikada: *"o sırada zatən **PM session low-u ilə Asya-nın
+low-u** likiditesini də alır"* — yəni **iki** hovuz eyni anda.
+
+### 🔴 FİTİL vs GÖVDƏ — mərkəzi qayda [00:03:26–00:03:42]
+> *"**İğneleri takmayın arkadaşlar. İğneler genelde manipülasyonda çox hikayə
+> anladır bizə. GÖVDƏLƏRƏ odaklanın.** Gövdələr fair value gap-ə nə qədər
+> içində qaldığına baxın."*
+
+Bu qayda kursda **ən azı 4 dəfə** təkrarlanır (D32, D33 FVG ölümü, D30 order
+block etibarlılığı, D43 günlük bias). Kodda hər yerdə `close`/`open` ilə
+işləmək lazımdır, `high`/`low` ilə yox — yalnız sweep aşkarlanmasında fitil.
+
+### Müəllimin praktika tövsiyəsi [00:07:25–00:07:58]
+> *"Bu şeyləri qrafikdə **incələyin, izləyin**. İşlem açın demirəm, **demo
+> hesabda da işlem açın demirəm**. Sadəcə **izləyin, işarələyin**. Gözünüz
+> alışsın — gözünüz gördükcə anlayacaq."*
