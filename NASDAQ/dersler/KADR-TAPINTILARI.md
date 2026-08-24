@@ -1445,3 +1445,29 @@ sıxıldıqda.
 → Dəqiq giriş/çıxış nöqtəsi konfiqurasiya edilə bilən olmalıdır (bizim
 kodda artıq `slMode`, `useDolTp`, `minRR` kimi seçimlər var) — müəllim
 özü tək bir "doğru" icra tərzi olduğunu israrla rədd edir.
+
+---
+
+## ⭐ D43 [00:15:55–00:16:49] — İKİ HƏDƏF FƏLSƏFƏSİ, İKİSİ DƏ ETİBARLI
+
+Bu, bizim kodda `useDolTp` seçicisinin (DOL-hədəf vs sabit R-multiple) niyə
+**hər ikisinin düzgün** olduğunu izah edən açıqlamadır:
+
+> *"Sizə 1:2, 1:3 deyirəm — **mexaniki yanaşma** deyirəm. Çünki bəzən bizim
+> etdiyimiz şey... **təcrübəli insanlar** nə edir? Bu likiditeni görürlər,
+> **internal-external məsələsinə hakim olanlar**, riski həll etmiş insanlar
+> — **bu şəkildə daxil olub gedirlər.** Bu buradakı likiditeyə qədər
+> tutur, adam **daha çox R alır**, daha gözəl işlemlər ala bilir. Amma
+> mənə görə **1:2, 1:3 zatən kifayətdir.**"*
+
+İki fəlsəfə:
+1. **Mexaniki/sadə** (yeni başlayan) → sabit **1:2 / 1:3 R** hədəflə, dayan.
+2. **Təcrübəli** → **DOL-a qədər tut**, likidite zəncirini izlə, daha çox R al.
+
+> *"Buraya atdığın zaman **1.74** alırsan, body-yə atdığın zaman **1:3**
+> alırsan, burada **1:2** alırsan. Ararın yaxşı deyilsə **stopu bir az daha
+> çəkərsən, ya da daha gözəl bir giriş axtararsan.**"*
+
+Bizim kodda `useDolTp=true` = təcrübəli fəlsəfə (DOL-a qədər), `false` =
+mexaniki fəlsəfə (sabit `tp1RR`/`tp2RR`). **Hər iki rejim müəllimin özü
+tərəfindən legitim sayılır** — bu, bizim dizayn qərarımızı təsdiqləyir.
