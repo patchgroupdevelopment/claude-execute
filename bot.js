@@ -773,6 +773,40 @@ function checkVolumeConfirmation(candles, lookback = 20) {
   return { ratio, pass: ratio !== null && ratio >= CONFIG.volumeThreshold };
 }
 
+// ─── Expectancy — Van Tharp (knowledge/KITAB-DERSLERI.md §10) ────────────────
+//
+// "Sistemin gəlirliliyini giriş yox, POZİSYON ÖLÇÜSÜ və EXPECTANCY müəyyən edir."
+// Win rate TƏK BAŞINA mənasızdır: 35% qazanma ilə 1:3 RR, 60% qazanma ilə
+// 1:1-dən yaxşıdır. Ona görə bütün hesabatlarda expectancy də göstərilir.
+//
+// Kahneman (kiçik ədədlər qanunu, §13): 30-dan az nümunədən çıxarılan win rate
+// məlumat deyil, SƏS-KÜYDÜR — `thin` bayrağı bunu işarələyir.
+function calcExpectancy(values) {
+  const v = values.filter((x) => typeof x === "number" && isFinite(x));
+  const n = v.length;
+  if (!n) return { n: 0, winRate: null, expectancy: null, avgWin: 0, avgLoss: 0, thin: true };
+  const w = v.filter((x) => x > 0);
+  const l = v.filter((x) => x <= 0);
+  const avgWin = w.length ? w.reduce((a, b) => a + b, 0) / w.length : 0;
+  const avgLoss = l.length ? Math.abs(l.reduce((a, b) => a + b, 0) / l.length) : 0;
+  const pw = w.length / n;
+  return { n, winRate: pw * 100, avgWin, avgLoss,
+           expectancy: pw * avgWin - (1 - pw) * avgLoss, thin: n < 30 };
+}
+
+// Hesabat sətri. unit: "%" və ya "$"
+function expectancyLine(values, unit = "%") {
+  const e = calcExpectancy(values);
+  if (!e.n) return "";
+  const sg = e.expectancy >= 0 ? "+" : "";
+  let out = `📐 Expectancy: <b>${sg}${e.expectancy.toFixed(2)}${unit}</b>/əməliyyat` +
+            ` (orta qazanc ${e.avgWin.toFixed(2)}${unit} · orta itki ${e.avgLoss.toFixed(2)}${unit})`;
+  if (e.thin) out += `
+⚠️ Yalnız ${e.n} əməliyyat — 30-dan azdır, bu rəqəmlər hələ SƏS-KÜYDÜR.`;
+  return out;
+}
+
+
 // ─── Təhlükəsizlik Yoxlaması ──────────────────────────────────────────────────
 
 // ─── Strategiya: Connors-adaptasiyalı Mean-Reversion (v2) ────────────────────
@@ -1821,6 +1855,7 @@ async function sendWeeklyReportIfDue() {
   const signals = log.trades.filter((t) => t.allPass && new Date(t.timestamp).getTime() >= weekAgo);
 
   let wins = 0, losses = 0, open = 0, totalPnl = 0;
+  const closedPnls = [];
   let best = null, worst = null;
   const lines = [];
   for (const s of signals) {
@@ -1833,6 +1868,7 @@ async function sendWeeklyReportIfDue() {
     } else {
       totalPnl += r.pnlPct;
       if (r.pnlPct > 0) wins++; else losses++;
+      closedPnls.push(r.pnlPct);
       if (!best || r.pnlPct > best.pnl) best = { label, side: s.side, pnl: r.pnlPct };
       if (!worst || r.pnlPct < worst.pnl) worst = { label, side: s.side, pnl: r.pnlPct };
       lines.push(`${r.pnlPct > 0 ? "✅" : "❌"} ${label} ${s.side}: ${r.pnlPct >= 0 ? "+" : ""}${r.pnlPct.toFixed(2)}%`);
@@ -1855,7 +1891,9 @@ async function sendWeeklyReportIfDue() {
     msg +=
       `✅ Uğurlu: <b>${wins}</b> | ❌ Uğursuz: <b>${losses}</b>` + (open ? ` | ⏳ Açıq: ${open}` : "") + `\n` +
       `🎯 Win rate: <b>${((100 * wins) / closed).toFixed(0)}%</b>\n` +
-      `📈 Cəm nəticə (bərabər ölçü ilə): <b>${totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(2)}%</b>\n`;
+      `📈 Cəm nəticə (bərabər ölçü ilə): <b>${totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(2)}%</b>\n` +
+      `${expectancyLine(closedPnls, "%")}
+`;
     if (best) msg += `🥇 Ən yaxşı: ${best.label} ${best.side} ${best.pnl >= 0 ? "+" : ""}${best.pnl.toFixed(2)}%\n`;
     if (worst && worst.pnl < 0) msg += `💔 Ən pis: ${worst.label} ${worst.side} ${worst.pnl.toFixed(2)}%\n`;
     msg += `\n${lines.join("\n")}\n`;
@@ -2076,6 +2114,8 @@ async function sendGoldDailyBriefIfDue() {
     const wins = state.history.filter((h) => h.pnlPct > 0).length;
     const tot = state.history.reduce((s, h) => s + h.pnlPct, 0);
     msg += `\n📊 İndiyədək: ${state.history.length} əməliyyat, ${wins}✅/${state.history.length - wins}❌, cəm ${tot >= 0 ? "+" : ""}${tot.toFixed(2)}%`;
+    msg += `
+${expectancyLine(state.history.map((h) => h.pnlPct), "%")}`;
   }
 
   const sent = await sendTelegram(msg);
@@ -2196,6 +2236,8 @@ async function sendDailyEquityBriefIfDue(cfg) {
     const wins = state.history.filter((h) => h.pnlPct > 0).length;
     const tot = state.history.reduce((s, h) => s + h.pnlPct, 0);
     msg += `\n📊 İndiyədək: ${state.history.length} əməliyyat, ${wins}✅/${state.history.length - wins}❌, cəm ${tot >= 0 ? "+" : ""}${tot.toFixed(2)}%`;
+    msg += `
+${expectancyLine(state.history.map((h) => h.pnlPct), "%")}`;
   }
 
   const sent = await sendTelegram(msg);
@@ -2350,6 +2392,8 @@ async function sendOilDailyBriefIfDue() {
     const wins = state.history.filter((h) => h.pnlPct > 0).length;
     const tot = state.history.reduce((s, h) => s + h.pnlPct, 0);
     msg += `\n📊 İndiyədək: ${state.history.length} əməliyyat, ${wins}✅/${state.history.length - wins}❌, cəm ${tot >= 0 ? "+" : ""}${tot.toFixed(2)}%`;
+    msg += `
+${expectancyLine(state.history.map((h) => h.pnlPct), "%")}`;
   }
 
   const sent = await sendTelegram(msg);
