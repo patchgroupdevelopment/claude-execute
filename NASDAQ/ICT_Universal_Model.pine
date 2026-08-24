@@ -424,11 +424,11 @@ swLo = nLo > 0
 swHi = nHi > 0
 
 sweptName = f_swLo(pdlV, pdlL) or f_swHi(pdhV, pdhL) ? "PDH/L" :
-            f_swLo(pwlV, pwlL) or f_swHi(pwhV, pwhL) ? "PWH/L" :
-            f_swLo(asL, asLv)  or f_swHi(asH, asHv)  ? "ASIA"  :
-            f_swLo(loL, loLv)  or f_swHi(loH, loHv)  ? "LONDON" :
-            f_swLo(pmL, pmLv)  or f_swHi(pmH, pmHv)  ? "NYPM"  :
-            f_swLo(luL, luLv)  or f_swHi(luH, luHv)  ? "LUNCH" : "NYAM"
+             f_swLo(pwlV, pwlL) or f_swHi(pwhV, pwhL) ? "PWH/L" :
+             f_swLo(asL, asLv)  or f_swHi(asH, asHv)  ? "ASIA"  :
+             f_swLo(loL, loLv)  or f_swHi(loH, loHv)  ? "LONDON" :
+             f_swLo(pmL, pmLv)  or f_swHi(pmH, pmHv)  ? "NYPM"  :
+             f_swLo(luL, luLv)  or f_swHi(luH, luHv)  ? "LUNCH" : "NYAM"
 
 // ────────────────────────────────────────────────────────────────────────────
 //  16. PREMIUM / DISCOUNT (D24 @00:04:13)
@@ -779,7 +779,7 @@ if hasSig
     rrTxt = sigRisk > 0 ? str.tostring(math.abs(sigTp1 - sigEntry) / sigRisk, "#.##") : "—"
     units = sigRisk > 0 ? riskUsd / sigRisk : na
     head  = (isL ? "▲ AL" : "▼ SAT") + (hadSharp ? " ⚡" : "") + "  " + sweptNm +
-            (sigCnt > 1 ? " ×" + str.tostring(sigCnt) : "") + "  ·  RR " + rrTxt
+             (sigCnt > 1 ? " ×" + str.tostring(sigCnt) : "") + "  ·  RR " + rrTxt
     array.push(sLb, label.new(xb, sigEntry, head, style = label.style_label_left,
          color = color.new(isL ? C_UP : C_DN, 8), textcolor = color.white, size = size.small))
     array.push(sLb, label.new(xb, sigSl, "SL " + str.tostring(sigSl, format.mintick),
@@ -847,7 +847,7 @@ if uiTable and barstate.islast
          inPremium ? C_DN : C_UP)
 
     stTxt = stage == 0 ? "— gözləyir —" :
-            stage == 1 ? "1️⃣ sweep · MSS gözlənilir" : "2️⃣ MSS · FVG-yə çəkilmə"
+             stage == 1 ? "1️⃣ sweep · MSS gözlənilir" : "2️⃣ MSS · FVG-yə çəkilmə"
     f_row(8, "Setup", stTxt, stage > 0 ? sweptNm + " ×" + str.tostring(sweepCnt) : "",
          stage > 0 ? color.new(C_GOLD, 55) : cRw, stage > 0 ? C_GOLD : C_NEU)
 
