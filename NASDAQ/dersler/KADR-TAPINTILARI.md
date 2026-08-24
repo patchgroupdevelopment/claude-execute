@@ -947,3 +947,106 @@ Ona görə FVG geri doldurulur — bu, "tarazlığın bərpası"dır.
 ### D23 real əməliyyat ölçüləri
 [00:04:04–00:04:20]: *"36,5 point... **60 point-lik bir işlem**"* — NAS100-də.
 Yenə **20–60 punkt** aralığı. ✅ (D40/D41 ölçüləri ilə uyğun.)
+
+---
+
+## 🔴 D17 — İNDİKATORUN TAM AYARLARI (kadrdan hərfbəhərf oxundu)
+
+Kadr `17/f_00051` böyüdüləndə TradingView-ün başlıq sətrində indikatorun
+bütün parametrləri oxunur. Bu, təxmin deyil — **ekrandan oxunan mətndir**:
+
+```
+3 30  GMT-5  Normal 1200-1201  70 50
+Asia      2000-0000
+London    0200-0500
+NY AM     0930-1100
+NY Lunch  1200-1300
+NY PM     1330-1600
+AS.H AS.L LO.H LO.L NYAM.H NYAM.L NYL.H NYL.L NYPM.H NYPM.L
+Solid 1 Bottom  Midnight  D.OPEN  W.OPEN  M.OPEN  Solid 1  True Day Open
+```
+
+### ✅ Təsdiqləndi
+- **NY AM = 0930-1100** (əvvəlki düzəlişim DOĞRU idi — kontakt vərəqində
+  kiçildilmiş mətn "0830" kimi görünürdü, tam ölçüdə **0930**-dur)
+- Digər bütün seans saatları bizim Pine faylındakı kimidir ✅
+- True Day Open = **1200-1201** ✅
+
+### ⚠️ ƏLAVƏ EDİLMƏLİ — 4 yeni istinad səviyyəsi
+İndikator bunları da çəkir, bizdə **YOX**:
+- **Midnight Open** (00:00 NY)
+- **D.OPEN** — günlük açılış
+- **W.OPEN** — həftəlik açılış
+- **M.OPEN** — aylıq açılış
+
+### ⚠️ Saat qurşağı xəbərdarlığı
+Ayarda **GMT-5** (sabit) yazılıb — bu, NY qış vaxtıdır. Yayda NY **GMT-4**
+olur. Kadrların altında bəzən `(UTC-4)`, bəzən `(UTC-5)` görünür — müəllim
+əl ilə dəyişir (D23 @00:10:53: *"şu indikatörü də düzəldim, GMT-5 yapalım"*).
+→ **Bizim Pine-da sabit ofset yox, `America/New_York` istifadə edilməlidir**
+ki, yay/qış avtomatik keçsin. Bu, müəllimin əl işini avtomatlaşdırır.
+
+Taymfreym bu dərsdə: **NQ1! 15 dəqiqə** (seans qutularına baxmaq üçün).
+
+---
+
+## 🔴 D17 — POWER OF THREE (PO3): GÜNÜN MAKRO ŞABLONU
+
+[00:05:29–00:07:31] — bunu heç yerdə qeyd etməmişdim, halbuki **bütün
+strategiyanın çərçivəsidir**:
+
+```
+ASİYA   → AKKUMULYASİYA  — smart money mövqe yığır, hərəkət yoxdur
+LONDON  → MANİPULYASİYA  — Asiyanın likiditesini alır, stopları partladır
+NY      → DİSTRİBUSİYA   — əsl hərəkət, hədəfə gedir
+```
+
+> *"Asya seansında hərəkət yoxdur, **orderlar birikir**. Londra seansına
+> gəldiyimiz zaman **manipulyasiya başlayır**. Tam **8.5-a, endekslər
+> açıldığı zaman** bütün biriken likiditeni alır, ondan sonra
+> **distribution** — yəni hədəfinə davam edir."*
+
+### ⭐⭐ KODLANA BİLƏN QAYDA [00:05:12–00:05:28]
+> *"**Bullish olduğu zaman market — günün LOW-unu LONDRA-da yapar.**"*
+
+Yəni:
+- Gün **bullish** olacaqsa → **günün ən aşağı nöqtəsi London seansında** yaranır
+- Gün **bearish** olacaqsa → **günün ən yüksək nöqtəsi London seansında** yaranır
+
+Bu, "London sweep-i günün ekstremumudur" fərziyyəsidir və **ölçülə bilər**:
+NASDAQ datasında *"günün low-u London saatlarında yaranıbmı?"* faizini
+hesablamaq — birbaşa yoxlanıla bilən statistik iddia.
+
+---
+
+## 🔴 D17 — SEANS SAATLARI: İNDİKATOR ≠ TRADE PƏNCƏRƏSİ
+
+[00:02:43–00:02:57] Müəllimin **öz trade pəncərələri** (NY vaxtı):
+
+| Bazar | Ən yaxşı pəncərə |
+|---|---|
+| London (hər ikisi) | **02:00–05:00** |
+| **Forex** NY | **07:00–10:00** |
+| **ENDEKS (NASDAQ)** NY | **08:30–11:00** ⭐ |
+
+⚠️ Diqqət: indikatorun **NY AM qutusu 09:30–11:00**-dır, amma müəllimin
+**endekslər üçün dediyi pəncərə 08:30–11:00**-dır — yəni **08:30 iqtisadi
+data buraxılışı** daxildir. D43 @00:27:24-də də *"New York açılışından əvvəl
+8.5-a"* deyir.
+
+→ Bizim Pine-da **NAS100 üçün trade pəncərəsi 08:30–11:00** olmalıdır
+(indikator qutusu 09:30-da başlasa da).
+
+### PM haqqında zidd görünən iki ifadə — həlli
+- D17 @00:03:45: *"Mən bu **PM session-a çox baxmıram**, sadəcə Londra ilə
+  New York tərəfinə baxıram."* → **PM-də trade etmir**
+- D23 @00:10:45: *"ən önəmli likidite səviyyəsi **PM session likiditesi**"*
+  → **PM-in likiditesi HƏDƏF kimi ən vacibdir**
+
+Ziddiyyət yoxdur: **PM-də girmir, amma PM-in qoyduğu likiditeni hədəf alır.**
+Kodda: NYPM.H/L səviyyələri **hədəf siyahısında** qalsın, amma PM pəncərəsi
+**giriş üçün defolt bağlı** olsun.
+
+### Asiya haqqında
+[00:02:00–00:02:08] *"Asya seansının çox işlem açmağa uyğun bir saat dilimi
+olduğunu düşünmürəm, çünki **çoğu şey hərəkət etmir**."* → Asiya = trade YOX.
