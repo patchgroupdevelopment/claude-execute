@@ -1261,3 +1261,47 @@ itki sayı artacaq — gözlənilən, dizayn kompromisidir.
 almış... En son alan yer harasıdır? O zaman alan mum haradır? Şu üç mum,
 arxası təqib edən ARDICIL mumlar."* — D29/D30-dakı "çoxlu sweep-dən sonra
 FAKTİKİ alan şam(lar)ı götür" qaydasının **üçüncü** bazarda (neft) təkrarı.
+
+---
+
+## ⭐ D40 [00:05:56–00:06:04] — HTF FVG-yə TOXUNMA ≠ GİRİŞ SİQNALI
+
+Bu, bizim yeni kodlaşdırdığımız HTF filtrinin yanına əlavə olunmalı vacib
+incəlik idi, indi mətnlə təsdiqlənir:
+
+> *"Yüksek zaman diliminden tepki almış — yani şu FVG'ye **DOKUNDUĞU AN
+> işleme girmiyorsunuz**. Şu yükselişi gördüğünüz an, **başladığı an dönüşü
+> gördüğünüz an** işleme dahil olacaksınız. **Kural bu.**"*
+
+Yəni: **HTF FVG-nin içində olmaq VACİB, amma KİFAYƏT DEYİL** — LTF-də
+displacement/MSS ilə təsdiqlənən **faktiki dönüşün BAŞLADIĞI** görünməlidir.
+Bizim kodda bu artıq düzgün strukturlaşdırılıb: `htfFilterOn` HTF-in içində
+olmağı sweep-in **şərti** edir, amma giriş yalnız sonrakı MSS+FVG
+mərhələsindən sonra baş verir — yəni bu qayda onsuz da tətbiq olunur,
+sadəcə **niyə belə qurduğumuzun sözlə təsdiqidir.**
+
+---
+
+## 🔴🔴 D40 [00:23:10–00:24:01] — MÜƏLLİMİN ÖZ AĞZINDAN "HAMISI EYNİDİR" TƏSDİQİ
+
+Bu, "bazarlar" sualına verilə biləcək **ən avtoritetli cavabdır** — çünki
+bu, digər dərslərdəki əlavə nümunələr yox, məhz **flagman NASDAQ strategiya
+dərsinin (D40) özündə** deyilir, kadr `40/sheet_016` (Qızıl GC1! nümunəsi)
+ilə birlikdə:
+
+> *"NQ1 ilə forex paritəsi NZD1 **eynidir arkadaşlar**. O üzdən NQ1-də
+> göstərmədim, futures tərəfində NQ1 — bunları trade edəcəksiniz. Ya da bu
+> mesela **qızılın futures-ı, fərq etmir — hamısı eyni paritə zatən.**
+> İndi sizə **qızılda** da bir nümunə göstərəcəyəm, sonra videonu
+> **Bitcoin**-də də göstərəcəyəm, bağlayacağıq."*
+
+> *"Sadəcə bu paritə deyil — anlatdığım şeyləri, yəni **likidite ilə IFVG
+> məntiqi, DOL məntiqi, draw on liquidity** — yəni likiditenin harada
+> olduğunu anlasanız, zatən **ufaq-təfək öz-özünüzə işləm ala bilərsiniz.**
+> Sadəcə bu strategiyaya uysa da, uymasa da, öz-özünüzə fərqli-fərqli
+> şeylər yarada bilərsiniz."*
+
+**Nəticə:** metodun bazar-aqnostik olduğu iddiası bu dəfə **ehtimal və ya
+əlavə nümunə deyil** — bilavasitə NASDAQ dərsinin öz mətnindədir. Qızıl
+nümunəsi eyni kadrda Sharp Turn + IFVG + MSS + 1:2/1:3 RR ilə göstərilir,
+sonra Bitcoin nümunəsi gəlir (D40-un sonrakı hissəsi, hələ baxılmayıb).
