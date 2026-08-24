@@ -1305,3 +1305,57 @@ ilə birlikdə:
 əlavə nümunə deyil** — bilavasitə NASDAQ dərsinin öz mətnindədir. Qızıl
 nümunəsi eyni kadrda Sharp Turn + IFVG + MSS + 1:2/1:3 RR ilə göstərilir,
 sonra Bitcoin nümunəsi gəlir (D40-un sonrakı hissəsi, hələ baxılmayıb).
+
+## D40 [00:28:01–00:29:52] — Bitcoin əlavəsi: nə işləyir, nə işləmir + öz etirafı
+
+> *"Bitcoin edərkən **kill zon-lar falan olmadığı üçün** — yəni zaman
+> dilimi, borsa açılış saatı olmadığı üçün — sadəcə gene eyni şeyləri:
+> IFVG-i, likiditeyə görə işlem alacaksınız."*
+> *"Bax buralar — 'Asya' yazdığına baxmayın. **Bunlar çalışmır Bitcoin-də,
+> yəni kilon deyə bir şey yox.**"*
+> *"IFVG hər türlü zatən işləyir."*
+
+⭐ **Öz etirafı** [00:29:17–00:29:52]:
+> *"Bitcoin dediğim kimi **çox bildiyim bir şey deyil.** Amma ümumi olaraq
+> likidite məntiqi, FVG məntiqi burada da işləyir... **Bitcoin-də niyə
+> işləm alasınız bu dediyim paritələr varkən** — sadəcə arkadaşlar
+> strategiya budur."*
+
+Bu, layihəmizin başlanğıcındakı **"ETH BTC xaric, əsas NASDAQ üçün edirik"**
+qərarını müəllimin öz ağzından dolayı təsdiqləyir — o özü də BTC-ni digər
+paritələr (NASDAQ, qızıl, forex) mövcud olarkən ikinci dərəcəli sayır və
+BTC-də özünün az təcrübəli olduğunu açıq deyir.
+
+**Yekun qayda:** killzone/seans filtri Bitcoin-ə tətbiq OLUNMAMALIDIR
+(bizim NAS100 skriptimiz onsuz da NASDAQ üçündür, bu, üzr istəməyə ehtiyac
+yaratmır — sadəcə gələcəkdə BTC üçün ayrı indikator lazım olsa, killzone
+hissəsini söndürmək lazım olacaq).
+
+---
+
+## ⭐ D28 — VACİB SƏVİYYƏNİN PSİXOLOJİ ƏSASI (yeni "niyə")
+
+D23-də vacib səviyyə **ranqını** (NY PM > LRLR > günlük FVG > swing) yazmışdıq.
+D28 bunun **SƏBƏBİNİ** izah edir — hansı səviyyələr niyə "vacib":
+
+> *"[Reaksiya olmadı] — **niyə? Çünki bu vacib bir likidite deyil.** Məsələn
+> bir əvvəlki günün low-u olar, əvvəlki günün high-ı olar — yəni
+> **insanların əmr ata biləcəyi yerləri düşünün.** İnsanlar haradan işləmə
+> girir? Məntiqən düşündüyünüz zaman deyirsiniz ki: bir hissə, bir paritə,
+> kripto — deyirsiniz ki **aylıq ən yüksəyə gəldi, buradan nə olar, düşər**
+> — **retail düşüncəsi**, hər kəsin düşündüyü kimi düşünəcəksiniz. İnsanlar
+> belə düşünür, orada pul olur. Amma **smart money** nə edir? Oralardan
+> girənləri **partladır** — stopları, əmrləri."*
+
+**Qayda:** vacib səviyyə = **bariz, hamının gördüyü, retail-in ora əmr
+qoyacağı səviyyə** (əvvəlki gün H/L, həftəlik/aylıq H/L, round nömrələr).
+Nə qədər "gözəgörünən" və hamı tərəfindən izlənirsə, bir o qədər likidite
+yığılır və smart money-nin hədəfi olur.
+
+### Hədəf iyerarxiyası (dəqiqləşdirilmiş)
+[00:04:23]: *"Haftalıkta **ən böyük likidite hədəfi** budur."*
+→ **Həftəlik səviyyələr** günlük/seans səviyyələrindən **daha böyük**
+maqnitdir. Sıra: **Aylıq > Həftəlik > Günlük > Seans (AS/LO/NY H-L)**.
+Bu, D23-ün ranqına **yuxarı ucdan** əlavədir (əvvəl NY PM-i "ən vacib" kimi
+yazmışdıq — bu, seans-daxili səviyyələr arasında düzgündür, amma
+Həftəlik/Aylıq onlardan da yuxarıdadır).
