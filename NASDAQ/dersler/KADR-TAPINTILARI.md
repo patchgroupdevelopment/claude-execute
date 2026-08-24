@@ -1404,3 +1404,44 @@ bazarın ARTIQ NƏ ETDİYİNİ (tamamlanmış strukturu) oxu**, gələcəyi təx
 etməyə çalışma. Bu, bizim kodun **HTF filtrini SWEEP-dən ƏVVƏL yoxlaması**
 məntiqi ilə üst-üstə düşür — sistemin "əvvəl HTF vəziyyətinə bax, sonra
 LTF-ə en" ardıcıllığının doğruluğunu bir daha təsdiqləyir.
+
+---
+
+## D33 [00:14:07] — "AMD" = Power of Three-nin digər adı
+
+> *"Market Maker modeli gerçəkləşdi. Market Maker modelleri, **AMD, Power of
+> 3** falan irəlidə gələcək."*
+
+**AMD = Accumulation / Manipulation / Distribution** — bizim D17-də
+sənədləşdirdiyimiz **Power of Three**-nin sinonimidir (Asiya=Accumulation,
+London=Manipulation, NY=Distribution). Terminologiya arayışında hər ikisi
+eyni şeyi göstərir, qarışdırılmasın.
+
+Kadr `33/sheet_009`: Qızıl **GÜNLÜK (1D)** qrafikdə **stacked (üst-üstə)
+IFVG-lər** dəstək zənciri kimi göstərilir — bir IFVG doldurulub keçildikdən
+sonra bazar bir sonrakına doğru davam edir, hər biri ardıcıl dəstək rolunu
+oynayır (D42-dəki "hər FVG bir sonrakının yanına aparır" məntiqi ilə eyni,
+bu dəfə günlük TF-də IFVG zənciri kimi).
+
+---
+
+## D32 kadr `sheet_012` (`f_00112`) — NAS100-də RR 6.26 real nümunə
+
+Position tool: **Stop 21.75 (0.13%) 87 · Amount 61878 · Target 143.75
+(0.84%) 571 · Amount 55849 · Qty 0.313 · Risk/Reward Ratio 6.26**
+
+Ən yüksək qeydə alınan real RR nümunəsi (əvvəlki aralıq 1.88–3.9 idi).
+Stop çox dar (0.13%), hədəf uzaq bir likidite idi — deməli DOL-hədəf
+yanaşması bəzən **çox böyük RR** verə bilir, xüsusilə stop OB/FVG gövdəsinə
+sıxıldıqda.
+
+### D32 [00:14:36–00:15:21] — Fərdi icra sərbəstliyi (dizayn fəlsəfəsi)
+> *"Sizə desəm ki 'buradan dalırsan, buraya stop atırsan, buraya qədər
+> tutursan, 6.5 R-lık işlem bitdi' — belə işlem heç vaxt **inkişaf edə
+> bilməzsiniz.** Mən buradan açaram, sən buradan açarsan, sən elə bu kiçik
+> mumdan girərsən — **hər yediyin yoğurdun yeyişi fərqlidir.** Mən sizə
+> göstərirəm, **özünüz bir yol tapacaqsınız.**"*
+
+→ Dəqiq giriş/çıxış nöqtəsi konfiqurasiya edilə bilən olmalıdır (bizim
+kodda artıq `slMode`, `useDolTp`, `minRR` kimi seçimlər var) — müəllim
+özü tək bir "doğru" icra tərzi olduğunu israrla rədd edir.
