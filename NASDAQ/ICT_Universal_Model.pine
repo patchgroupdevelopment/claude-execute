@@ -64,7 +64,29 @@ htfOn       = input.bool(true,  "HTF FVG içində olmaq şərti  ⭐", group = G
                "səviyyə olmadan STOP oldu, 1H FVG-nin içində olanda TP oldu.\n" +
                "Müəllim: 'Burada o önəmli səviyyə var mı? YOX. O zaman bir şey olmur.'\n" +
                "Bu filtr olmadan qalan bütün məntiq statistik olaraq mənasızdır.")
-htfTf       = input.timeframe("60", "HTF taymfreymi", group = G_SET,
+preset      = input.string("Balanslı", "Siqnal sıxlığı", group = G_SET,
+     options = ["Sərt (A+ setup)", "Balanslı", "Sıx (çox siqnal)"],
+     tooltip = "Sərt   → RR≥2.5, HTF pəncərəsi dar, ən azı 2 səviyyə sweep.
+" +
+               "Balanslı → aşağıdakı öz ayarların işləyir.
+" +
+               "Sıx    → RR≥1.5, geniş HTF pəncərəsi, 1 sweep kifayət.
+
+" +
+               "⚠️ 'Sıx' rejimi məhz müəllimin xəbərdarlıq etdiyi setup-ları da
+" +
+               "buraxır (D31: HTF səviyyə olmadan eyni pattern STOP oldu).
+" +
+               "Siqnal sayı artır, KEYFİYYƏT AZALIR. Cədvəldəki nəticəyə bax.")
+htfAuto     = input.bool(true, "HTF-i qrafik taymfreyminə görə avtomatik seç  ⭐", group = G_SET,
+     tooltip = "D44 @00:33:29: 'Zaman FRAKTALDIR.'
+" +
+               "1m→15m · 3m→30m · 5m→1H · 15m→4H · 1H→D · daha yuxarı→W
+" +
+               "Aşağı taymfreymdə 1H FVG çox uzaq qalır — miqyaslama
+" +
+               "setup sayını real şəkildə artırır (filtri boşaltmadan).")
+htfTfManual = input.timeframe("60", "HTF taymfreymi (əl ilə)", group = G_SET,
      tooltip = "Intraday üçün 60 və ya 240. Scalp üçün 240. (D44 @00:23:09)")
 htfWin      = input.int(20, "HTF zonasına toxunma pəncərəsi (şam)", minval = 0, maxval = 200, group = G_SET,
      tooltip = "Sweep-in MƏHZ HTF FVG-nin içində baş verməsi çox nadir təsadüfdür.
@@ -112,6 +134,17 @@ minRR    = input.float(2.0, "Minimum RR", minval = 1.0, step = 0.1, group = G_RI
 tp1RR    = input.float(2.0, "TP1 (R) — DOL sönükdə", minval = 0.5, step = 0.5, group = G_RISK)
 tp2RR    = input.float(3.0, "TP2 (R) — DOL sönükdə", minval = 0.5, step = 0.5, group = G_RISK)
 beOnTp1  = input.bool(true, "TP1-dən sonra stop girişə (BE)", group = G_RISK)
+maxBarsTr = input.int(0, "Maksimum mövqe müddəti (şam · 0 = limitsiz)", minval = 0, group = G_RISK,
+     tooltip = "D43 @00:33:52: 'PM seansının sonuna doğru konsolidə olmağa
+" +
+               "başlayır — bağlayarsan əməliyyatı.'
+
+" +
+               "⭐ Aşağı taymfreymdə VACİBDİR: açıq mövqe varkən script yeni
+" +
+               "setup izləmir. Uzun sürən bir əməliyyat saatlarla bütün
+" +
+               "siqnalları bloklaya bilər. 5m üçün 60–120, 1m üçün 100–300.")
 accSize  = input.float(1000, "Hesab ($)", minval = 10, group = G_RISK)
 riskPct  = input.float(1.0, "Risk (%)", minval = 0.1, maxval = 5, step = 0.1, group = G_RISK,
      tooltip = "Bootcamp: 0.5–1%. ASLA 2% yox (D37 @00:03:01).\n" +
@@ -163,6 +196,21 @@ uiTblPos  = input.string("Sağ üst", "Cədvəl yeri", options = ["Sağ üst", "
 // Köhnə `time(timeframe.period, sess, TZ)` yanaşması simvolun birja seansına
 // bağlı idi → BTC/qızıl/CFD-lərdə Asiya heç vaxt işə düşmürdü.
 // İndi şamın vaxt damğasından NY saat/dəqiqəsi hesablanır — universal işləyir.
+
+// Qrafik taymfreyminə görə HTF seçimi — "zaman fraktaldır" (D44)
+f_autoHtf() =>
+    m = timeframe.in_seconds(timeframe.period) / 60
+    m <= 1 ? "15" : m <= 3 ? "30" : m <= 5 ? "60" : m <= 15 ? "240" : m <= 60 ? "D" : "W"
+
+htfTf = htfAuto ? f_autoHtf() : htfTfManual
+
+// Presetin effektiv dəyərləri (Balanslı = istifadəçi ayarları olduğu kimi)
+isStrict = preset == "Sərt (A+ setup)"
+isLoose  = preset == "Sıx (çox siqnal)"
+effRR    = isStrict ? math.max(minRR, 2.5)      : isLoose ? math.min(minRR, 1.5)      : minRR
+effHtfW  = isStrict ? math.min(htfWin, 8)       : isLoose ? math.max(htfWin, 40)      : htfWin
+effSweep = isStrict ? math.max(minSweep, 2)     : isLoose ? 1                         : minSweep
+effDisp  = isStrict ? math.max(minDispAtr, 0.6) : isLoose ? math.min(minDispAtr, 0.3) : minDispAtr
 
 nyMin = hour(time, TZ) * 60 + minute(time, TZ)   // 0..1439, NY vaxtı
 
@@ -354,14 +402,14 @@ f_bullFvg(int j) =>
     bot = high[j + 2]
     top = low[j]
     disp = high[j + 1] - low[j + 1]
-    ok = top > bot and disp >= atr * minDispAtr and close[j + 1] > open[j + 1]
+    ok = top > bot and disp >= atr * effDisp and close[j + 1] > open[j + 1]
     [ok, top, bot]
 
 f_bearFvg(int j) =>
     top = low[j + 2]
     bot = high[j]
     disp = high[j + 1] - low[j + 1]
-    ok = top > bot and disp >= atr * minDispAtr and close[j + 1] < open[j + 1]
+    ok = top > bot and disp >= atr * effDisp and close[j + 1] < open[j + 1]
     [ok, top, bot]
 
 [curBull, cbT, cbB] = f_bullFvg(0)
@@ -408,8 +456,8 @@ if inHtfBull
     lastHtfBullBar := bar_index
 if inHtfBear
     lastHtfBearBar := bar_index
-htfNearBull = inHtfBull or (not na(lastHtfBullBar) and bar_index - lastHtfBullBar <= htfWin)
-htfNearBear = inHtfBear or (not na(lastHtfBearBar) and bar_index - lastHtfBearBar <= htfWin)
+htfNearBull = inHtfBull or (not na(lastHtfBullBar) and bar_index - lastHtfBullBar <= effHtfW)
+htfNearBear = inHtfBear or (not na(lastHtfBearBar) and bar_index - lastHtfBearBar <= effHtfW)
 
 // ────────────────────────────────────────────────────────────────────────────
 //  14. SHARP TURN (D26 @00:09:39 / D40 @00:13:44)
@@ -518,6 +566,8 @@ var float tTp1 = na
 var float tTp2 = na
 var bool  tTp1Hit = false
 var int   tDir = 0
+var int   tOpenBar = na
+var float tRiskV = na
 
 var int   nSig = 0
 var int   nTp1 = 0
@@ -530,6 +580,7 @@ var float netR = 0.0
 var int   nRejHtf = 0     // sweep oldu, amma HTF vacib səviyyə yox idi
 var int   nRejRR  = 0     // setup tamamlandı, amma RR minimumdan az idi
 var int   nRejFlt = 0     // FVG dolduruldu, amma seans/bias filtri bloklandı
+var int   nTimeX  = 0     // vaxt stopu ilə bağlanan mövqe
 
 // ── Açıq mövqe (SL əvvəl yoxlanır — konservativ) ──
 if inTrade
@@ -555,6 +606,12 @@ if inTrade
         tTp1Hit := true
         if beOnTp1
             tSl := tEntry
+    // Vaxt stopu — mövqeyi bağlayır və state maşınını azad edir
+    if inTrade and maxBarsTr > 0 and not na(tOpenBar) and bar_index - tOpenBar >= maxBarsTr
+        rReal = tRiskV > 0 ? (close - tEntry) / tRiskV * tDir : 0.0
+        netR += rReal
+        nTimeX += 1
+        inTrade := false
 
 // ── Mərhələ 1: sweep qeydə alınır (HTF filtri BURADA tətbiq olunur) ──
 if not inTrade and stage == 0 and barstate.isconfirmed
@@ -562,7 +619,7 @@ if not inTrade and stage == 0 and barstate.isconfirmed
     htfOkD = not htfOn or htfNearBear
     if (swLo or swHi) and not (htfOkU or htfOkD)
         nRejHtf += 1
-    if swLo and htfOkU and nLo >= minSweep
+    if swLo and htfOkU and nLo >= effSweep
         stage := 1
         dir := 1
         stageBar := bar_index
@@ -570,7 +627,7 @@ if not inTrade and stage == 0 and barstate.isconfirmed
         hadSharp := false
         sweptNm := sweptName
         sweepCnt := nLo
-    else if swHi and htfOkD and nHi >= minSweep
+    else if swHi and htfOkD and nHi >= effSweep
         stage := 1
         dir := -1
         stageBar := bar_index
@@ -666,7 +723,7 @@ if stage == 2 and not inTrade and barstate.isconfirmed
                 slTight := slWide
             if dir == -1 and slTight <= ent
                 slTight := slWide
-            useTight = useDol and not na(dolTgt) and (na(rrWide) or rrWide < minRR)
+            useTight = useDol and not na(dolTgt) and (na(rrWide) or rrWide < effRR)
 
             sl   = useTight ? slTight : slWide
             risk = math.abs(ent - sl)
@@ -675,7 +732,7 @@ if stage == 2 and not inTrade and barstate.isconfirmed
             // İstisna: o tərəfdə toxunulmamış likidite qalmayıbsa (dolTgt = na),
             // DOL rejimi işləmir → sabit R-multiple hədəfinə geri qayıdılır,
             // əks halda bütün səviyyələr süpürüldükdən sonra indikator susardı.
-            rrOk = not useDol or na(dolTgt) or (not na(rr) and rr >= minRR)
+            rrOk = not useDol or na(dolTgt) or (not na(rr) and rr >= effRR)
 
             if not rrOk
                 nRejRR += 1
@@ -692,6 +749,8 @@ if stage == 2 and not inTrade and barstate.isconfirmed
                     tTp1 := dir == 1 ? ent + risk * tp1RR : ent - risk * tp1RR
                     tTp2 := dir == 1 ? ent + risk * tp2RR : ent - risk * tp2RR
                 tTp1Hit := false
+                tOpenBar := bar_index
+                tRiskV := risk
                 sigEntry := ent
                 sigSl := sl
                 sigTp1 := tTp1
@@ -830,7 +889,7 @@ tblPos = uiTblPos == "Sağ üst" ? position.top_right :
          uiTblPos == "Sağ alt" ? position.bottom_right :
          uiTblPos == "Sol üst" ? position.top_left : position.bottom_left
 
-var table tb = table.new(tblPos, 3, 13, border_width = 1,
+var table tb = table.new(tblPos, 3, 14, border_width = 1,
      frame_width = 1, frame_color = color.new(C_NEU, 55))
 
 f_row(int r, string a, string b, string c, color bg, color tc) =>
@@ -897,6 +956,7 @@ if uiTable and barstate.islast
     tfMin = timeframe.in_seconds(timeframe.period) / 60
     tfBad = not isCrypto and tfMin > 60
     blockTxt = tfBad ? "⚠️ TAYMFREYM ÇOX BÖYÜK — 5m/15m işlət!" :
+                 inTrade ? "açıq mövqe var (vaxt stopu qoy)" :
                  useKz and not inTradeWin ? "trade pəncərəsi bağlıdır" :
                  not isCrypto and inNoTr ? "CBDR qadağan zonası (16:00–20:00 NY)" :
                  not isCrypto and skipLunch and inLunch ? "nahar saatı" :
@@ -909,7 +969,13 @@ if uiTable and barstate.islast
 
     f_row(12, "Rədd edilən setup",
          "HTF " + str.tostring(nRejHtf) + " · RR " + str.tostring(nRejRR) + " · filtr " + str.tostring(nRejFlt),
-         "sərtlik göstəricisi", cRw, C_NEU)
+         nTimeX > 0 ? "vaxt stopu " + str.tostring(nTimeX) : "sərtlik göstəricisi", cRw, C_NEU)
+
+    f_row(13, "Rejim", preset + " · HTF " + htfTf + (htfAuto ? " (avto)" : ""),
+         "RR≥" + str.tostring(effRR, "#.#") + " · sweep≥" + str.tostring(effSweep) +
+         " · pəncərə " + str.tostring(effHtfW),
+         isLoose ? color.new(C_GOLD, 55) : isStrict ? color.new(C_ACC, 55) : cRw,
+         isLoose ? C_GOLD : color.new(color.white, 20))
 
 // ════════════════════════════════════════════════════════════════════════════
 //  21. ALERT
