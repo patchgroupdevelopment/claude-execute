@@ -1483,3 +1483,50 @@ Yəni 5m→3m→1m enmə **avtomatik addım deyil**, yalnız 5m-də FVG/IFVG **a
 görünmürsə** tətbiq olunur. Bu, D44-dəki "salaq-saçma price action-da
 taymfreymi yüksəlt" qaydasının **əksi/tamamlayıcısı**dır: struktur
 görünmürsə aşağı en (aydınlıq üçün), amma artıq aydındırsa aşağı enmə.
+
+---
+
+## 🔴 D37 [00:00:33–00:02:54] — ANTİ-MARTİNGALE NƏRDİVANININ DƏQİQ MEXANİZMİ
+
+Bu, ən dəqiq və rəqəmli izahdır (əvvəlki qeydimiz sadələşdirilmiş idi).
+$100,000 hesabla misal:
+
+```
+Başlanğıc: 100,000 $, risk 1%
+  ↓ itki
+99,000 $ — risk 0.5%-ə DÜŞÜR
+  ↓ itki (1-ci 0.5% cəhd)
+98,500 $ — risk YENƏ 0.5% qalır ⭐ (İKİ dəfə 0.5% haqqı var!)
+  ↓ itki (2-ci 0.5% cəhd)
+98,000 $ — risk 0.25%-ə DÜŞÜR
+  ↓ ... 0.25%-də QALIR ("tak tak tak") TA Kİ balans YENİDƏN 98,500-ə QALXANA QƏDƏR
+98,500-ə qayıdanda → risk YENİDƏN 0.5%-ə QALXIR
+  (bu məntiqlə davam: növbəti bərpa pilləsində 1%-ə qayıdır)
+```
+
+> *"Bir daha % 0.5 riskə edirsən. **2 dənə 0.5% riskə etmə haqqım var.**
+> Onları da itirdim, 0.25%-ə düşürürəm. Tak-tak-tak... **98,500 çıxana qədər
+> 0.25%-də qalıram.** Daha sonra **YENİDƏN 0.5% riskə edirəm.**"*
+
+### ⭐ Yekun qaydalar
+- Hər pillədə **düşərkən** = itkidən sonra bir aşağı pillə (istisna: 0.5%
+  pilləsində **iki** ardıcıl itki haqqı var, sonra 0.25%-ə düşür)
+- **Qalxarkən** = balans əvvəlki pillənin threshold-una **geri çatanda**
+  (mütləq qazanc yox, sadəcə itirilən məbləğin bərpası) bir yuxarı pilləyə qayıdır
+- *"Real hesapda maksimum 1% riskə et, ASLA 2% riskə etmə."*
+- Fon hesabı (challenge) ilə real/live funded hesabda **eyni risk metodu**
+  tətbiq olunur — fərq yoxdur.
+- Forex fondlarında vaxt limiti olmadığı üçün *"tələsməyin, rahat keçin"*.
+
+### Fərqli hesab strategiyası (əlaqəli olmayan qeyd)
+Müəllim ayrıca *"bir hesabı əyləncə/risk üçün ayırıram, orada agressiv risk
+alıram, payout alıb atıram"* deyir — bu, əsas strategiyaya aid **deyil**,
+sadəcə şəxsi fond-hesab idarəçiliyi fəlsəfəsidir, bizim strategiyaya
+aid edilməməlidir.
+
+**Qeyd:** Bu, hesab səviyyəsində **ardıcıl əməliyyatlar arası** vəziyyət
+maşınıdır (money management), tək bir indikator siqnalının hissəsi deyil.
+Pine indikatorumuzda `riskPct` sabit input olaraq qalır — bu nərdivan
+istifadəçinin özü tərəfindən əl ilə tətbiq edilməlidir (broker equity-ni
+izləyərək), TradingView indikatoru bunu avtomatik edə bilməz (çünki
+hesabın HAQİQİ balansını bilmir).
