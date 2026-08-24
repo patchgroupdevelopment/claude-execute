@@ -283,11 +283,32 @@ inNyPm   = f_in(sNyPm)
 inNoTr   = f_in(sNoTr)
 inNyTr   = f_in(sNyTrade)
 
+// ⭐ ÖLÇÜLMÜŞ DÜZƏLİŞ (2026-08-24, scripts/test-h1-london-extreme.mjs):
+// "London günün ekstremumunu yaradır" iddiası İNDEKSLƏRDƏ TƏKZİB EDİLDİ.
+// Günün ekstremumunu tutma faizi (təsadüfi gözlənti 23.4%):
+//   ES=F London 6.1% (z=-2.86, sıra 46/48) · NQ=F 12.2% (sıra 41/48)
+//   Ən yaxşı pəncərə: ES 08:30-11:30 = 63.3% · NQ 08:00-11:00 = 46.9%
+// Yəni müəllimin ARAYIŞ KARTINDAN oxuduğu ICT qaydası (D41 kadrı) forex
+// mərkəzlidir; öz təcrübəsindən dediyi "endeksdə 8.5-11 arası" (D17) isə
+// ölçmə ilə TƏSDİQLƏNİR. İndekslərdə London defolt olaraq söndürülür.
+// Qızılda London neytraldır (24.5% ≈ təsadüfi) — açıq saxlanılır.
+useLondon = input.bool(true, "London killzone-da da giriş axtar", group = G_SESS,
+     tooltip = "⚠️ ÖLÇÜLMÜŞ: indekslərdə (NQ/ES) London günün ekstremumunu
+" +
+               "təsadüfdən AZ tutur (ES 6.1% vs 23.4%, z=-2.86, sıra 46/48).
+" +
+               "Ona görə İNDEKSLƏRDƏ defolt söndürülüb.
+" +
+               "Qızıl/forexdə açıq qalır — orada neytral və ya faydalı ola bilər.
+" +
+               "Bax: knowledge/TRADING-LEARNINGS.md §6")
+lonOk = useLondon and not isIndex
+
 // Kripto: birja açılışı yoxdur → killzone məntiqi tətbiq olunmur (D40 @00:28:03)
-inTradeWin = isCrypto ? true : (inLondon or inNyTr or (usePM and inNyPm))
+inTradeWin = isCrypto ? true : ((lonOk and inLondon) or inNyTr or (usePM and inNyPm))
 kzName = isCrypto  ? "24/7"   :
          inNyTr    ? "NY"     :
-         inLondon  ? "LONDON" :
+         (lonOk and inLondon) ? "LONDON" :
          inNyPm    ? "NY PM"  :
          inLunch   ? "NAHAR"  :
          inAsia    ? "ASİYA"  :
@@ -929,8 +950,10 @@ if uiTable and barstate.islast
 
     f_row(2, "Trade pəncərəsi", isCrypto ? "24/7 (killzone yox)" : f_toBaku(sNyTrade) + " Bakı",
          isCrypto ? "—" : "NY " + sNyTrade, cRw, color.new(color.white, 20))
-    f_row(3, "London", f_toBaku(sLondon) + " Bakı", inLondon ? "▶" : "", inLondon ? cOk : cRw,
-         inLondon ? C_UP : color.new(color.white, 20))
+    f_row(3, "London", f_toBaku(sLondon) + " Bakı",
+         not lonOk ? "⊘ ölçmə ilə söndürülüb" : inLondon ? "▶" : "",
+         (lonOk and inLondon) ? cOk : cRw,
+         not lonOk ? C_NEU : inLondon ? C_UP : color.new(color.white, 20))
     f_row(4, "Asiya", f_toBaku(sAsia) + " Bakı", inAsia ? "▶" : "", inAsia ? cOk : cRw,
          inAsia ? C_UP : color.new(color.white, 20))
 

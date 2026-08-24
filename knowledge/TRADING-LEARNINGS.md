@@ -133,3 +133,63 @@ Xam mətnlər: `video-train/`
 
 <!-- BOOTCAMP-START -->
 <!-- BOOTCAMP-END -->
+
+---
+
+## 6. ⭐ ÖLÇÜLMÜŞ — "London günün ekstremumunu yaradır" TƏKZİB EDİLDİ
+
+**Tarix:** 2026-08-24 · **Skript:** `scripts/test-h1-london-extreme.mjs`
+**Data:** Yahoo 5m, 60 gün (49 tam gün) · NQ=F, ES=F, GC=F
+
+### İddia (mənbə)
+D17 @00:05:12: *"Bullish olduğu zaman market günün LOW-unu LONDRA-da yapar."*
+Kadr `41/f_00082` (ICT arayış kartı): *"London Open Killzone generally creates
+the High or Low of the day."*
+
+Bu, **Power of Three** çərçivəsinin təməlidir (Asiya=akkumulyasiya,
+London=manipulyasiya/ekstremum, NY=distribusiya).
+
+### Nəticə: ❌ İNDEKSLƏRDƏ TƏKZİB EDİLDİ
+
+Günün ekstremumunu (high və ya low) tutma faizi — təsadüfi gözlənti **23.4%**
+(3 saat / 24 saat, iki ekstremumdan biri):
+
+| Bazar | London 02:00–05:00 | z | Sıralama (48 pəncərə) | Ən yaxşı pəncərə |
+|---|---|---|---|---|
+| **ES=F** (SP500) | **6.1%** | **−2.86** ❗ | **46/48** | 08:30–11:30 → **63.3%** |
+| **NQ=F** (NASDAQ) | 12.2% | −1.85 | 41/48 | 08:00–11:00 → **46.9%** |
+| **GC=F** (Qızıl) | 24.5% | +0.17 ⚪ | 19/48 | 00:00–03:00 → **57.1%** |
+
+Permutation testi (NQ, 2000 təsadüfi pəncərə): London **9.2 persentil** —
+95% həddindən çox uzaq.
+
+### 🔑 Əsas nəticə — mənbənin İKİ ifadəsi ziddiyyətlidir və biri doğrudur
+
+Müəllim **iki fərqli şey** deyir və ölçmə hansının doğru olduğunu göstərir:
+
+1. ❌ **Arayış kartından oxuduğu ICT qaydası** (D41 kadrı): *"London Open KZ
+   günün ekstremumunu yaradır"* → **indekslərdə YANLIŞDIR**. Bu qayda
+   forex-mərkəzlidir (ICT-nin öz mənşəyi forexdir).
+2. ✅ **Öz təcrübəsindən dediyi** (D17 @00:02:54): *"Endeks marketində
+   **8.5 ilə 11 arası**"* → **ÖLÇMƏ BUNU TƏSDİQLƏYİR**. ES-də 08:30–11:30
+   pəncərəsi 63.3% ilə **birinci yerdədir** (təsadüfidən 2.7 dəfə çox).
+
+Yəni müəllim praktikada haqlıdır, amma ekrana gətirdiyi ümumi ICT kartı
+indekslərə aid deyil. Biz kartı kor-koranə köçürsəydik səhv edərdik.
+
+### Bazara görə düzəliş (koda tətbiq edildi)
+- **İndekslər (NAS/SPX/DOW):** London killzone **söndürülür** — anti-prediktivdir.
+  Yalnız NY 08:30–11:00.
+- **Qızıl:** London neytraldır; ən güclü pəncərə **00:00–03:00 NY**
+  (Asiya sonu / London açılışından əvvəl) — gözlənilməz, ayrıca yoxlanmalıdır.
+- **Forex:** ölçülməyib (ICT-nin öz sahəsidir, iddia orada doğru ola bilər).
+
+### ⚠️ Məhdudiyyət
+49 gün **az nümunədir** (Aronson §2). ES-in z=−2.86-sı təkbaşına
+əhəmiyyətlidir, NQ-nun −1.85-i sərhəddədir. Amma üç bazarda **eyni istiqamət**
++ sıralama + permutation birlikdə ardıcıl mənzərə verir. Uzun data ilə
+təkrarlanmalıdır.
+
+**Metodoloji qeyd:** bu, `KITAB-DERSLERI.md` §4-dəki "benchmark məcburidir"
+qaydasının birbaşa nəticəsidir. Yalnız "London 12% tutur" desəydik, bu, heç nə
+demirdi. Təsadüfi gözlənti (23.4%) ilə müqayisə **istiqaməti tərsinə çevirdi**.
