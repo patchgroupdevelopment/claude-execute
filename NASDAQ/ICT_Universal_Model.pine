@@ -107,6 +107,15 @@ usePD       = input.bool(false, "Premium/Discount filtri", group = G_SET,
                "bullish → DISCOUNT-da. 'Tam ters yönlü FVG aramayın.'")
 minDispAtr  = input.float(0.5, "Minimum displacement (×ATR)", minval = 0.1, step = 0.1, group = G_SET,
      tooltip = "FVG-ni yaradan orta şam ən azı bu qədər olmalıdır — 'enerjili hərəkət'.")
+useVol      = input.bool(false, "Həcm filtri (displacement həcmlə təsdiqlənsin)", group = G_SET,
+     tooltip = "Anna Coulling / Wyckoff: əsl institusional displacement HƏCMLƏ gəlir.
+" +
+               "Bizim ICT modelində həcm ümumiyyətlə yox idi — ən böyük boşluq.
+" +
+               "⚠️ CFD-lərdə həcm brokerə görə dəyişir; futures-də (NQ1!) realdır.
+" +
+               "Ölçülməmiş əlavədir — açıb-bağlayaraq cədvəldəki Expectancy-yə bax.")
+volMult     = input.float(1.5, "Həcm həddi (× orta)", minval = 1.0, step = 0.1, group = G_SET)
 pivLen      = input.int(1, "Swing pivot uzunluğu", minval = 1, maxval = 5, group = G_SET,
      tooltip = "D26 @00:01:56: müəllimin swing tərifi 3 şamlıqdır (sol 1, orta, sağ 1) → 1.")
 maxWaitMss  = input.int(12, "Sweep→MSS gözləmə (şam)", minval = 2, maxval = 60, group = G_SET)
@@ -398,18 +407,21 @@ if not na(pl)
     swLBody := math.min(open[pivLen], close[pivLen])
 
 // FVG: 3 şam, ortadakı displacement boşluq buraxır (D19 @00:01:15)
+volAvg = ta.sma(volume, 20)
+f_volOk(int j) => not useVol or na(volAvg) or volAvg <= 0 or volume[j + 1] >= volAvg * volMult
+
 f_bullFvg(int j) =>
     bot = high[j + 2]
     top = low[j]
     disp = high[j + 1] - low[j + 1]
-    ok = top > bot and disp >= atr * effDisp and close[j + 1] > open[j + 1]
+    ok = top > bot and disp >= atr * effDisp and close[j + 1] > open[j + 1] and f_volOk(j)
     [ok, top, bot]
 
 f_bearFvg(int j) =>
     top = low[j + 2]
     bot = high[j]
     disp = high[j + 1] - low[j + 1]
-    ok = top > bot and disp >= atr * effDisp and close[j + 1] < open[j + 1]
+    ok = top > bot and disp >= atr * effDisp and close[j + 1] < open[j + 1] and f_volOk(j)
     [ok, top, bot]
 
 [curBull, cbT, cbB] = f_bullFvg(0)
@@ -889,7 +901,7 @@ tblPos = uiTblPos == "Sağ üst" ? position.top_right :
          uiTblPos == "Sağ alt" ? position.bottom_right :
          uiTblPos == "Sol üst" ? position.top_left : position.bottom_left
 
-var table tb = table.new(tblPos, 3, 14, border_width = 1,
+var table tb = table.new(tblPos, 3, 15, border_width = 1,
      frame_width = 1, frame_color = color.new(C_NEU, 55))
 
 f_row(int r, string a, string b, string c, color bg, color tc) =>
@@ -945,12 +957,22 @@ if uiTable and barstate.islast
          inTrade ? "SL " + str.tostring(tSl, format.mintick) + (tTp1Hit ? " BE" : "") : "",
          inTrade ? color.new(C_ACC, 60) : cRw, inTrade ? color.white : C_NEU)
 
-    wr = nSig > 0 ? 100.0 * nTp1 / nSig : na
+    // Tharp: win rate TƏK BAŞINA mənasızdır — expectancy əsl ölçüdür.
+    // Kahneman (kiçik ədədlər qanunu): 30-dan az nümunə = səs-küy, məlumat deyil.
+    wr  = nSig > 0 ? 100.0 * nTp1 / nSig : na
+    expR = nSig > 0 ? netR / nSig : na
+    thin = nSig < 30
     f_row(10, "NƏTİCƏ (script sayır)",
          str.tostring(nSig) + " siqnal · TP1 " + (na(wr) ? "—" : str.tostring(wr, "#") + "%") +
          " · SL " + str.tostring(nSl),
-         (netR >= 0 ? "+" : "") + str.tostring(netR, "#.#") + "R · risk $" + str.tostring(riskUsd, "#"),
+         (netR >= 0 ? "+" : "") + str.tostring(netR, "#.#") + "R",
          color.new(C_NEU, 60), netR >= 0 ? C_UP : C_DN)
+
+    f_row(11, "Expectancy (R/əməliyyat)",
+         na(expR) ? "—" : (expR >= 0 ? "+" : "") + str.tostring(expR, "#.###") + " R",
+         thin ? "⚠️ " + str.tostring(nSig) + "/30 — SƏS-KÜY" : "kifayət qədər nümunə",
+         thin ? color.new(C_GOLD, 55) : (nz(expR) > 0 ? color.new(C_UP, 55) : color.new(C_DN, 55)),
+         thin ? C_GOLD : (nz(expR) > 0 ? C_UP : C_DN))
 
     // ── Diaqnostika: siqnal yoxdursa SƏBƏBİNİ göstərir ──
     tfMin = timeframe.in_seconds(timeframe.period) / 60
@@ -964,14 +986,14 @@ if uiTable and barstate.islast
                  stage == 0 ? "likidite sweep-i gözlənilir" :
                  stage == 1 ? "MSS (gövdə bağlanışı) gözlənilir" :
                  "FVG orta nöqtəsinə çəkilmə gözlənilir"
-    f_row(11, "Niyə siqnal yoxdur?", blockTxt, tfBad ? "❗" : "",
+    f_row(12, "Niyə siqnal yoxdur?", blockTxt, tfBad ? "❗" : "",
          tfBad ? color.new(C_DN, 30) : cRw, tfBad ? color.white : color.new(color.white, 20))
 
-    f_row(12, "Rədd edilən setup",
+    f_row(13, "Rədd edilən setup",
          "HTF " + str.tostring(nRejHtf) + " · RR " + str.tostring(nRejRR) + " · filtr " + str.tostring(nRejFlt),
          nTimeX > 0 ? "vaxt stopu " + str.tostring(nTimeX) : "sərtlik göstəricisi", cRw, C_NEU)
 
-    f_row(13, "Rejim", preset + " · HTF " + htfTf + (htfAuto ? " (avto)" : ""),
+    f_row(14, "Rejim", preset + " · HTF " + htfTf + (htfAuto ? " (avto)" : ""),
          "RR≥" + str.tostring(effRR, "#.#") + " · sweep≥" + str.tostring(effSweep) +
          " · pəncərə " + str.tostring(effHtfW),
          isLoose ? color.new(C_GOLD, 55) : isStrict ? color.new(C_ACC, 55) : cRw,
