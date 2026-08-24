@@ -66,6 +66,14 @@ htfOn       = input.bool(true,  "HTF FVG içində olmaq şərti  ⭐", group = G
                "Bu filtr olmadan qalan bütün məntiq statistik olaraq mənasızdır.")
 htfTf       = input.timeframe("60", "HTF taymfreymi", group = G_SET,
      tooltip = "Intraday üçün 60 və ya 240. Scalp üçün 240. (D44 @00:23:09)")
+htfWin      = input.int(20, "HTF zonasına toxunma pəncərəsi (şam)", minval = 0, maxval = 200, group = G_SET,
+     tooltip = "Sweep-in MƏHZ HTF FVG-nin içində baş verməsi çox nadir təsadüfdür.
+" +
+               "Müəllim 'qiymət o zonaya GƏLDİ, oradan reaksiya aldı' deyir —
+" +
+               "yəni son N şam ərzində HTF zonasına toxunmuş olmaq kifayətdir.
+" +
+               "0 = köhnə sərt davranış (yalnız cari şam zonanın içində).")
 minSweep    = input.int(1, "Minimum eyni-anlı sweep sayı", minval = 1, maxval = 6, group = G_SET,
      tooltip = "D32 @00:04:23: 'Kaç tane likiditeyi aldı burada?'\n" +
                "Bir sweep-də neçə izlənən səviyyə eyni anda süpürülüb.\n" +
@@ -393,6 +401,16 @@ if not na(htfBearT) and close > (htfBearT + htfBearB) / 2
 inHtfBull = not na(htfBullT) and low  <= htfBullT and high >= htfBullB
 inHtfBear = not na(htfBearT) and high >= htfBearB and low  <= htfBearT
 
+// Zonaya son toxunuşdan neçə şam keçib — "gəldi, reaksiya aldı" məntiqi
+var int lastHtfBullBar = na
+var int lastHtfBearBar = na
+if inHtfBull
+    lastHtfBullBar := bar_index
+if inHtfBear
+    lastHtfBearBar := bar_index
+htfNearBull = inHtfBull or (not na(lastHtfBullBar) and bar_index - lastHtfBullBar <= htfWin)
+htfNearBear = inHtfBear or (not na(lastHtfBearBar) and bar_index - lastHtfBearBar <= htfWin)
+
 // ────────────────────────────────────────────────────────────────────────────
 //  14. SHARP TURN (D26 @00:09:39 / D40 @00:13:44)
 // ────────────────────────────────────────────────────────────────────────────
@@ -508,6 +526,11 @@ var int   nSl  = 0
 var int   nBe  = 0
 var float netR = 0.0
 
+// Rədd sayğacları — filtrlərin nə qədər sərt olduğunu göstərir
+var int   nRejHtf = 0     // sweep oldu, amma HTF vacib səviyyə yox idi
+var int   nRejRR  = 0     // setup tamamlandı, amma RR minimumdan az idi
+var int   nRejFlt = 0     // FVG dolduruldu, amma seans/bias filtri bloklandı
+
 // ── Açıq mövqe (SL əvvəl yoxlanır — konservativ) ──
 if inTrade
     slHit  = tDir == 1 ? low  <= tSl  : high >= tSl
@@ -535,8 +558,10 @@ if inTrade
 
 // ── Mərhələ 1: sweep qeydə alınır (HTF filtri BURADA tətbiq olunur) ──
 if not inTrade and stage == 0 and barstate.isconfirmed
-    htfOkU = not htfOn or inHtfBull
-    htfOkD = not htfOn or inHtfBear
+    htfOkU = not htfOn or htfNearBull
+    htfOkD = not htfOn or htfNearBear
+    if (swLo or swHi) and not (htfOkU or htfOkD)
+        nRejHtf += 1
     if swLo and htfOkU and nLo >= minSweep
         stage := 1
         dir := 1
@@ -652,6 +677,8 @@ if stage == 2 and not inTrade and barstate.isconfirmed
             // əks halda bütün səviyyələr süpürüldükdən sonra indikator susardı.
             rrOk = not useDol or na(dolTgt) or (not na(rr) and rr >= minRR)
 
+            if not rrOk
+                nRejRR += 1
             if risk > 0 and rrOk
                 nSig += 1
                 inTrade := true
@@ -674,6 +701,7 @@ if stage == 2 and not inTrade and barstate.isconfirmed
                 sigCnt := sweepCnt
                 stage := 0
         else if filled
+            nRejFlt += 1
             stage := 0
 
 hasSig  = not na(sigEntry)
@@ -802,7 +830,7 @@ tblPos = uiTblPos == "Sağ üst" ? position.top_right :
          uiTblPos == "Sağ alt" ? position.bottom_right :
          uiTblPos == "Sol üst" ? position.top_left : position.bottom_left
 
-var table tb = table.new(tblPos, 3, 11, border_width = 1,
+var table tb = table.new(tblPos, 3, 13, border_width = 1,
      frame_width = 1, frame_color = color.new(C_NEU, 55))
 
 f_row(int r, string a, string b, string c, color bg, color tc) =>
@@ -837,8 +865,10 @@ if uiTable and barstate.islast
 
     f_row(5, "Günlük bias", biasTxt, "ATR " + str.tostring(atr, format.mintick), cRw, biasCol)
 
-    htfTxt = inHtfBull ? "🟢 HTF bull FVG içində" : inHtfBear ? "🔴 HTF bear FVG içində" : "— yoxdur —"
-    htfOk  = inHtfBull or inHtfBear
+    htfOk  = htfNearBull or htfNearBear
+    htfTxt = inHtfBull ? "🟢 bull FVG İÇİNDƏ" : inHtfBear ? "🔴 bear FVG İÇİNDƏ" :
+              htfNearBull ? "🟢 bull FVG yaxınlığında" : htfNearBear ? "🔴 bear FVG yaxınlığında" :
+              "— yoxdur —"
     f_row(6, "HTF vacib səviyyə ⭐", htfTxt, htfOn ? htfTf : "sönük",
          htfOk ? cOk : cRw, htfOk ? C_UP : C_NEU)
 
@@ -862,6 +892,24 @@ if uiTable and barstate.islast
          " · SL " + str.tostring(nSl),
          (netR >= 0 ? "+" : "") + str.tostring(netR, "#.#") + "R · risk $" + str.tostring(riskUsd, "#"),
          color.new(C_NEU, 60), netR >= 0 ? C_UP : C_DN)
+
+    // ── Diaqnostika: siqnal yoxdursa SƏBƏBİNİ göstərir ──
+    tfMin = timeframe.in_seconds(timeframe.period) / 60
+    tfBad = not isCrypto and tfMin > 60
+    blockTxt = tfBad ? "⚠️ TAYMFREYM ÇOX BÖYÜK — 5m/15m işlət!" :
+                 useKz and not inTradeWin ? "trade pəncərəsi bağlıdır" :
+                 not isCrypto and inNoTr ? "CBDR qadağan zonası (16:00–20:00 NY)" :
+                 not isCrypto and skipLunch and inLunch ? "nahar saatı" :
+                 htfOn and not htfOk ? "HTF vacib səviyyə yoxdur" :
+                 stage == 0 ? "likidite sweep-i gözlənilir" :
+                 stage == 1 ? "MSS (gövdə bağlanışı) gözlənilir" :
+                 "FVG orta nöqtəsinə çəkilmə gözlənilir"
+    f_row(11, "Niyə siqnal yoxdur?", blockTxt, tfBad ? "❗" : "",
+         tfBad ? color.new(C_DN, 30) : cRw, tfBad ? color.white : color.new(color.white, 20))
+
+    f_row(12, "Rədd edilən setup",
+         "HTF " + str.tostring(nRejHtf) + " · RR " + str.tostring(nRejRR) + " · filtr " + str.tostring(nRejFlt),
+         "sərtlik göstəricisi", cRw, C_NEU)
 
 // ════════════════════════════════════════════════════════════════════════════
 //  21. ALERT
