@@ -1050,3 +1050,89 @@ Kodda: NYPM.H/L səviyyələri **hədəf siyahısında** qalsın, amma PM pənc�
 ### Asiya haqqında
 [00:02:00–00:02:08] *"Asya seansının çox işlem açmağa uyğun bir saat dilimi
 olduğunu düşünmürəm, çünki **çoğu şey hərəkət etmir**."* → Asiya = trade YOX.
+
+---
+
+## 🔴 D43 [00:12:15–00:13:56] — İKİ YENİ MEXANİKİ QAYDA
+
+### 1️⃣ FVG girişi ≠ IFVG girişi (bunu qarışdırmışdım)
+> *"IFVG-yə **necə girəcəksən**? Hani buraya **geri dönməsini mi
+> gözləyəcəksən? KƏSİNLİKLƏ XEYR.** ... **Böyük ehtimalla retrace verməz
+> oralar. IFVG retrace olmaz.** FVG olabilir, amma bu tərz vəziyyətlərdə
+> IFVG geri dönüş çox olmaz. Nə edərsən? IFVG harada bağlamış — **gövdə
+> bağlanışı** — **BİR SONRAKI ŞAMDA dahil olursan.**"*
+
+| Quruluş | Giriş üsulu |
+|---|---|
+| **FVG** | Geri çəkilməni gözlə → **50% orta nöqtədən** limit |
+| **IFVG** | Gözləmə → **gövdə bağlanışından SONRAKI şamda market** |
+
+Bizim Pine kodunda hazırda hər ikisi üçün "50%-ə qayıt" gözlənilir —
+**IFVG üçün bu SƏHVDİR** və siqnalların itməsinə səbəb olur.
+
+### 2️⃣ ⭐ STOP YERİ RR-ə GÖRƏ SEÇİLİR (mexaniki qayda)
+> *"Nə etdim? **Gövdəyə atdım.** Çünki niyə? **Swing low-a atsam 1.37 verir —
+> RR çox pisdir.** Nə etdim? Buraya atdım — **3.2** işlemimi aldım."*
+
+Alqoritm:
+```
+1. Stopu swing low/high-a qoy → RR hesabla
+2. RR < 2 isə → stopu FVG/IFVG-nin GÖVDƏSİNƏ çək (daha dar)
+3. Yenidən RR hesabla; hələ də < 2 isə → BU SETUP-I BURAX
+```
+Bu, D40/D41-dəki **çox dar stopların (0.10–0.20%)** səbəbini izah edir:
+stop "təhlükəsizlik" üçün deyil, **RR-i 2-nin üstünə çıxarmaq üçün** seçilir.
+
+⚠️ Diqqət: D33 @00:12:00-də özü xəbərdarlıq edir — *"Mən stopu qısa tuturam,
+təcrübəli olduğum üçün. Siz bu qədər qısa stop işlətməyin."* İki ifadə birgə
+oxunmalıdır: **RR-i stopu daraltmaqla düzəltmək təcrübəli davranışdır.**
+
+### 3️⃣ Müəllim özü MEXANİKİ yanaşmanı seçir [00:12:45–00:12:53]
+> *"Bunu **RR-ə görə ayarlayacaqsan. MEXANİKİ yaxınlaşırıq.** Mən, daha
+> doğrusu, **mexaniki yaxınlaşmaq daha xoşuma gedir.**"*
+
+→ Strategiyanın kodlaşdırılmasına müəllimin öz mövqeyi maneə deyil.
+
+### 4️⃣ Hədəf seçimi — acgözlük yox [00:12:56–00:13:17]
+> *"**Həftənin likiditesi var** — belə tutmaqdansa... Twitter-də hava atacağam
+> deyə yox. **Birbaşa baxıram: burada likidite var, toxunulmamış** — buranı
+> hədəflədim."*
+→ Hədəf = **ən yaxın TOXUNULMAMIŞ likidite**, ən böyüyü yox.
+
+### 5️⃣ Konfluens yenidən sadalanır [00:11:32–00:11:47]
+> *"Həm **yüksək zaman dilimində internal çəkilir**, həm **düşük zaman
+> dilimində likidite alır**, həm **external/internal məntiqinə** görə hərəkət
+> edir. Artı olaraq **günlük bias-ın da bəllidir**. Oranı alarkən nə yaradır?
+> **IFVG.** Aldıqdan sonrakı **Sharp Turn**."*
+
+---
+
+## 📋 D41 kadr `f_00082` — ORİJİNAL ICT KILLZONE CƏDVƏLİ (ekrandan oxundu)
+
+Canlı yayımda müəllim Google-da axtarıb ekrana gətirir: *"ICT Killzones And
+Ranges"* (mənbə: Tradinator, X/Twitter). Saatlar **NY vaxtı**:
+
+| Zona | Xarakter | Vaxt (NY) | Sweetspot |
+|---|---|---|---|
+| **London Open KZ** | ⭐ *"Generally creates the **High or Low of the day**"* | **02:00–05:00** | **03:00** |
+| London Lunch | Konsolidasiya; dönüş/davam ola bilər | 05:00–07:00 | — |
+| **New York Open KZ** | *"Generally provides **Continuation or Reversal**"* | **07:00–10:00** | **09:00–09:30** |
+| London Close KZ | *"For **profit taking**; can also create the High or Low of the day"* | 10:00–12:00 | — |
+| ICT Asian Range | JPY/AUD/NZD daha volatil | 20:00–00:00 | — |
+| **ICT Central Bank Dealers Range** | 🚫 ***"No-Trade zone"*** | **16:00–20:00** | — |
+| ICT Flout Range | Flout+Asia; 🚫 *"also no-trade zone"* | 16:00–00:00 | — |
+
+### Bundan çıxan yeni qaydalar
+1. ⭐ **"London Open KZ günün high və ya low-unu yaradır"** — D17-dəki
+   *"bullish gündə günün low-u Londra-da yaranır"* ifadəsinin **yazılı
+   təsdiqi**. Bu, ölçülə bilən konkret iddiadır.
+2. 🚫 **16:00–20:00 NY = TRADE YOX** (Central Bank Dealers Range). Bizim
+   indikatorda bu pəncərə **bloklanmalıdır** — hazırda yoxdur.
+3. **London Close KZ (10:00–12:00 NY)** = qazanc götürmə zonası → açıq
+   mövqeni orada bağlamaq məntiqlidir (D43-dəki "PM sonunda bağla" ilə uyğun).
+4. **Sweetspot** anlayışı: killzone içində **ən aktiv dəqiqələr** —
+   London 03:00, NY 09:00–09:30. Siqnal ağırlığı üçün istifadə oluna bilər.
+
+⚠️ Diqqət: bu cədvəl **ICT-nin klassik** saatlarıdır (forex mərkəzli).
+Müəllimin **öz indikatoru** endekslər üçün fərqlidir (NY AM 09:30–11:00).
+İkisi ziddiyyət deyil — **forex vs endeks** fərqidir (D17 @00:02:54).
