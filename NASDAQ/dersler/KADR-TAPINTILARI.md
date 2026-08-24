@@ -1136,3 +1136,70 @@ Ranges"* (mənbə: Tradinator, X/Twitter). Saatlar **NY vaxtı**:
 ⚠️ Diqqət: bu cədvəl **ICT-nin klassik** saatlarıdır (forex mərkəzli).
 Müəllimin **öz indikatoru** endekslər üçün fərqlidir (NY AM 09:30–11:00).
 İkisi ziddiyyət deyil — **forex vs endeks** fərqidir (D17 @00:02:54).
+
+---
+
+## Kadr baxışı — kod düzəlişindən sonrakı davam (3-cü keçid)
+
+### D30 kadr `sheet_002` (00:06:40, `f_00051`) — order block RR real ölçü
+Position tool: **Stop 30.50 (0.20%) 122 · Amount 49500 · Open P&L 30.25 ·
+Qty 0.52 · Risk/Reward Ratio 1.88 · Target 57.75 (0.37%) 231**
+
+NAS100-də daha bir real nümunə — bu dəfə **RR 1.88** (bizim kodda default
+`minRR=2.0`-dan bir az aşağı). Transkriptlə üst-üstə düşür [00:06:30-00:06:44]:
+> *"Satış əmri order block seçdim, stopu **sinkə** qoydum. Hədəf: **London-un
+> low-u.**"*
+Stop = fitil ("sink"), hədəf = London seansının low-u (əvvəlki seansın
+swing-i). Bu, D31-in "mean threshold"undan fərqli — burada stop **fitilə**
+qoyulub, gövdəyə yox. Deməli order block-da stop seçimi iki variantlıdır
+(fitil = təhlükəsiz, gövdə = aqressiv/yaxşı RR) — D31 @00:12:00-dəki
+xəbərdarlıqla eynidir.
+
+### D30 [00:05:00–00:06:15] — Order block-un TAM addım-addım nümunəsi
+> *"Vacib likidite səviyyəsini aldı, aşağı atdı... **bunun dibində
+> qapatmadı**. Yenidən gedir oraya. Bax indi bu **da aldı**. Bu şama
+> baxacaqsınız. Bu, artıq **son alış proqramı üçün satışa** — bunun
+> **altında** qapatması lazım. Onun altında qapatır. Nə gözləyə bilərsiniz?
+> İndi buraya geri gəlib tepki almasını gözləyə bilərsiniz, çünki bu
+> **valid bir order block.**"*
+
+Diqqət: burada order block **iki cəhddən sonra** valid olur — birinci
+cəhddə (ilk yaşıl şam) gövdə bağlanışı olmayıb (etibarsız), bazar YENİDƏN
+gəlib həmin səviyyəni alıb, İKİNCİ dəfə gövdə ilə bağlanıb və VALID olub.
+Bu, D30-un STRATEGIYA-SPEC-də olan "bir neçə şam olarsa, likiditeni faktiki
+alanı götür" qaydasının canlı nümunəsidir.
+
+### D24 [00:07:20–00:09:24] — LRLR + FVG birgə gözləmə ardıcıllığı (NAS100)
+Kadr `24/sheet_005` (f_00062–f_00065): yaşıl support qutusu (order block/FVG)
+NAS100 1m/15m qrafikdə.
+> *"Bax burada da mesela bir likidite buraxdı, FVG-ni də buraxdı. Nə
+> gözləməliyik bu nöqtədə? Bu FVG-yə bir geri çəkilmə, daha sonra bu
+> likidite nöqtələrini almasını gözləyə bilərik — niyə DÜŞÜK DİRƏNCLİ
+> likidite nöqtəsi olduğu üçün."*
+> *"Ən optimal olaraq: displacement, sol aşağı FVG buraxdı, aşağıda
+> düşük-dirənc kompleksimiz var, aşağıda FVG-yə geri çəkilir, o daha sonra
+> alır."*
+
+Bu, bizim indi kodladığımız DOL-hədəf + FVG-giriş kombinasiyasının sözlə
+tam təsviridir: **giriş FVG-dən, hədəf LRLR-dən seçilir.**
+
+### D42 [00:24:31–00:27:03] — Tam kaskad nümunəsi (Qızıl, GC1!)
+Həftəlik → 4H → 15m tam iş axını, real RR ilə:
+```
+Həftəlik bullish bias (gövdə bağlanışı ilə təsdiqlənib)
+  → 4H-də internal FVG identifikasiya edilir
+  → geri çəkilmə gözlənilir
+  → 15m-ə enilir
+  → geri çəkilmə HƏM FVG-ni doldurur HƏM stopları partladır (LRLR + FVG konfluensi)
+  → CISD (order block) gözlənilir: son likidite-alan şam öz əksində gövdə ilə bağlanır
+  → giriş: o şamın bağlanışında
+  → hədəf: external likidite (əvvəlki HƏFTƏNİN high-ı)
+  → nəticə: RR ~2.5-3
+```
+> *"Stop niyə belə qoyulmuşdu? Çünki bu **mean threshold**-a hörmət edib
+> **oradan çıxmasını** gözləyirdik. Nə oldu — zatən stop [olmadı], o üzdən
+> **order body-yə atdıq**, zatən getdi gəldi."*
+
+Bu, D31-in HTF-FVG + order block birgə istifadəsinin **ikinci tam təsdiqi**dir
+(Qızıl üzərində) — bizim kodda indi tətbiq olunan HTF filtri + DOL hədəfi
+birbaşa bu nümunənin məntiqidir.
