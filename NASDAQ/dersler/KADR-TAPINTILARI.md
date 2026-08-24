@@ -1203,3 +1203,61 @@ Həftəlik bullish bias (gövdə bağlanışı ilə təsdiqlənib)
 Bu, D31-in HTF-FVG + order block birgə istifadəsinin **ikinci tam təsdiqi**dir
 (Qızıl üzərində) — bizim kodda indi tətbiq olunan HTF filtri + DOL hədəfi
 birbaşa bu nümunənin məntiqidir.
+
+---
+
+## ⭐ D25 kadr `sheet_002` — SP500 BİRBAŞA TƏSDİQİ
+
+Kadr `f_00029`–`f_00038`: simvol sətri **"S&P 500 E-mini Futures · 1W · CME"**
+(ES1!) — **HƏFTƏLİK** qrafikdə IRL/ERL nümunəsi göstərilir.
+
+Bu, əvvəlki qeydimdəki "SP500 üçün ayrıca nümunə yoxdur" fikrini **düzəldir** —
+əslində var: D25-in bütün IRL/ERL izahı ES1! həftəlik qrafikdə aparılır,
+NQ1!-ə keçid YOX bu dərsdə. Deməli sualın "SP500-də işləyir?" hissəsinə
+indi **birbaşa vizual sübut** var (əvvəl yalnız NQ/Gold/Forex/BTC idi).
+
+Məzmun özü əvvəlki qeydlə eynidir (external→internal→external
+növbələşməsi), fərq yalnız simvoldur.
+
+---
+
+## ⭐ D26/D29 — YENİ BAZAR NÜMUNƏLƏRİ: NZD, OIL
+
+- **D26** [00:18:34-00:18:50]: *"Bitcoin ve NZD üzerinde de örneklerini
+  göstereceğim"* — Sharp Turn NZDUSD-də də göstərilir (kadr baxılmadı, amma
+  sözlə təsdiqlənib).
+- **D29** kadr `sheet_008` (`f_00108`–`f_00117`): simvol **"CFDs on Crude Oil
+  (WTI) · 5"** — order block-un çoxlu-sweep qaydası burada **NEFT (OIL)**
+  üzərində göstərilir. Bazar siyahımıza əlavə: ✅ **OIL/WTI də nümunə var.**
+
+Yekun bazar siyahısı indi: NASDAQ/NQ, Gold, GBPUSD, EURCAD, USDJPY, EURUSD,
+BTC, **SP500 (ES1!, birbaşa)**, **NZD**, **OIL/WTI**. Yəni müəllim demək
+istədiyi *"hər paritedə işləyir"* iddiası kadr sübutları ilə geniş
+təsdiqlənir — sırf "sadece indeks/gold" deyil.
+
+---
+
+## ⭐ D31 [00:14:30–00:16:20] — MEAN THRESHOLD GİRİŞİNİN PROS/CONS TƏHLİLİ
+
+Neft (Crude Oil, FOREX.com) üzərində, çox aşağı RR verən bir order block
+nümunəsində müəllim **orta nöqtədən (mean threshold) giriş**in üstünlük və
+çatışmazlıqlarını açıq şəkildə sadalayır — bu, bizim kodun FVG/OB girişini
+default olaraq **50% orta nöqtədən** etməsini birbaşa əsaslandırır:
+
+> *"Bunun zərərləri nə, artıları nə? **Artısı**: belə vəziyyətlərdə **daha
+> çox R ala bilirsin, daha çox pul qazana bilirsin, daha gözəl bir entry
+> olursun.** **Zərərləri**: bəzən spread-dən, ondan-bundan; **bəzən qiymət
+> oraya gəlmir**. Bəzən fiyat belə gedir, oraya heç toxunmur. Bu
+> vəziyyətlərdə **qaçıra bilirsin. Zərərləri bunlardır. Başqa zərəri yoxdur.**"*
+
+**Nəticə bizim kod üçün:** `entryPx := (ft + fb) / 2` (FVG/OB orta nöqtəsi)
+seçimimiz **düz mexanizmdir**, amma "qiymət 50%-ə çatmadan gedə bilər" —
+bu, `maxWaitFill` parametrinin niyə mövcud olduğunu təsdiqləyir (setup vaxt
+bitəndə ləğv olunur, əbədi gözləmir). Sürətli bazarlarda (məs. FOMC) bu
+itki sayı artacaq — gözlənilən, dizayn kompromisidir.
+
+### Yenidən təsdiq: çox-mumlu order block (Neft üzərində)
+[00:15:08–00:15:37]: *"Üç dənə böyük gövdəli mum var... likiditesini də
+almış... En son alan yer harasıdır? O zaman alan mum haradır? Şu üç mum,
+arxası təqib edən ARDICIL mumlar."* — D29/D30-dakı "çoxlu sweep-dən sonra
+FAKTİKİ alan şam(lar)ı götür" qaydasının **üçüncü** bazarda (neft) təkrarı.
