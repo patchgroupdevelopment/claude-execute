@@ -1542,3 +1542,37 @@ Power of Three / London manipulyasiyası nümunəsi bu dəfə Dow Jones
 
 Yekun (indi): NASDAQ/NQ, SP500/ES1!, Dow/YM1!, Gold, GBPUSD, EURCAD,
 USDJPY, EURUSD, BTC, NZD, OIL/WTI — geniş bazar spektri təsdiqlənib.
+
+---
+
+## 🔴🔴🔴 D42 [00:07:38–00:08:20] — 8 PARİTƏNİN YAN-YANA MÜQAYİSƏSİ (ən güclü bazar-universallıq sübutu)
+
+Kadr `42/sheet_006` (`f_00058`–`f_00066`): ekranda **8 panelli grid**,
+eyni anda göstərilən simvollar (başlıqlardan oxundu):
+**British Pound (GBP) · Bitcoin/Tether (BTC) · NASDAQ E-mini Futures (NQ) ·
+S&P 500 E-mini Futures (ES) · Euro/US Dollar (EUR) · Light Crude Oil
+Futures (WTI) · E-mini Dow Jones Futures (YM)** — 4H taymfreymdə, hər
+birində eyni internal/external FVG mantığı işarələnib.
+
+Müəllimin öz sözü:
+> *"İndi sizə bir neçə nümunə daha göstərəcəyəm. Bax bütün **8 dənə FƏRQLİ
+> PARİTƏ** var burada. Hamısının nəyə yaradığını göstərəcəyəm sizə. Bunu
+> yüksək zaman diliminə görə internal-external məntiqinə görə — yüksək
+> zaman diliminə tətbiq edib aşağı zaman dilimindən giriş axtarsanız,
+> **trade-in keyfiyyəti, win rate ÇOX ÇOX ÇOX daha artacaq.**"*
+
+Bu, kursda **bazar-universallığının ən güclü tək sübutudur** — təsadüfi
+əlavə nümunə deyil, **məqsədli qurulmuş 8-paritəli müqayisə**. D40-dakı
+"hamısı eyni paritə zatən" sözünün vizual, sistematik təsdiqidir.
+
+### ⭐ Əlavə vacib qeyd — HTF bias-ın MƏCBURİLİYİ haqqında
+[00:08:03–00:08:17] Tənqidçilərinə cavab verir:
+> *"Bəzi meymunlar mənə deyir ki 'daily bias-a baxmırsan, bir şey etmirsin,
+> heç bir mənası yoxdur'. **Ulan onlar olmasa zatən işlemin bir mənası
+> yox!** Likiditenin harada olduğunu bilmək/tapmaq üçün gözəl bir üsul
+> internal-external məntiqi. Zatən **xarici traderlerin çoxu** bunu öz
+> trade sistemlərində tətbiq edir."*
+
+→ HTF bias/IRL-ERL addımı **könüllü dekorasiya deyil, girişin mənasını
+verən əsas komponentdir** — bizim kodun `htfFilterOn` məcburi şərt kimi
+qurulmasını əlavə təsdiqləyir.
