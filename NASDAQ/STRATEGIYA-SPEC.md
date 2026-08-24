@@ -245,15 +245,23 @@ Alternativ: **taymfreymi yüksəlt** (1m → 3m) — struktur netləşir.
 ## 7. RİSK (dəyişməz)
 
 - Əməliyyat başına **maksimum 1%** (adətən 0.5–1%)
-- **⭐ ANTİ-MARTİNGALE nərdivanı** (D41 @00:38:04, D37 @00:02:34):
+- **⭐ ANTİ-MARTİNGALE nərdivanı — dəqiq mexanizm** (D41 @00:38:04, D37 @00:00:33–00:02:54):
   ```
-  1% itirdin   → növbəti 0.5%    ($100k hesabda: $1000 → $500)
-  0.5% itirdin → növbəti 0.25%   ($250)
-  ... zərər çıxana qədər, sonra yenidən 1%
+  100,000$ → risk 1% → itki → 99,000$
+  99,000$  → risk 0.5% → itki → 98,500$
+  98,500$  → risk YENƏ 0.5% (⭐ İKİ dəfə 0.5% haqqı var) → itki → 98,000$
+  98,000$  → risk 0.25%-ə düşür, balans 98,500$-ə QAYIDANA qədər 0.25%-də qalır
+  98,500$-ə qayıdanda → risk YENİDƏN 0.5%-ə qalxır (eyni məntiqlə yuxarı)
   ```
-  **İtkidən sonra ölçü KİÇİLİR** — martingale-in tam əksi.
-  (Kadr `41/f_00083`–`f_00087`: ekranda Google kalkulyatorunda
-  `100000×0.5% = 500`, `100000×0.25% = 250` hesablanır.)
+  **Qalxma qaydası:** balans əvvəlki pillənin threshold-una **geri çatanda**
+  (mütləq xalis qazanc yox, sadəcə həmin pillənin itkisinin bərpası) bir
+  yuxarı pilləyə qayıdılır. **Real hesabda maksimum 1%, ASLA 2% yox.**
+  Challenge və real/live funded hesabda **eyni** risk metodu tətbiq olunur.
+  (Kadr `41/f_00083`–`f_00087`: Google kalkulyatorunda `100000×0.5%=500`,
+  `100000×0.25%=250` hesablanır.)
+  ⚠️ Bu, hesab-səviyyəli ardıcıl-əməliyyat vəziyyət maşınıdır — TradingView
+  indikatoru broker balansını bilmədiyi üçün bunu avtomatlaşdıra bilməz;
+  istifadəçi əl ilə tətbiq etməlidir. Pine-da `riskPct` sabit input olaraq qalır.
 - Hədəf **1:2** (yeni başlayan üçün 1:1 də olar)
 - Lot riskdən hesablanır, əksinə yox
 - HTF FVG-yə çatanda **yarısını bağla** (D41 @00:34:03)
