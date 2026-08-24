@@ -1471,3 +1471,15 @@ Bu, bizim kodda `useDolTp` seçicisinin (DOL-hədəf vs sabit R-multiple) niyə
 Bizim kodda `useDolTp=true` = təcrübəli fəlsəfə (DOL-a qədər), `false` =
 mexaniki fəlsəfə (sabit `tp1RR`/`tp2RR`). **Hər iki rejim müəllimin özü
 tərəfindən legitim sayılır** — bu, bizim dizayn qərarımızı təsdiqləyir.
+
+---
+
+## D43 [00:28:03–00:28:33] — Aşağı TF-ə enmə qaydası ŞƏRTLİDİR
+
+> *"Əgər 5 dəqiqəlikdə IFVG varsa, **bir aşağı zaman dilimə enmək lazım
+> deyil.** Amma əgər yoxdursa, 5 dəqiqədən **3 dəqiqəyə enəcəksən.**"*
+
+Yəni 5m→3m→1m enmə **avtomatik addım deyil**, yalnız 5m-də FVG/IFVG **aydın
+görünmürsə** tətbiq olunur. Bu, D44-dəki "salaq-saçma price action-da
+taymfreymi yüksəlt" qaydasının **əksi/tamamlayıcısı**dır: struktur
+görünmürsə aşağı en (aydınlıq üçün), amma artıq aydındırsa aşağı enmə.
