@@ -1359,3 +1359,28 @@ maqnitdir. Sıra: **Aylıq > Həftəlik > Günlük > Seans (AS/LO/NY H-L)**.
 Bu, D23-ün ranqına **yuxarı ucdan** əlavədir (əvvəl NY PM-i "ən vacib" kimi
 yazmışdıq — bu, seans-daxili səviyyələr arasında düzgündür, amma
 Həftəlik/Aylıq onlardan da yuxarıdadır).
+
+---
+
+## 🔴 D34 [00:15:39–00:17:02] — SP500-DƏ "DAHA GÖZƏL İŞLƏYİR" + IFVG-nin minimal giriş qaydası
+
+Kadr `34/sheet_012` (`f_00119`–`f_00127`): simvol **"S&P 500 E-mini
+Vadeliler · 5"** (ES1!), tam killzone rəngləri (Asia/London/NY AM/NY
+Lunch/NY PM) ilə. Position tool: **Risk/Ödül Oranı: 3.08** (Kapalı K/Z 10.00,
+Miktar 0.032).
+
+> *"Qısa bahs etmək istədim — **SMP 500-də də göstərəyim, bax bu HƏR
+> PARİTEDƏ işləyir. Bu arada SMP 500-də falan DAHA GÖZƏL işləyir.**"*
+
+⭐ **IFVG-nin minimal giriş qaydası (yeni incəlik)** [00:16:42–00:16:51]:
+> *"Burada body ilə bağlamış, daha sonra bax **ufacıq bir wick-lə gəlmiş
+> buraya** — görürsünüz, **inversion artıq olduğu üçün bunun içinə ən
+> ufaq bir tepkidən girə bilərsiniz.**"*
+
+Bu, D43-dəki "IFVG retrace olmaz, sonrakı şamda gir" qaydasını
+**dəqiqləşdirir**: bəzən **çox kiçik bir fitil** belə kifayət edir (tam
+retrace şərt deyil) — bizim kodda `sharpFastEntry` məntiqi (MSS-dən sonrakı
+şamda bazar qiymətindən giriş) bunun praktik ekvivalentidir, çünki gözləmə
+tamamilə aradan qaldırılır.
+
+Nəticələr: 1:2 tez tutulur, bir nümunədə **3.56R**-ə qədər uzanır.
