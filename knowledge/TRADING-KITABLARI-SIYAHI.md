@@ -1,0 +1,110 @@
+# Trading kitabları — xarici siyahı (arayış)
+
+Mənbə: wuipow.notion.site açıq səhifəsi · **99 kitab**
+
+⚠️ Bu, rəsmi olmayan kolleksiyadır (müəllif hüquqları qorunan kitablar).
+Bu fayl yalnız **biblioqrafiya** kimi saxlanılır — fayllar yüklənməyib.
+
+Layihəmizə uyğunluğu üçün bax: `knowledge/KITAB-XERITESI.md`
+
+---
+
+- A complete guide to the futures market_ technical analysis and trading systems, fundamental analysis, options, spreads, and trading principles
+- A Man For All Markets From Las Vegas To Wall Street
+- A Random Walk Down Wall Street_ The Time-Tested Strategy for Successful Investing (Eleventh Edition)
+- A-Complete-Guide-To-Volume-Price-Analysis-Anna-Coulling-
+- Against the Gods_ The Remarkable Story of Risk
+- Antifragile_ Things That Gain from Disorder
+- Building Winning Algorithmic Trading Systems_ A Trader's Journey from Data Mining to Monte Carlo Simulation to Live Trading
+- Come In To My Trading Room
+- Common-Stocks-and-Uncommon-Profits
+- Dark Pools_ The Rise of the Machine Traders and the Rigging of the U.S. Stock Market
+- diary-of-a-professional-commodity-trader
+- Elliott Waves Principle  Key to Market Behavior A. J. Frost , Robert Prechter
+- Encyclopedia Of Chart Patterns, 2nd Edition
+- Enhancing Trader Performance_ Proven Strategies From the Cutting Edge of Trading Psychology (Wiley Trading)
+- Entries & Exits_ Visits to 16 Trading Rooms (Wiley Trading)
+- Evidence Based Technical Analysis
+- Extraordinary Popular Delusions and the Madness of Crowds)
+- Flash Boys_ A Wall Street Revol - Lewis, Michael
+- Fooled by Randomness
+- Fortune's Formula_ The Untold Story of the Scientific Betting System That Beat the Casinos and Wall Street
+- Hedge Fund Market Wizards
+- High probability trading  take the steps to become a successful trader(rasabourse.com)
+- How I made 2 Million In The Stock Market
+- How to Day Trade for a Living
+- How_to_Make_Money_in_Stocks_Trilogy
+- How_To_Trade_In_Stocks_(1940_original)-EN
+- Inside the house of money_ Top hedge fund traders
+- Insider buy superstocks
+- Irrational Exuberance 3rd edition )
+- Japanese Candlestick Charting Techniques
+- Liar's_Poker_MIchael Lewis
+- Little Book Of Common Sense Investing
+- Long-Term Secrets to Short-Term Trading
+- Manias, Panics, and Crashes_ A History of Financial Crises
+- Market Wizards_ Jack Schwager
+- market_makers_matrix
+- Mastering Elliot Wave_ Presenting the Neely Method_ The First Scientific, Objective Approach to Market Forecasting with the Elliott Wave Theory
+- Mastering The Trade
+- Mind Over Markets_ Power Trading with Market Generated Information, Updated Edition
+- Momentum Masters
+- More Money Than God_ Hedge Funds and the Making of a New Elite
+- Naked Forex
+- One Good Trade
+- One Up On Wall Street_ How To Use What You Already Know To Make Money In The Market
+- Option_Volatility_Sheldon_Natenberg
+- Options as a strategic investment
+- Pit_Bull
+- Quantitative Trading_ How to Build Your Own Algorithmic Trading Business
+- Reminiscences of a Stock Operator_Edwin Leverfre
+- Secrets-For-Profiting-in-Bull-and-Bear-Markets-McGraw-Hill-1988
+- security_analysis
+- Stock Market Wizards_ Interviews with America's Top Stock Traders
+- Super Trader_Van Tharp
+- Technical Analysis of Stock Trends, 8th Ed_Robert Edwards, John Magee
+- Technical Analysis Of the Financial Markets_John Murphy
+- The Alchemy of Finance_ Reading the Mind of the Market
+- The Art and Science of Technical Analysis_ Market Structure, Price Action, and Trading Strategies
+- The Complete Turtle Trader - The Legend, The Lessons, The Results
+- The Daily Trading Coach_ 101 Lessons for Becoming Your Own Trading Psychologist (Wiley Trading)
+- The Disciplined Trader
+- The Greatest Trade Ever_ The Behind-the-scenes Story of How John Paulson Defied Wall Street and Made Financial History
+- The Intelligent Investor
+- The Little Book of Market Wizards_ Lessons from the Greatest Traders
+- The Little Book of Trading
+- the man who solved the markets
+- The Most Important Thing Illuminated_ Uncommon Sense for the Thoughtful Investor
+- The New Market Wizards_Jack Schwager
+- The New Sell and Sell Short_ How To Take Profits, Cut Losses, and Benefit From Price Declines (2 Edition)
+- The New Trading for a Living_ Psychology, Discipline, Trading Tools and Systems, Risk Control, Trade Management (Wiley Trading)
+- The PlayBook_ An Inside Look at How to Think Like a Professional Trader
+- The Psychology of Trading_ Tools and Techniques for Minding the Markets
+- The Quants_ How a New Breed of Math Whizzes Conquered Wall Street and Nearly Destroyed It
+- The Visual Investor_ How to Spot Market Trends (Wiley Trading)
+- The-Black-Swann
+- the-four-pillars-of-investing-by-william-j-bernstein
+- The_Big_Short__Inside_the_Doom
+- the_misbehavior_of_markets_-_benoit_mandelbrot
+- Think_and_Trade_Like_a_Champion
+- Thinking, Fast and Slow
+- Trade Like a Casino_ Find Your Edge, Manage Risk, and Win Like the House
+- Trade Mindfully_ Achieve Your Optimum Trading Performance with Mindfulness and "Cutting Edge" Psychology
+- TRADE YOUR WAY TO FINANCIAL FREEDOM
+- TRADE_LIKE_A_STOCK_MARKET_WIZARD
+- trader-vic-methods-of-a-wall-street-master-sperandeo-victor
+- Trades About to Happen_ A Modern Adaptation of the Wyckoff Method
+- Trading and Exchanges_ Market Microstructure for Practitioners - FULL
+- Trading Classic Chart Patterns - Thomas Bulkowski
+- Trading For Living_ Alexander Elder
+- Trading In The Zone_ Mark Douglas
+- Trading Price Action Reversals_ Technical Analysis of Price Charts Bar by Bar for the Serious Trader (Wiley Trading)
+- Trading Price Action Trends_ Technical Analysis of Price Charts Bar by Bar for the Serious Trader
+- Trading Psychology 2.0
+- Trading Systems and Methods - Trading Software
+- Trend Following. How Great Traders Make Millions in Up or Down Markets
+- Van Tharp's definitive guide to position sizing
+- Way Of the Turtle
+- What I Learned Losing a Million Dollars
+- When Genius Failed_ The Rise and Fall of Long-Term Capital Management
+- You Can Be a Stock Market Genius Even if You're Not Too Smart_ Uncover the Secret Hiding Places of Stock Market Profits
