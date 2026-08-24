@@ -1530,3 +1530,15 @@ Pine indikatorumuzda `riskPct` sabit input olaraq qalır — bu nərdivan
 istifadəçinin özü tərəfindən əl ilə tətbiq edilməlidir (broker equity-ni
 izləyərək), TradingView indikatoru bunu avtomatik edə bilməz (çünki
 hesabın HAQİQİ balansını bilmir).
+
+---
+
+## D18 — Dow Jones (YM1!) da bazar siyahısına əlavə olundu
+
+Kadr `18/sheet_004`: simvol **"E-mini Dow Jones (YM1!) · 5 · CBOT"** —
+Power of Three / London manipulyasiyası nümunəsi bu dəfə Dow Jones
+üzərində göstərilir (killzone rəngləri ilə). Bazar siyahımıza əlavə:
+✅ **Dow Jones (YM1!) də nümunə var.**
+
+Yekun (indi): NASDAQ/NQ, SP500/ES1!, Dow/YM1!, Gold, GBPUSD, EURCAD,
+USDJPY, EURUSD, BTC, NZD, OIL/WTI — geniş bazar spektri təsdiqlənib.
