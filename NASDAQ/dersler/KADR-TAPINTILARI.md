@@ -1384,3 +1384,23 @@ retrace şərt deyil) — bizim kodda `sharpFastEntry` məntiqi (MSS-dən sonrak
 tamamilə aradan qaldırılır.
 
 Nəticələr: 1:2 tez tutulur, bir nümunədə **3.56R**-ə qədər uzanır.
+
+---
+
+## ⭐ D43 [00:22:29–00:23:05] — ƏN BÖYÜK YENİ BAŞLAYAN SƏHVİ (metodoloji xəbərdarlığı)
+
+> *"**Sizin ən böyük etdiyiniz səhv** budur — bunları görmədən **birbaşa
+> gözləyirsiniz.** Londra-da bazarı izləyərkən deyirsiniz: 'belə gələcək,
+> buraya alacaq, buradan bir setup olacaq, FVG olacaq, mən oradan daxil
+> olacağam.' Ə qardaşım, **o qədər elə bir şey ola bilərmi?** O zatən
+> alacağını **artıq alıb.** Yüksək zaman dilimindən bir çıxsan, **5
+> dəqiqəlikdən başını çıxarsan**, zatən yüksək zaman diliminde **nə
+> etdiyini/etməyə çalışdığını görərsən.**"*
+
+**Praktik nəticə:** 5m-də əvvəlcədən dəqiq mikro-ssenari qurub gözləmək
+("bura gələcək, sonra bura, sonra FVG olacaq...") səhvdir — çünki bazar
+adətən artıq lazım olanı alıb qurtarıb. Düzgün yanaşma: **HTF-ə çıx,
+bazarın ARTIQ NƏ ETDİYİNİ (tamamlanmış strukturu) oxu**, gələcəyi təxmin
+etməyə çalışma. Bu, bizim kodun **HTF filtrini SWEEP-dən ƏVVƏL yoxlaması**
+məntiqi ilə üst-üstə düşür — sistemin "əvvəl HTF vəziyyətinə bax, sonra
+LTF-ə en" ardıcıllığının doğruluğunu bir daha təsdiqləyir.
