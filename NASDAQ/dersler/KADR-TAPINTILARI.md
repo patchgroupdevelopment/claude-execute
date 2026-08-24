@@ -820,3 +820,130 @@ işləmək lazımdır, `high`/`low` ilə yox — yalnız sweep aşkarlanmasında
 > *"Bu şeyləri qrafikdə **incələyin, izləyin**. İşlem açın demirəm, **demo
 > hesabda da işlem açın demirəm**. Sadəcə **izləyin, işarələyin**. Gözünüz
 > alışsın — gözünüz gördükcə anlayacaq."*
+
+---
+
+## 🔴🔴 D31 — MÜƏLLİMİN A/B TƏCRÜBƏSİ: EYNİ PATTERN, FƏRQLİ NƏTİCƏ
+
+Bu, bütün kursda **bizim üçün ən çox dəyəri olan didaktik hissədir**, çünki
+müəllim **eyni order block pattern-ini iki dəfə** göstərir — biri **UĞURSUZ**,
+biri **UĞURLU** — və aradakı **yeganə fərqi** adlandırır.
+
+### A) UĞURSUZ nümunə [00:05:06–00:06:11]
+Hər şey "kitaba uyğun"dur:
+- likidite nöqtəsi var ✅
+- qiymət onu alır ✅
+- şamın üstündə **gövdə ilə bağlanır** ✅ → *"burası bizim üçün order block
+  oluyor, değil mi?"*
+- limit əmri qoyulur, hədəf 1:2
+
+**Nəticə:** *"Aa, olmadık."* (TP olmadı, stop oldu.)
+
+Müəllimin öz izahı:
+> *"Peki **niyə** oldu bu? ... Burada **o önəmli səviyyə dediyim yer var mı?
+> YOX.** O zaman bu bizim üçün nə olur? **Bir şey olmur.**"*
+
+### B) UĞURLU nümunə [00:06:44–00:08:25]
+Fərq **yalnız bir şeydir**: yüksək taymfreymdə **vacib səviyyə**.
+> *"Yüksək zaman diliminə baxdığımızda... **important level dediyimiz önəmli
+> səviyyə əslində BİR SAATLİKDƏ burada varmış.** ... Burada nə var? **1 saatlik
+> FVG var. Point of interest dediyimiz bir yer var.** 5 dəqiqəliyə endik."*
+
+Tam yoxlama siyahısı (müəllimin ardıcıllığı ilə):
+```
+1. HTF (1H) FVG-nin İÇİNDƏYİK          ← "important level" / point of interest
+2. HTF istiqamət UYĞUNDUR              ← "1 saatlik trendimiz yuxarı, buy modeldeyiz"
+3. LTF likidite ALINIR                 ← "buradaki low'u alıyor"
+4. Likiditeni alan ƏKS-RƏNGLİ şam      ← "down close candle, kırmızı bir mum"
+5. Onun ÜSTÜNDƏ GÖVDƏ bağlanışı        ← "bunun üstüne kapatırsa → CISD/order block"
+6. GİRİŞ: order block gövdəsi və ya ORTA NÖQTƏSİ
+7. STOP: OB-nin fitilinə (RR 1.68) və ya gövdəsinə (daha yaxşı RR)
+8. HƏDƏF: yuxarıdakı high, ya da 1:2
+```
+> *"**Hər şey uyuyor.** Hani zaman dilimini də uydururuq özümüzcə. Önəmli
+> səviyyəni də aldı."*
+
+### ⭐ YENİ TERMİN: "MEAN THRESHOLD" [00:08:39]
+> *"Şimdi bunun **orta nöqtələri — mean threshold** olduğunu... bunu çəkib
+> **orta nöqtədən** giriş arayanlar olur."*
+
+Yəni order block-un da FVG kimi **50% orta nöqtəsi** var və giriş oradandır.
+Bizim kodda FVG üçün bu var, **order block üçün əlavə edilməlidir**.
+
+### 🎯 BİZİM ÜÇÜN NƏTİCƏ
+Köhnə XAU sistemimizin **-0.331 ATR** nəticəsi məhz A) variantı idi:
+sweep var, pattern var, **HTF vacib səviyyə YOX**.
+Müəllim eyni səhvi ekranda edib nəticəni göstərir.
+
+**Kodda məcburi şərt:** siqnal yalnız qiymət **HTF FVG / OB / vacib səviyyənin
+içində və ya ona toxunma məsafəsində** olarsa verilir. Bu filtr olmadan
+qalan bütün məntiq **statistik olaraq mənasızdır**.
+
+---
+
+## 🔴 D23 — "VACİB SƏVİYYƏ" NƏDİR? (D31-in itən yarısı)
+
+D31 dedi ki *"important level olmadan order block işləmir"* — amma **hansı
+səviyyənin vacib olduğunu** D23 təyin edir.
+
+### Vacib likidite səviyyələrinin RANQI [00:10:45–00:11:18]
+> *"Buradakı **ən önəmli likidite səviyyəsi harası idi? New York seansında
+> oluşmuş PM SESSION likiditesi** — New York-un öğlen saatlerinde... **1.5 ilə
+> 4 arası** oluşmuş o **biriken** likidite. Bir də o **düşük dirençli**
+> likidite... **oralara getməsi çox daha yüksək ehtimallıdır.**"*
+
+Sıralama (yüksəkdən aşağı):
+1. **NY PM seansında yığılmış likidite** (13:30–16:00 NY) ← ən vacib
+2. **Low Resistance Liquidity** — toxunulmamış, üst-üstə yığılan səviyyələr
+3. **Günlük (Daily) FVG** — HTF hədəfi
+4. **Günlük swing high/low** — external hədəf
+5. Seans high/low-ları (AS/LO/NYAM/NYL/NYPM)
+
+### Tərəf seçimi qaydası [00:10:07–00:10:21]
+> *"Burada bu qədər **heyvan kimi likidite var — TOXUNULMAMIŞ**. Para para
+> para var burada. Burada da var para, **amma məntiqən hara getməsi daha
+> OPTIMAL olur?**"*
+
+→ İki tərəfdə də likidite var. **Daha çox toxunulmamış** olan tərəfi seç.
+Kodda: hər iki tərəfdəki alınmamış səviyyələri **say**, çox olanı hədəf götür.
+
+### ⭐ FVG-lər HƏDƏF kimi [00:03:37]
+> *"**FVG-ləri arkadaşlar LİKİDİTE HƏDƏFİ olaraq istifadə edə bilərsiniz.**"*
+Yəni TP həmişə swing olmaq məcburiyyətində deyil — qarşı tərəfdəki
+doldurulmamış FVG də etibarlı TP-dir. (IRL/ERL növbələşməsi ilə eynidir.)
+
+### Günlük qrafikdən bias qurma resepti [00:14:38–00:19:33]
+```
+1. GÜNLÜK qrafiyə keç
+2. İşarələ: swing high/low (external) + doldurulmamış günlük FVG (internal)
+3. Yuxarıda swing high, aşağıda doldurulmamış FVG varsa →
+   gözlənti: əvvəl aşağı geri çəkilmə (FVG-ni doldurmaq üçün), SONRA long
+4. LTF bias bu hədəfə görə qurulur
+5. İki günlük FVG varsa: qiymət birincidən tepki alıb ikinciyə heç
+   uğramadan hədəfə gedə bilər
+```
+
+### ⭐ FVG-nin NİYƏ yarandığı (kökündəki məntiq) [00:13:36–00:13:47]
+> *"**FVG-lərin və displacement-in oluşma səbəbi: qiymətin TƏK TƏRƏFLİ
+> sunulması.** Tək tərəfli olaraq sunur qiyməti market/alqoritma bizə, daha
+> sonra oranı **REBALANCE edir, dengeliyor.**"*
+
+Ona görə FVG geri doldurulur — bu, "tarazlığın bərpası"dır.
+
+### 🧊 SOYUDUCU DUŞ — müəllimin öz etirafları
+[00:16:07–00:16:30]:
+> *"Market günlükdə aşağı gedir — **tam tərsi**... **Market heç vaxt sizin
+> gözlədiyiniz şeyləri net, əlinizə tepsi ilə sunmaz.** ... **Nə
+> gözləyirsinizsə, TAM TƏRSİNİ etməyi market sevir** — stop partladır çünki."*
+
+[00:16:59–00:17:12]:
+> *"**Belə canlı-canlı seçərək nümunə etməyi sevmirəm**, çünki heç vaxt
+> **mükəmməl nümunəni** önünüzə qoymaq istəmirəm — çünki heç vaxt mükəmməl
+> nümunə olmayacaq. **Bu şeylər sürəkli %100 işləməyəcək.**"*
+
+→ Bizim mövqeyimizi təsdiqləyir: **ölçmədən inanma.** Müəllim özü də
+"həmişə işləyir" demir.
+
+### D23 real əməliyyat ölçüləri
+[00:04:04–00:04:20]: *"36,5 point... **60 point-lik bir işlem**"* — NAS100-də.
+Yenə **20–60 punkt** aralığı. ✅ (D40/D41 ölçüləri ilə uyğun.)
