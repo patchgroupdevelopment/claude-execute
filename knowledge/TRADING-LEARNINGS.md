@@ -248,3 +248,47 @@ məlumat qiymətə hopub.
    filtr deyil**, mesajda göstərilən kontekstdir.
 
 **Tətbiq:** `ict-engine.mjs` → `dxyContext()` — yalnız məlumat, filtr DEYİL.
+
+---
+
+## 8. ⭐ ÖLÇÜLMÜŞ — indekslərdə ICT setup-ları killzone saatlarına DÜŞMÜR
+
+**Tarix:** 2026-08-24 · **Data:** 5m, 30 gün, NQ=F + ES=F + YM=F
+
+İstifadəçinin xahişi ilə indeks trade pəncərəsi genişləndirildi
+(08:30–11:00 → 07:00–16:00). Nəticə **gözlənilənin əksinə** çıxdı:
+
+| Pəncərə | Genişlik | Siqnal (3 indeks, 30 gün) |
+|---|---|---|
+| 08:30–11:00 | 2.5 saat | **0** |
+| 07:00–16:00 | 9 saat | **2** |
+| Tam sutka (filtrsiz) | 24 saat | **7** |
+
+Pəncərəni 3.6 dəfə genişləndirmək siqnalı yalnız 0→2 etdi.
+
+### Səbəb — setup-lar hansı saatda tamamlanır (NY vaxtı)
+```
+00:00 █   01:00 █   05:00 █   06:00 █   07:00 █   14:00 █   21:00 █
+```
+**Səpələnmişdir.** Killzone saatlarında (08:30–11:00) **heç biri yoxdur.**
+
+### Huni müqayisəsi — indeks vs kripto
+```
+NASDAQ  60 sweep → 22 HTF → 18 MSS → 10 FVG → 5 doldu → pəncərə 5-ni kəsdi → 0
+BTC     69 sweep → 30 HTF → 25 MSS → 18 FVG → 12 doldu → pəncərə 0 kəsdi → 12
+```
+Setup-lar indekslərdə də **tamamlanır** — sadəcə RTH-dan kənarda (gecə/Asiya
+saatlarında əvvəlki günün səviyyələri süpürülür).
+
+### 🔑 Nəticə
+1. **İndekslərdə tavan ~7 siqnal/ay** (3 alət, filtrsiz). Pəncərə tənzimləməklə
+   bunu artırmaq mümkün deyil — setup-ların özü nadirdir.
+2. Bu, §6-dakı tapıntı ilə **ardıcıldır**: killzone konsepsiyası indekslərdə
+   özünü doğrultmur. §6-da London ekstremum iddiası təkzib edilmişdi; burada
+   isə killzone saatlarında setup ümumiyyətlə tamamlanmır.
+3. Sistem **praktikada kripto sistemidir**: BTC 12 + ETH 11 = 23 siqnal/ay,
+   çünki 24/7 bazarda vaxt filtri tətbiq olunmur.
+
+**Açıq sual (ölçülməyib):** RTH-dan kənarda tamamlanan indeks setup-ları
+GƏLİRLİ olurmu? Spread gecə saatlarında genişdir — sayı artırmaq keyfiyyəti
+aşağı sala bilər. Qərar verməzdən əvvəl bu ölçülməlidir.

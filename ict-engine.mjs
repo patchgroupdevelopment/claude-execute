@@ -46,12 +46,30 @@ export const SESSIONS = {
 const LUNCH = [720, 780];      // 12:00–13:00
 const CBDR = [960, 1200];      // 16:00–20:00 — ICT "No-Trade zone"
 
-// Bazara görə trade pəncərəsi (D17 @00:02:43 — müəllimin ÖZ saatları)
+// Bazara görə trade pəncərəsi — NY vaxtı, dəqiqə.
+//
+// ⚠️ ÖLÇMƏ QEYDİ (knowledge/TRADING-LEARNINGS.md §6):
+// Günün ekstremumları indekslərdə 08:00–11:00 NY-də cəmləşir (ES 63.3%,
+// NQ 46.9% — təsadüfi gözlənti 23.4%). Dar pəncərə KEYFİYYƏT baxımından
+// üstündür. Lakin dar pəncərə ilə 30 gündə indekslərdə SIFIR siqnal çıxdı
+// (BTC 12, ETH 11 — kriptoda killzone məhdudiyyəti yoxdur).
+//
+// İstifadəçinin qərarı ilə indeks pəncərəsi genişləndirildi (07:00–16:00).
+// Bu, siqnal sayını artırır, keyfiyyəti isə ölçmədən asılı olaraq aşağı
+// sala bilər — nəticə cədvəldəki Expectancy ilə izlənməlidir.
+// Geri qaytarmaq: ICT_INDEX_WINDOW="510,660"
+function envWin(name, def) {
+  const v = process.env[name];
+  if (!v) return def;
+  const p = v.split(",").map((x) => parseInt(x.trim(), 10));
+  return p.length === 2 && p.every((x) => Number.isFinite(x)) ? p : def;
+}
+
 export function tradeWindowFor(kind) {
-  if (kind === "crypto") return null;              // 24/7, killzone yoxdur
-  if (kind === "index") return [510, 660];         // 08:30–11:00
-  if (kind === "gold") return [480, 660];          // 08:00–11:00
-  return [420, 600];                               // forex 07:00–10:00
+  if (kind === "crypto") return null;                             // 24/7
+  if (kind === "index") return envWin("ICT_INDEX_WINDOW", [420, 960]);   // 07:00–16:00
+  if (kind === "gold") return envWin("ICT_GOLD_WINDOW", [420, 960]);     // 07:00–16:00
+  return envWin("ICT_FX_WINDOW", [420, 720]);                     // forex 07:00–12:00
 }
 
 const nyFmt = new Intl.DateTimeFormat("en-CA", {
