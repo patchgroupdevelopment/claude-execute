@@ -11,6 +11,10 @@ on:
         description: "Həftəlik hesabatı indi göndər (gün/saat şərtinə baxmadan)"
         type: boolean
         default: false
+      ict_test:
+        description: "ICT TEST siqnalı göndər (real deyil — yalnız formatı yoxlamaq üçün)"
+        type: boolean
+        default: false
 
 # State fayllarını repoya geri yazmaq üçün lazımdır
 permissions:
@@ -64,6 +68,7 @@ jobs:
       # Formalaşan setup bildirişi: sweep olub, MSS/giriş gözlənilir.
       # Bu, ƏMR deyil — "diqqətdə saxla" xəbərdarlığıdır. Söndürmək: "0"
       ICT_FORMING: "1"
+      ICT_TEST: ${{ inputs.ict_test && '1' || '0' }}
 
       # ── S&P 500 və US100 günlük siqnalı (NY açılışından sonra hər ticarət günü brifinq) ──
       SP500: "1"

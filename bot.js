@@ -2932,7 +2932,51 @@ async function fetchYahoo5m(ticker) {
 }
 
 async function checkIctSignals() {
-  if (process.env.ICT_SIGNALS !== "1") return;
+  if (process.env.ICT_SIGNALS !== "1" && process.env.ICT_TEST !== "1") return;
+
+  // ── TEST rejimi: real setup gözləmədən formatı yoxlamaq üçün ──
+  // Canlı bazar datası ilə uydurma bir setup qurulur ki, mesajın necə
+  // görünəcəyini görəsən. Bu, REAL siqnal DEYİL və heç nəyə əsas vermir.
+  if (process.env.ICT_TEST === "1") {
+    const { formatIctSignal, formatIctForming, fetchDxy, dxyContext } =
+      await import("./ict-engine.mjs");
+    try {
+      const bars = await fetchYahoo5m("GC=F");
+      const px = bars[bars.length - 1].c;
+      const atr = px * 0.0025;
+      const demo = {
+        dir: 1, entry: px - atr * 0.5, sl: px - atr * 1.5, tp1: px + atr * 1.5,
+        tp2: px + atr * 2.5, rr: 2.0, risk: atr, sweptName: "AS.L", sweepCnt: 2,
+        dolUsed: true, barsAgo: 0, time: bars[bars.length - 1].t,
+      };
+      let msg = "🧪🧪 <b>TEST — bu REAL siqnal DEYİL</b> 🧪🧪\n" +
+                "Formatı yoxlamaq üçün göndərildi. Rəqəmlər uydurmadır.\n" +
+                "────────────────────\n\n" +
+                formatIctSignal(demo, "QIZIL (TEST)", px);
+      try {
+        const dxy = await fetchDxy();
+        const ctx = dxy && dxyContext(dxy, bars, 1);
+        if (ctx) msg += `
+
+${ctx.line}`;
+      } catch { /* kritik deyil */ }
+      await sendTelegram(msg);
+
+      await sendTelegram(
+        "🧪 <b>TEST — formalaşan setup nümunəsi</b>\n────────────────────\n\n" +
+        formatIctForming(
+          { stage: 2, dir: -1, sweptName: "PDH", sweepCnt: 1, barsWaiting: 5,
+            entryPx: px + atr, needs: "FVG orta nöqtəsinə geri çəkilmə" },
+          "NASDAQ (TEST)", px,
+        ),
+      );
+      console.log("  🧪 ICT TEST mesajları göndərildi.");
+    } catch (err) {
+      console.log(`  ⚠️  ICT test xətası: ${err.message}`);
+    }
+    if (process.env.ICT_SIGNALS !== "1") return;
+  }
+
   const { findIctSetup, formatIctSignal, formatIctForming, fetchDxy, dxyContext } =
     await import("./ict-engine.mjs");
 
