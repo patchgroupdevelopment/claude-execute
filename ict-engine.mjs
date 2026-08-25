@@ -46,18 +46,25 @@ export const SESSIONS = {
 const LUNCH = [720, 780];      // 12:00–13:00
 const CBDR = [960, 1200];      // 16:00–20:00 — ICT "No-Trade zone"
 
-// Bazara görə trade pəncərəsi — NY vaxtı, dəqiqə.
+// ════════════════════════════════════════════════════════════════════════════
+//  VAXT FİLTRİ — DEFOLT OLARAQ SÖNÜKDÜR (istifadəçi qərarı)
 //
-// ⚠️ ÖLÇMƏ QEYDİ (knowledge/TRADING-LEARNINGS.md §6):
-// Günün ekstremumları indekslərdə 08:00–11:00 NY-də cəmləşir (ES 63.3%,
-// NQ 46.9% — təsadüfi gözlənti 23.4%). Dar pəncərə KEYFİYYƏT baxımından
-// üstündür. Lakin dar pəncərə ilə 30 gündə indekslərdə SIFIR siqnal çıxdı
-// (BTC 12, ETH 11 — kriptoda killzone məhdudiyyəti yoxdur).
+//  İstifadəçinin tələbi: "saatın, sessiyanın fərqi yoxdur — əsas siqnal olsun
+//  və işləsin." Sistem təyin edilmiş alətləri DAİMİ analiz edir və struktur
+//  şərtləri ödəniləndə TP/SL ilə siqnal verir.
 //
-// İstifadəçinin qərarı ilə indeks pəncərəsi genişləndirildi (07:00–16:00).
-// Bu, siqnal sayını artırır, keyfiyyəti isə ölçmədən asılı olaraq aşağı
-// sala bilər — nəticə cədvəldəki Expectancy ilə izlənməlidir.
-// Geri qaytarmaq: ICT_INDEX_WINDOW="510,660"
+//  Bu qərar ölçmə ilə də dəstəklənir (TRADING-LEARNINGS §6 və §8):
+//   • "London günün ekstremumunu yaradır" iddiası indekslərdə TƏKZİB edildi
+//   • İndeks setup-ları killzone saatlarında ÜMUMİYYƏTLƏ tamamlanmır
+//     (00:00, 01:00, 05:00, 06:00, 07:00, 14:00, 21:00 NY — səpələnmiş)
+//   • Pəncərəni 2.5 saatdan 9 saata çıxarmaq siqnalı yalnız 0→2 etdi
+//
+//  ⚠️ Bir şey ÖLÇÜLMƏYİB: RTH-dan kənarda spread genişdir. Sayı artırmaq
+//  keyfiyyəti aşağı sala bilər. Cədvəldəki Expectancy ilə izlənməlidir.
+//
+//  Geri qaytarmaq (seans filtri istəsən):
+//     ICT_USE_SESSIONS=1  → bazara görə klassik pəncərələr qayıdır
+// ════════════════════════════════════════════════════════════════════════════
 function envWin(name, def) {
   const v = process.env[name];
   if (!v) return def;
@@ -65,11 +72,14 @@ function envWin(name, def) {
   return p.length === 2 && p.every((x) => Number.isFinite(x)) ? p : def;
 }
 
+export const SESSION_FILTER_ON = process.env.ICT_USE_SESSIONS === "1";
+
 export function tradeWindowFor(kind) {
-  if (kind === "crypto") return null;                             // 24/7
-  if (kind === "index") return envWin("ICT_INDEX_WINDOW", [420, 960]);   // 07:00–16:00
-  if (kind === "gold") return envWin("ICT_GOLD_WINDOW", [420, 960]);     // 07:00–16:00
-  return envWin("ICT_FX_WINDOW", [420, 720]);                     // forex 07:00–12:00
+  if (!SESSION_FILTER_ON) return null;                            // 24/7 analiz
+  if (kind === "crypto") return null;
+  if (kind === "index") return envWin("ICT_INDEX_WINDOW", [510, 660]);
+  if (kind === "gold") return envWin("ICT_GOLD_WINDOW", [480, 660]);
+  return envWin("ICT_FX_WINDOW", [420, 600]);
 }
 
 const nyFmt = new Intl.DateTimeFormat("en-CA", {
@@ -249,7 +259,9 @@ export function findIctSetup(bars, opt = {}) {
       else if (dir === 1 ? b.l <= entryPx : b.h >= entryPx) {
         diag.filled++;
         const winOk = !tradeWin || inWin(b.min, tradeWin);
-        const blockOk = kind === "crypto" || (!inWin(b.min, CBDR) && !inWin(b.min, LUNCH));
+        // CBDR / nahar blokları da yalnız seans filtri açıq olanda tətbiq olunur
+        const blockOk = !SESSION_FILTER_ON || kind === "crypto" ||
+                        (!inWin(b.min, CBDR) && !inWin(b.min, LUNCH));
         if (!winOk || !blockOk) { diag.rejWin++; stage = 0; }
         else {
           const ent = entryPx;

@@ -68,6 +68,10 @@ jobs:
       # Formalaşan setup bildirişi: sweep olub, MSS/giriş gözlənilir.
       # Bu, ƏMR deyil — "diqqətdə saxla" xəbərdarlığıdır. Söndürmək: "0"
       ICT_FORMING: "1"
+      # Seans/killzone filtri SÖNÜKDÜR — sistem 24/7 analiz edir.
+      # Ölçüldü: killzone saatlarında indeks setup-ları tamamlanmır
+      # (TRADING-LEARNINGS §6, §8). Açmaq üçün: ICT_USE_SESSIONS: "1"
+      ICT_USE_SESSIONS: "0"
       ICT_TEST: ${{ inputs.ict_test && '1' || '0' }}
 
       # ── S&P 500 və US100 günlük siqnalı (NY açılışından sonra hər ticarət günü brifinq) ──
