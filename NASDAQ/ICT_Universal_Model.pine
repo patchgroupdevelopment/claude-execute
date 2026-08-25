@@ -938,7 +938,7 @@ if barstate.islast
         tfWarn := na
     if tfBadG
         tfWarn := label.new(
-             bar_index, (ta.highest(high, 50) + ta.lowest(low, 50)) / 2,
+             bar_index, rngMid,
              "⚠️  YANLIŞ TAYMFREYM  ⚠️\n\n" +
              "Bu model 5 DƏQİQƏLİK üçün qurulub.\n" +
              "Cari: " + timeframe.period + "  →  5m və ya 15m seç.\n\n" +
