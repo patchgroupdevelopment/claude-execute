@@ -20,6 +20,8 @@ const P = {
   noTrade: [960, 1200],                   // 16:00–20:00 CBDR
   lunch: [720, 780],
 };
+// HTFON=0 → HTF FVG qapısını tamamilə söndür (ölçmə üçün)
+const HTF_ON = process.env.HTFON !== "0";
 
 async function fetchYahoo(sym, interval, range) {
   const u = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=${interval}&range=${range}`;
@@ -183,7 +185,7 @@ function atrSeries(b, n = 14) {
         if (inTrade) { rejBy.inTrade++; }
         else {
           const d = nLo > 0 ? 1 : -1;
-          const ok = d === 1 ? htfNearU : htfNearD;
+          const ok = HTF_ON ? (d === 1 ? htfNearU : htfNearD) : true;
           const cnt = d === 1 ? nLo : nHi;
           if (!ok) rejBy.htf++;
           else if (cnt < P.minSweep) { /* sayı azdır */ }

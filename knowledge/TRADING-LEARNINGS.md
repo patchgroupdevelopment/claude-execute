@@ -292,3 +292,37 @@ saatlarında əvvəlki günün səviyyələri süpürülür).
 **Açıq sual (ölçülməyib):** RTH-dan kənarda tamamlanan indeks setup-ları
 GƏLİRLİ olurmu? Spread gecə saatlarında genişdir — sayı artırmaq keyfiyyəti
 aşağı sala bilər. Qərar verməzdən əvvəl bu ölçülməlidir.
+
+
+---
+
+## §9 — ICT bootcamp modeli ÖLÇÜLDÜ: ölçülə bilən üstünlük TAPILMADI (2026-08-25)
+
+45 videoluq bootcampdən çıxarılan model (sweep → MSS → FVG girişi → DOL hədəfi)
+ilk dəfə gəlirlilik baxımından ölçüldü: `scripts/backtest-ict.mjs`,
+8 alət × 60 gün × 5m, mühafizəkar icra (SL və TP eyni şamda → SL əvvəl sayılır).
+
+| Konfiqurasiya | trade | qazanc% | expectancy | t | maks. düşüş |
+|---|---|---|---|---|---|
+| HTF FVG qapısı AÇIQ | 78 | 49% | **+0.026R** | 0.18 | −14.8R |
+| HTF FVG qapısı SÖNÜK | 214 | 46% | **−0.040R** | −0.49 | −37.6R |
+
+Qəbul meyarı (§KITAB-DERSLERI §1 və §10-da ÖLÇMƏDƏN ƏVVƏL yazılmışdı):
+expectancy ≥ +0.15R, ≥ 50 trade, t ≥ 2. **Hər iki konfiqurasiya kəsildi.**
+
+Orta qazanan +1.06…+1.11R, orta itirən −1.00R, qazanma faizi 46–49% →
+bu, tam olaraq üstünlüyü olmayan sistemin görüntüsüdür (pul atmaq).
+Komissiya və spred hesaba qatılsa hər iki rəqəm daha da pisləşir.
+
+⚠️ Ayrı-ayrı alətlərdə yaxşı rəqəmlər var (ES +0.566R / 15 trade,
+ETH +0.300R / 35 trade) — LAKİN 8 alət yoxlananda 1-2-sinin yaxşı çıxması
+təsadüfün normal davranışıdır (çoxlu müqayisə problemi). Onlara görə
+parametr seçmək = data-mining bias (Aronson §1). Belə seçim edilməməlidir.
+
+**Nə deməkdir:** model qrafikdə vəziyyəti göstərən VİZUAL alət kimi qalır
+(seans səviyyələri, canlı FVG, premium/discount). Avtomatik AL/SAT siqnalı
+kimi ona GÜVƏNMƏK ÜÇÜN ƏSAS YOXDUR. Real pul qoyulmamalıdır.
+
+**Nəyi ölçmək qalır:** modelin özünü deyil, ayrı-ayrı komponentlərini —
+məsələn "sweep-dən sonra MSS gələrsə" şərti təkbaşına üstünlük verirmi.
+Bütöv modeli deyil, hissələri sınamaq daha məlumatvericidir.
