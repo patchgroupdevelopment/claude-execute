@@ -431,6 +431,6 @@ export function dxyContext(dxyBars, goldBars, dir) {
   if (broken) line += `\n⚠️ Korrelyasiya POZULUB (normalda −0.4…−0.8). Anomal rejim — ehtiyatlı ol.`;
   else if (conflict) line += `\n⚠️ DXY siqnalla ZİDDİR (${dir === 1 ? "qızılda AL, amma dollar qalxır" : "qızılda SAT, amma dollar düşür"}).`;
   else line += `\n✅ DXY siqnalı təsdiqləyir.`;
-  line += `\nℹ️ Ölçülüb: DXY proqnoz vermir (t<2) — bu, BLOKLAYICI filtr deyil, kontekstdir.`;
+  line += `\nℹ️ Ölçülüb: DXY proqnoz vermir (t &lt; 2) — bu, BLOKLAYICI filtr deyil, kontekstdir.`;
   return { line, conflict, broken, corr, move };
 }

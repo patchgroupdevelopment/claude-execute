@@ -226,6 +226,21 @@ async function sendTelegram(text) {
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
+      // HTML formatlaması pozulubsa (mətndə tanınmayan "<..." varsa) Telegram
+      // BÜTÜN mesajı rədd edir. Belə halda formatsız təkrar göndərilir —
+      // bildirişin itməsi formatın itməsindən qat-qat pisdir.
+      if (res.status === 400 && /parse entities/i.test(body)) {
+        console.log(`⚠️  Telegram HTML formatını qəbul etmədi — formatsız təkrar göndərilir.`);
+        const plain = text.replace(/<\/?(b|i|u|s|code|pre)>/g, "");
+        const res2 = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: chatId, text: plain, disable_web_page_preview: true }),
+        });
+        if (res2.ok) return true;
+        console.log(`⚠️  Formatsız cəhd də alınmadı: HTTP ${res2.status}`);
+        return false;
+      }
       console.log(`⚠️  Telegram bildirişi göndərilə bilmədi: HTTP ${res.status} ${body.slice(0, 150)}`);
       return false;
     }
