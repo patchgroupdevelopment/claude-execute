@@ -19,6 +19,21 @@
 //  İndi seanslar birbaşa şamın vaxt damğasından NY saat/dəqiqəsi hesablanaraq
 //  müəyyən edilir → HƏR simvolda, HƏR birjada düzgün işləyir.
 //
+//
+//  📊 ÖLÇÜLMÜŞ DEFOLTLAR (scripts/funnel-ict-signals.mjs, NQ=F 5m, 60 gün):
+//  Siqnal hunisi ölçüldü — hansı qapının əsl əngəl olduğu təxminlə yox,
+//  rəqəmlə müəyyən edildi:
+//     146 sweep → 25 HTF keçdi → 17 MSS → 7 FVG → 3 doldu → 0 siqnal
+//  Ən böyük itki: HTF FVG şərti (83%). Ona görə htfWin 20→60,
+//  maxWaitMss 12→24, fvgLookback 10→20 edildi (siqnal ~2× artdı).
+//  ⚠️ Bunlar SİQNAL SAYINA görə tənzimləndi, GƏLİRLİLİYƏ görə YOX —
+//  gəlirlilik hələ ayrıca ölçülməlidir (Aronson: data-mining bias).
+//
+//  ⚠️ Bu strategiya TƏBİƏTƏN AZ SİQNALLIDIR: bütün filtrlər boşaldılsa belə
+//  bir alətdə ~1.8 siqnal/həftə çıxır. Müəllimin öz iddiası ilə üst-üstə
+//  düşür (D41 @00:33:16: "hər həftə 2-3 dəfə rahat olur").
+//  → Daha çox siqnal üçün DÜZGÜN YOL: bir neçə aləti paralel izləmək
+//    (NQ+ES+YM+GOLD+BTC), filtrləri boşaltmaq yox.
 //  ⚠️ VALİDASİYA: strategiya HƏLƏ ÖLÇÜLMƏYİB. Videolardakı nümunələr
 //  TradingView Replay ilə keçmişə baxılaraq seçilib — backtest deyil.
 //  Cədvəldəki "NƏTİCƏ" sətri scriptin ÖZ saydığı real nəticədir.
@@ -66,35 +81,23 @@ htfOn       = input.bool(true,  "HTF FVG içində olmaq şərti  ⭐", group = G
                "Bu filtr olmadan qalan bütün məntiq statistik olaraq mənasızdır.")
 preset      = input.string("Balanslı", "Siqnal sıxlığı", group = G_SET,
      options = ["Sərt (A+ setup)", "Balanslı", "Sıx (çox siqnal)"],
-     tooltip = "Sərt   → RR≥2.5, HTF pəncərəsi dar, ən azı 2 səviyyə sweep.
-" +
-               "Balanslı → aşağıdakı öz ayarların işləyir.
-" +
-               "Sıx    → RR≥1.5, geniş HTF pəncərəsi, 1 sweep kifayət.
-
-" +
-               "⚠️ 'Sıx' rejimi məhz müəllimin xəbərdarlıq etdiyi setup-ları da
-" +
-               "buraxır (D31: HTF səviyyə olmadan eyni pattern STOP oldu).
-" +
+     tooltip = "Sərt   → RR≥2.5, HTF pəncərəsi dar, ən azı 2 səviyyə sweep.\n" +
+               "Balanslı → aşağıdakı öz ayarların işləyir.\n" +
+               "Sıx    → RR≥1.5, geniş HTF pəncərəsi, 1 sweep kifayət.\n\n" +
+               "⚠️ 'Sıx' rejimi məhz müəllimin xəbərdarlıq etdiyi setup-ları da\n" +
+               "buraxır (D31: HTF səviyyə olmadan eyni pattern STOP oldu).\n" +
                "Siqnal sayı artır, KEYFİYYƏT AZALIR. Cədvəldəki nəticəyə bax.")
 htfAuto     = input.bool(true, "HTF-i qrafik taymfreyminə görə avtomatik seç  ⭐", group = G_SET,
-     tooltip = "D44 @00:33:29: 'Zaman FRAKTALDIR.'
-" +
-               "1m→15m · 3m→30m · 5m→1H · 15m→4H · 1H→D · daha yuxarı→W
-" +
-               "Aşağı taymfreymdə 1H FVG çox uzaq qalır — miqyaslama
-" +
+     tooltip = "D44 @00:33:29: 'Zaman FRAKTALDIR.'\n" +
+               "1m→15m · 3m→30m · 5m→1H · 15m→4H · 1H→D · daha yuxarı→W\n" +
+               "Aşağı taymfreymdə 1H FVG çox uzaq qalır — miqyaslama\n" +
                "setup sayını real şəkildə artırır (filtri boşaltmadan).")
 htfTfManual = input.timeframe("60", "HTF taymfreymi (əl ilə)", group = G_SET,
      tooltip = "Intraday üçün 60 və ya 240. Scalp üçün 240. (D44 @00:23:09)")
-htfWin      = input.int(20, "HTF zonasına toxunma pəncərəsi (şam)", minval = 0, maxval = 200, group = G_SET,
-     tooltip = "Sweep-in MƏHZ HTF FVG-nin içində baş verməsi çox nadir təsadüfdür.
-" +
-               "Müəllim 'qiymət o zonaya GƏLDİ, oradan reaksiya aldı' deyir —
-" +
-               "yəni son N şam ərzində HTF zonasına toxunmuş olmaq kifayətdir.
-" +
+htfWin      = input.int(60, "HTF zonasına toxunma pəncərəsi (şam)", minval = 0, maxval = 200, group = G_SET,
+     tooltip = "Sweep-in MƏHZ HTF FVG-nin içində baş verməsi çox nadir təsadüfdür.\n" +
+               "Müəllim 'qiymət o zonaya GƏLDİ, oradan reaksiya aldı' deyir —\n" +
+               "yəni son N şam ərzində HTF zonasına toxunmuş olmaq kifayətdir.\n" +
                "0 = köhnə sərt davranış (yalnız cari şam zonanın içində).")
 minSweep    = input.int(1, "Minimum eyni-anlı sweep sayı", minval = 1, maxval = 6, group = G_SET,
      tooltip = "D32 @00:04:23: 'Kaç tane likiditeyi aldı burada?'\n" +
@@ -108,19 +111,16 @@ usePD       = input.bool(false, "Premium/Discount filtri", group = G_SET,
 minDispAtr  = input.float(0.5, "Minimum displacement (×ATR)", minval = 0.1, step = 0.1, group = G_SET,
      tooltip = "FVG-ni yaradan orta şam ən azı bu qədər olmalıdır — 'enerjili hərəkət'.")
 useVol      = input.bool(false, "Həcm filtri (displacement həcmlə təsdiqlənsin)", group = G_SET,
-     tooltip = "Anna Coulling / Wyckoff: əsl institusional displacement HƏCMLƏ gəlir.
-" +
-               "Bizim ICT modelində həcm ümumiyyətlə yox idi — ən böyük boşluq.
-" +
-               "⚠️ CFD-lərdə həcm brokerə görə dəyişir; futures-də (NQ1!) realdır.
-" +
+     tooltip = "Anna Coulling / Wyckoff: əsl institusional displacement HƏCMLƏ gəlir.\n" +
+               "Bizim ICT modelində həcm ümumiyyətlə yox idi — ən böyük boşluq.\n" +
+               "⚠️ CFD-lərdə həcm brokerə görə dəyişir; futures-də (NQ1!) realdır.\n" +
                "Ölçülməmiş əlavədir — açıb-bağlayaraq cədvəldəki Expectancy-yə bax.")
 volMult     = input.float(1.5, "Həcm həddi (× orta)", minval = 1.0, step = 0.1, group = G_SET)
 pivLen      = input.int(1, "Swing pivot uzunluğu", minval = 1, maxval = 5, group = G_SET,
      tooltip = "D26 @00:01:56: müəllimin swing tərifi 3 şamlıqdır (sol 1, orta, sağ 1) → 1.")
-maxWaitMss  = input.int(12, "Sweep→MSS gözləmə (şam)", minval = 2, maxval = 60, group = G_SET)
+maxWaitMss  = input.int(24, "Sweep→MSS gözləmə (şam)", minval = 2, maxval = 60, group = G_SET)
 maxWaitFill = input.int(20, "MSS→giriş gözləmə (şam)", minval = 2, maxval = 60, group = G_SET)
-fvgLookback = input.int(10, "MSS-dən geriyə FVG axtarışı", minval = 3, maxval = 30, group = G_SET)
+fvgLookback = input.int(20, "MSS-dən geriyə FVG axtarışı", minval = 3, maxval = 30, group = G_SET)
 
 // ────────────────────────────────────────────────────────────────────────────
 //  3. INPUT — RİSK
@@ -144,15 +144,10 @@ tp1RR    = input.float(2.0, "TP1 (R) — DOL sönükdə", minval = 0.5, step = 0
 tp2RR    = input.float(3.0, "TP2 (R) — DOL sönükdə", minval = 0.5, step = 0.5, group = G_RISK)
 beOnTp1  = input.bool(true, "TP1-dən sonra stop girişə (BE)", group = G_RISK)
 maxBarsTr = input.int(0, "Maksimum mövqe müddəti (şam · 0 = limitsiz)", minval = 0, group = G_RISK,
-     tooltip = "D43 @00:33:52: 'PM seansının sonuna doğru konsolidə olmağa
-" +
-               "başlayır — bağlayarsan əməliyyatı.'
-
-" +
-               "⭐ Aşağı taymfreymdə VACİBDİR: açıq mövqe varkən script yeni
-" +
-               "setup izləmir. Uzun sürən bir əməliyyat saatlarla bütün
-" +
+     tooltip = "D43 @00:33:52: 'PM seansının sonuna doğru konsolidə olmağa\n" +
+               "başlayır — bağlayarsan əməliyyatı.'\n\n" +
+               "⭐ Aşağı taymfreymdə VACİBDİR: açıq mövqe varkən script yeni\n" +
+               "setup izləmir. Uzun sürən bir əməliyyat saatlarla bütün\n" +
                "siqnalları bloklaya bilər. 5m üçün 60–120, 1m üçün 100–300.")
 accSize  = input.float(1000, "Hesab ($)", minval = 10, group = G_RISK)
 riskPct  = input.float(1.0, "Risk (%)", minval = 0.1, maxval = 5, step = 0.1, group = G_RISK,
@@ -293,14 +288,10 @@ inNyTr   = f_in(sNyTrade)
 // ölçmə ilə TƏSDİQLƏNİR. İndekslərdə London defolt olaraq söndürülür.
 // Qızılda London neytraldır (24.5% ≈ təsadüfi) — açıq saxlanılır.
 useLondon = input.bool(true, "London killzone-da da giriş axtar", group = G_SESS,
-     tooltip = "⚠️ ÖLÇÜLMÜŞ: indekslərdə (NQ/ES) London günün ekstremumunu
-" +
-               "təsadüfdən AZ tutur (ES 6.1% vs 23.4%, z=-2.86, sıra 46/48).
-" +
-               "Ona görə İNDEKSLƏRDƏ defolt söndürülüb.
-" +
-               "Qızıl/forexdə açıq qalır — orada neytral və ya faydalı ola bilər.
-" +
+     tooltip = "⚠️ ÖLÇÜLMÜŞ: indekslərdə (NQ/ES) London günün ekstremumunu\n" +
+               "təsadüfdən AZ tutur (ES 6.1% vs 23.4%, z=-2.86, sıra 46/48).\n" +
+               "Ona görə İNDEKSLƏRDƏ defolt söndürülüb.\n" +
+               "Qızıl/forexdə açıq qalır — orada neytral və ya faydalı ola bilər.\n" +
                "Bax: knowledge/TRADING-LEARNINGS.md §6")
 lonOk = useLondon and not isIndex
 
@@ -337,17 +328,23 @@ f_sessLvl(bool act) =>
         ll := cl
         vh := true
         vl := true
+    // ⚠️ KÖK BUQ DÜZƏLİŞİ: sweep yoxlaması səviyyənin ŞAM AÇILANDAKI
+    // canlılığını işlətməlidir. Əks halda qiymət səviyyəni deldiyi ANDA
+    // səviyyə "ölü" işarələnir və sweep şərti HEÇ VAXT ödənmir —
+    // indikator prinsipcə siqnal verə bilmirdi.
+    wh = vh
+    wl = vl
     if vh and not na(lh) and high > lh
         vh := false
     if vl and not na(ll) and low < ll
         vl := false
-    [lh, ll, vh, vl]
+    [lh, ll, vh, vl, wh, wl]
 
-[asH, asL, asHv, asLv] = f_sessLvl(inAsia)
-[loH, loL, loHv, loLv] = f_sessLvl(inLondon)
-[amH, amL, amHv, amLv] = f_sessLvl(inNyAm)
-[luH, luL, luHv, luLv] = f_sessLvl(inLunch)
-[pmH, pmL, pmHv, pmLv] = f_sessLvl(inNyPm)
+[asH, asL, asHv, asLv, asHw, asLw] = f_sessLvl(inAsia)
+[loH, loL, loHv, loLv, loHw, loLw] = f_sessLvl(inLondon)
+[amH, amL, amHv, amLv, amHw, amLw] = f_sessLvl(inNyAm)
+[luH, luL, luHv, luLv, luHw, luLw] = f_sessLvl(inLunch)
+[pmH, pmL, pmHv, pmLv, pmHw, pmLw] = f_sessLvl(inNyPm)
 
 // ────────────────────────────────────────────────────────────────────────────
 //  9. İSTİNAD SƏVİYYƏLƏRİ (D17 kadrından: TDO · Midnight · D/W/M open)
@@ -381,14 +378,15 @@ f_liveRef(float lv, bool isHigh) =>
     if not na(lv) and (na(p) or lv != p)
         p := lv
         v := true
+    w = v                       // şam açılışındakı vəziyyət — sweep üçün
     if v and not na(p) and (isHigh ? high > p : low < p)
         v := false
-    [p, v]
+    [p, v, w]
 
-[pdhV, pdhL] = f_liveRef(pdh, true)
-[pdlV, pdlL] = f_liveRef(pdl, false)
-[pwhV, pwhL] = f_liveRef(pwh, true)
-[pwlV, pwlL] = f_liveRef(pwl, false)
+[pdhV, pdhL, pdhW] = f_liveRef(pdh, true)
+[pdlV, pdlL, pdlW] = f_liveRef(pdl, false)
+[pwhV, pwhL, pwhW] = f_liveRef(pwh, true)
+[pwlV, pwlL, pwlW] = f_liveRef(pwl, false)
 
 // ────────────────────────────────────────────────────────────────────────────
 //  11. GÜNLÜK BIAS (D43 @00:20:07 — mexaniki qayda)
@@ -512,22 +510,23 @@ sharpDn = curBear and not na(lastBullBar) and (bar_index - lastBullBar) <= 8
 f_swLo(float L, bool live) => live and not na(L) and low  < L and close > L
 f_swHi(float L, bool live) => live and not na(L) and high > L and close < L
 
-nLo = (f_swLo(pdlV, pdlL) ? 1 : 0) + (f_swLo(pwlV, pwlL) ? 1 : 0) +
-      (f_swLo(asL, asLv) ? 1 : 0) + (f_swLo(loL, loLv) ? 1 : 0) +
-      (f_swLo(amL, amLv) ? 1 : 0) + (f_swLo(luL, luLv) ? 1 : 0) + (f_swLo(pmL, pmLv) ? 1 : 0)
-nHi = (f_swHi(pdhV, pdhL) ? 1 : 0) + (f_swHi(pwhV, pwhL) ? 1 : 0) +
-      (f_swHi(asH, asHv) ? 1 : 0) + (f_swHi(loH, loHv) ? 1 : 0) +
-      (f_swHi(amH, amHv) ? 1 : 0) + (f_swHi(luH, luHv) ? 1 : 0) + (f_swHi(pmH, pmHv) ? 1 : 0)
+// Sweep: səviyyənin ŞAM AÇILANDAKI canlılığı işlədilir (…W/…w) — bax f_sessLvl.
+nLo = (f_swLo(pdlV, pdlW) ? 1 : 0) + (f_swLo(pwlV, pwlW) ? 1 : 0) +
+      (f_swLo(asL, asLw) ? 1 : 0) + (f_swLo(loL, loLw) ? 1 : 0) +
+      (f_swLo(amL, amLw) ? 1 : 0) + (f_swLo(luL, luLw) ? 1 : 0) + (f_swLo(pmL, pmLw) ? 1 : 0)
+nHi = (f_swHi(pdhV, pdhW) ? 1 : 0) + (f_swHi(pwhV, pwhW) ? 1 : 0) +
+      (f_swHi(asH, asHw) ? 1 : 0) + (f_swHi(loH, loHw) ? 1 : 0) +
+      (f_swHi(amH, amHw) ? 1 : 0) + (f_swHi(luH, luHw) ? 1 : 0) + (f_swHi(pmH, pmHw) ? 1 : 0)
 
 swLo = nLo > 0
 swHi = nHi > 0
 
-sweptName = f_swLo(pdlV, pdlL) or f_swHi(pdhV, pdhL) ? "PDH/L" :
-             f_swLo(pwlV, pwlL) or f_swHi(pwhV, pwhL) ? "PWH/L" :
-             f_swLo(asL, asLv)  or f_swHi(asH, asHv)  ? "ASIA"  :
-             f_swLo(loL, loLv)  or f_swHi(loH, loHv)  ? "LONDON" :
-             f_swLo(pmL, pmLv)  or f_swHi(pmH, pmHv)  ? "NYPM"  :
-             f_swLo(luL, luLv)  or f_swHi(luH, luHv)  ? "LUNCH" : "NYAM"
+sweptName = f_swLo(pdlV, pdlW) or f_swHi(pdhV, pdhW) ? "PDH/L" :
+             f_swLo(pwlV, pwlW) or f_swHi(pwhV, pwhW) ? "PWH/L" :
+             f_swLo(asL, asLw)  or f_swHi(asH, asHw)  ? "ASIA"  :
+             f_swLo(loL, loLw)  or f_swHi(loH, loHw)  ? "LONDON" :
+             f_swLo(pmL, pmLw)  or f_swHi(pmH, pmHw)  ? "NYPM"  :
+             f_swLo(luL, luLw)  or f_swHi(luH, luHw)  ? "LUNCH" : "NYAM"
 
 // ────────────────────────────────────────────────────────────────────────────
 //  16. PREMIUM / DISCOUNT (D24 @00:04:13)
