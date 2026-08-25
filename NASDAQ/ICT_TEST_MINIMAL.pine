@@ -1,0 +1,44 @@
+//@version=6
+// ════════════════════════════════════════════════════════════════════════════
+//  DİAQNOSTİK TEST — yalnız cədvəl və bir xətt çəkir
+//
+//  Məqsəd: əsas indikator heç nə çəkmirsə, problemin HARADA olduğunu tapmaq.
+//   • Bu script İŞLƏYİRSƏ  → TradingView/qrafik qaydadadır, problem əsas
+//     indikatorun məntiq hissəsindədir
+//   • Bu script də İŞLƏMİRSƏ → problem qrafik/hesab səviyyəsindədir
+//     (məs. indikator limiti dolub, script qrafikə əlavə olunmayıb)
+// ════════════════════════════════════════════════════════════════════════════
+indicator("ZZ TEST — cədvəl", "ZZ TEST", overlay = true)
+
+TZ  = "America/New_York"
+TZB = "Asia/Baku"
+
+var table t = table.new(position.top_right, 2, 5, border_width = 1,
+     frame_width = 2, frame_color = color.gray, bgcolor = #131722)
+
+if barstate.islast
+    table.cell(t, 0, 0, "✅ TEST İŞLƏYİR", text_color = color.white,
+         text_size = size.normal, bgcolor = color.new(color.blue, 30))
+    table.cell(t, 1, 0, "", bgcolor = color.new(color.blue, 30))
+
+    table.cell(t, 0, 1, "Simvol", text_color = color.gray, text_size = size.small)
+    table.cell(t, 1, 1, syminfo.ticker, text_color = color.white, text_size = size.small)
+
+    table.cell(t, 0, 2, "Taymfreym", text_color = color.gray, text_size = size.small)
+    table.cell(t, 1, 2, timeframe.period, text_color = color.white, text_size = size.small)
+
+    table.cell(t, 0, 3, "NY saatı", text_color = color.gray, text_size = size.small)
+    table.cell(t, 1, 3, str.tostring(hour(time, TZ)) + ":" + str.tostring(minute(time, TZ)),
+         text_color = color.white, text_size = size.small)
+
+    table.cell(t, 0, 4, "Bakı saatı", text_color = color.gray, text_size = size.small)
+    table.cell(t, 1, 4, str.tostring(hour(time, TZB)) + ":" + str.tostring(minute(time, TZB)),
+         text_color = color.white, text_size = size.small)
+
+// Sadə sarı xətt — çəkiliş ümumiyyətlə işləyirmi
+var line l = na
+if barstate.islast
+    if not na(l)
+        line.delete(l)
+    l := line.new(bar_index - 20, close, bar_index + 10, close,
+         color = color.yellow, width = 2, style = line.style_dashed)

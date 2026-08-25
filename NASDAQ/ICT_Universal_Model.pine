@@ -228,8 +228,14 @@ nyMin = hour(time, TZ) * 60 + minute(time, TZ)   // 0..1439, NY vaxtı
 // "HHMM-HHMM" → [başlanğıc dəq., bitiş dəq.]
 f_parse(string s) =>
     p  = str.split(s, "-")
-    a  = array.size(p) == 2 ? nz(str.tonumber(array.get(p, 0))) : 0.0
-    b  = array.size(p) == 2 ? nz(str.tonumber(array.get(p, 1))) : 0.0
+    // ⚠️ Pine ternary-nin HƏR İKİ qolunu hesablayır — array.get() şərtdən
+    // asılı olmayaraq işə düşür. Ona görə indeks əvvəlcədən sıxılır,
+    // əks halda səhv sessiya mətnində script RUNTIME-da çökür.
+    n  = array.size(p)
+    i0 = n > 0 ? 0 : 0
+    i1 = n > 1 ? 1 : 0
+    a  = n >= 2 ? nz(str.tonumber(array.get(p, i0))) : 0.0
+    b  = n >= 2 ? nz(str.tonumber(array.get(p, i1))) : 0.0
     sm = math.floor(a / 100) * 60 + math.round(a % 100)
     em = math.floor(b / 100) * 60 + math.round(b % 100)
     [sm, em == 0 ? 1440 : em]          // "0000" bitişi = gün sonu (1440)
