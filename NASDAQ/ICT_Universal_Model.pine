@@ -201,6 +201,14 @@ uiMaxSig  = input.int(3, "Qrafikdə saxlanılan siqnal", minval = 1, maxval = 10
 uiTable   = input.bool(true,  "İnfo cədvəli", group = G_UI)
 uiTblPos  = input.string("Sağ üst", "Cədvəl yeri", options = ["Sağ üst", "Sağ alt", "Sol üst", "Sol alt"], group = G_UI)
 
+// ⭐ DİAQNOSTİKA QATI — indikator heç nə çəkmirsə, bunu 1-ə sal və addım-addım artır.
+dbgLayer  = input.string("4 - tam", "Cekilis qati (nasazliq axtarisi)",
+     options = ["1 - yalniz panel", "2 - + seviyyeler", "3 - + FVG", "4 - tam"], group = G_UI,
+     tooltip = "Qrafikde hec ne gorunmurse: 1-i sec. Panel cixsa, 2 -> 3 -> 4 ile\n" +
+      "hansi qatin cekilisi dayandirdigini tap.")
+layN = dbgLayer == "1 - yalniz panel" ? 1 : dbgLayer == "2 - + seviyyeler" ? 2 :
+      dbgLayer == "3 - + FVG" ? 3 : 4
+
 // ════════════════════════════════════════════════════════════════════════════
 //  6. ⭐ SEANS MƏNTİQİ — BİRJADAN ASILI OLMAYAN (ƏSAS DÜZƏLİŞ)
 // ════════════════════════════════════════════════════════════════════════════
@@ -246,7 +254,9 @@ f_in(string s) =>
     sm <= em ? (nyMin >= sm and nyMin < em) : (nyMin >= sm or nyMin < em)
 
 // Bakı vaxtı ilə göstərmək üçün (cədvəldə)
-f_pad(float v) => (v < 10 ? "0" : "") + str.tostring(math.floor(v), "#")
+f_pad(float v) =>
+    i = math.floor(v)
+    (i < 10 ? "0" : "") + str.tostring(i)
 
 f_toBaku(string s) =>
     [sm, em] = f_parse(s)
@@ -835,7 +845,7 @@ f_drawLvl(float p, bool live, string txt, color c) =>
         array.push(lvlB, label.new(bar_index + 13, p, txt, style = label.style_none,
              textcolor = cc, size = size.tiny))
 
-if barstate.islast
+if layN >= 2 and barstate.islast
     while array.size(lvlL) > 0
         line.delete(array.pop(lvlL))
     while array.size(lvlB) > 0
@@ -862,7 +872,7 @@ if barstate.islast
 
 // ── HTF FVG zonası (vacib səviyyə) ──
 var box htfBox = na
-if barstate.islast
+if layN >= 2 and barstate.islast
     if not na(htfBox)
         box.delete(htfBox)
         htfBox := na
@@ -880,7 +890,7 @@ if barstate.islast
 
 // ── LTF FVG qutuları (yalnız son bir neçəsi) ──
 var array<box> fvgBx = array.new<box>()
-if uiFvg and barstate.isconfirmed
+if layN >= 3 and uiFvg and barstate.isconfirmed
     if curBull
         array.push(fvgBx, box.new(bar_index - 2, cbT, bar_index + 4, cbB,
              border_color = color.new(C_UP, 75), bgcolor = color.new(C_UP, 90)))
@@ -891,19 +901,19 @@ if uiFvg and barstate.isconfirmed
         box.delete(array.shift(fvgBx))
 
 // ── Sweep / MSS işarələri ──
-plotshape(uiMarks and stage == 1 and stage[1] == 0 and dir ==  1, "Sweep ↓", shape.xcross,
+plotshape(layN >= 4 and uiMarks and stage == 1 and stage[1] == 0 and dir ==  1, "Sweep ↓", shape.xcross,
      location.belowbar, color.new(C_NEU, 25), size = size.tiny)
-plotshape(uiMarks and stage == 1 and stage[1] == 0 and dir == -1, "Sweep ↑", shape.xcross,
+plotshape(layN >= 4 and uiMarks and stage == 1 and stage[1] == 0 and dir == -1, "Sweep ↑", shape.xcross,
      location.abovebar, color.new(C_NEU, 25), size = size.tiny)
-plotshape(uiMarks and stage == 2 and stage[1] == 1 and dir ==  1, "MSS ↑", shape.triangleup,
+plotshape(layN >= 4 and uiMarks and stage == 2 and stage[1] == 1 and dir ==  1, "MSS ↑", shape.triangleup,
      location.belowbar, color.new(C_ACC, 20), size = size.tiny, text = "mss")
-plotshape(uiMarks and stage == 2 and stage[1] == 1 and dir == -1, "MSS ↓", shape.triangledown,
+plotshape(layN >= 4 and uiMarks and stage == 2 and stage[1] == 1 and dir == -1, "MSS ↓", shape.triangledown,
      location.abovebar, color.new(C_ACC, 20), size = size.tiny, text = "mss")
 
 // ── Siqnal: broker üslubunda sifariş xətləri ──
 var array<line>  sLn = array.new<line>()
 var array<label> sLb = array.new<label>()
-if hasSig
+if layN >= 4 and hasSig
     isL = tDir == 1
     xa = bar_index
     xb = bar_index + 26
@@ -938,7 +948,7 @@ if hasSig
 // seans, sweep və FVG məntiqi işləmir. İstifadəçi bunu cədvəldə görməyə bilər,
 // ona görə qrafikin ORTASINDA böyük xəbərdarlıq göstərilir.
 var label tfWarn = na
-if barstate.islast
+if layN >= 4 and barstate.islast
     if not na(tfWarn)
         label.delete(tfWarn)
         tfWarn := na
@@ -961,7 +971,7 @@ tblPos = uiTblPos == "Sağ üst" ? position.top_right :
           uiTblPos == "Sağ alt" ? position.bottom_right :
           uiTblPos == "Sol üst" ? position.top_left : position.bottom_left
 
-var table tb = table.new(tblPos, 2, 16, border_width = 1,
+var table tb = table.new(tblPos, 2, 17, border_width = 1,
       frame_width = 2, frame_color = color.new(C_NEU, 40), bgcolor = #131722)
 
 // Başlıq zolağı — bölmələri ayırır
@@ -1040,6 +1050,10 @@ if uiTable and barstate.islast
          " · " + (netR >= 0 ? "+" : "") + str.tostring(netR, "#.#") + "R"
     f_kv(15, inTrade ? "Açıq mövqe" : "Nəticə (script sayır)", resTxt,
          inTrade ? color.white : netR >= 0 ? C_UP : C_DN)
+
+    // Diaqnostika — bu sətir görünürsə script SONA QƏDƏR işləyib
+    f_kv(16, "⚙ " + mkt + " · " + timeframe.period + " · qat " + str.tostring(layN),
+         "şam " + str.tostring(bar_index + 1) + " · HTF " + htfTf, color.new(color.white, 55))
 
 // ════════════════════════════════════════════════════════════════════════════
 //  21. ALERT
