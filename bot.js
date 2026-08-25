@@ -2901,11 +2901,20 @@ async function run() {
 // mövcud strategiyalara TOXUNMUR. ICT_SIGNALS=1 olmasa ümumiyyətlə işləmir.
 // Anthropic API tələb etmir.
 
+// Çox alət = çox siqnal, KEYFİYYƏT itirmədən. Müəllimin öz üsulu budur
+// (D42 @00:07:38 — 8 paritəni yan-yana izləyir). Filtri boşaltmaqdan fərqli
+// olaraq bu, setup keyfiyyətini aşağı salmır.
 const ICT_ASSETS = [
-  { t: "NQ=F", label: "NASDAQ (US100)", kind: "index" },
-  { t: "ES=F", label: "SP500",          kind: "index" },
-  { t: "YM=F", label: "DOW",            kind: "index" },
-  { t: "GC=F", label: "QIZIL",          kind: "gold"  },
+  { t: "NQ=F",    label: "NASDAQ (US100)", kind: "index"  },
+  { t: "ES=F",    label: "SP500",          kind: "index"  },
+  { t: "YM=F",    label: "DOW",            kind: "index"  },
+  { t: "GC=F",    label: "QIZIL",          kind: "gold"   },
+  { t: "CL=F",    label: "NEFT (WTI)",     kind: "gold"   },
+  { t: "SI=F",    label: "GÜMÜŞ",          kind: "gold"   },
+  { t: "BTC-USD", label: "BITCOIN",        kind: "crypto" },
+  { t: "ETH-USD", label: "ETHEREUM",       kind: "crypto" },
+  { t: "EURUSD=X", label: "EURUSD",        kind: "forex"  },
+  { t: "GBPUSD=X", label: "GBPUSD",        kind: "forex"  },
 ];
 
 async function fetchYahoo5m(ticker) {
@@ -2924,7 +2933,7 @@ async function fetchYahoo5m(ticker) {
 
 async function checkIctSignals() {
   if (process.env.ICT_SIGNALS !== "1") return;
-  const { findIctSetup, formatIctSignal } = await import("./ict-engine.mjs");
+  const { findIctSetup, formatIctSignal, formatIctForming } = await import("./ict-engine.mjs");
 
   // data/ qovluğu — signals.yml onu `git add -f data` ilə state branch-ına yazır,
   // yəni işlər arasında qalır (əks halda hər 15 dəqiqədə eyni siqnal təkrarlanardı).
@@ -2939,21 +2948,39 @@ async function checkIctSignals() {
   for (const a of ICT_ASSETS) {
     try {
       const bars = await fetchYahoo5m(a.t);
-      const { signal, diag } = findIctSetup(bars, { kind: a.kind });
+      const { signal, live, diag } = findIctSetup(bars, { kind: a.kind });
       console.log(
         `  ICT ${a.label}: sweep ${diag.sweeps} → HTF ${diag.htfOk} → MSS ${diag.mss} → ` +
         `FVG ${diag.fvg} → doldu ${diag.filled}` +
-        (signal ? ` | son setup ${signal.barsAgo} şam əvvəl` : " | setup yoxdur"),
+        (live ? ` | ⏳ CANLI mərhələ ${live.stage}` : "") +
+        (signal ? ` | son setup ${signal.barsAgo} şam əvvəl` : " | tam setup yoxdur"),
       );
-      if (!signal) continue;
-      if (signal.barsAgo > FRESH_BARS) continue;          // köhnədir
-      if (seen[a.t] === signal.time) continue;            // artıq göndərilib
-
       const price = bars[bars.length - 1].c;
-      await sendTelegram(formatIctSignal(signal, a.label, price));
-      seen[a.t] = signal.time;
-      await fs.writeFile(STATE, JSON.stringify(seen, null, 2));
-      console.log(`  📤 ICT siqnalı göndərildi: ${a.label}`);
+
+      // 1) Tam siqnal — setup tamamlanıb
+      if (signal && signal.barsAgo <= FRESH_BARS && seen[a.t] !== signal.time) {
+        await sendTelegram(formatIctSignal(signal, a.label, price));
+        seen[a.t] = signal.time;
+        await fs.writeFile(STATE, JSON.stringify(seen, null, 2));
+        console.log(`  📤 ICT SİQNALI göndərildi: ${a.label}`);
+        continue;
+      }
+
+      // 2) Formalaşan setup — istifadəçinin əsas tələbi: tez-tez analiz.
+      // Sweep olub, MSS/giriş gözlənilir. Bu, ƏMR deyil, diqqət xəbərdarlığıdır.
+      // Hər mərhələ üçün bir dəfə göndərilir (spam olmasın).
+      if (process.env.ICT_FORMING !== "0" && live) {
+        const key = `${a.t}:forming:${live.stage}:${live.dir}:${live.sweptName}`;
+        if (seen[key] !== bars[bars.length - 1].t && !seen[key]) {
+          await sendTelegram(formatIctForming(live, a.label, price));
+          seen[key] = bars[bars.length - 1].t;
+          // köhnə "forming" açarlarını təmizlə (fayl şişməsin)
+          const keys = Object.keys(seen).filter((k) => k.includes(":forming:"));
+          if (keys.length > 40) for (const k of keys.slice(0, 20)) delete seen[k];
+          await fs.writeFile(STATE, JSON.stringify(seen, null, 2));
+          console.log(`  ⏳ ICT setup formalaşır: ${a.label} (mərhələ ${live.stage})`);
+        }
+      }
     } catch (err) {
       console.log(`  ⚠️  ICT ${a.label}: ${err.message}`);
     }

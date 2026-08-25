@@ -61,6 +61,9 @@ jobs:
       # Anthropic API tələb ETMİR.
       ICT_SIGNALS: "1"
       ICT_FRESH_BARS: "3"
+      # Formalaşan setup bildirişi: sweep olub, MSS/giriş gözlənilir.
+      # Bu, ƏMR deyil — "diqqətdə saxla" xəbərdarlığıdır. Söndürmək: "0"
+      ICT_FORMING: "1"
 
       # ── S&P 500 və US100 günlük siqnalı (NY açılışından sonra hər ticarət günü brifinq) ──
       SP500: "1"

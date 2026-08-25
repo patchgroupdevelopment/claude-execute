@@ -139,6 +139,9 @@ export function findIctSetup(bars, opt = {}) {
 
   let stage = 0, dir = 0, stageBar = 0, swExt = 0, fvg = null, entryPx = 0, sweptName = "", sweepCnt = 0;
   let last = null;
+  // Son şamda hansı mərhələdəyik — tamamlanmış siqnal olmasa belə istifadəçiyə
+  // "setup formalaşır" deyə bilmək üçün (istifadəçinin əsas tələbi: tez-tez analiz).
+  let liveState = null;
   const diag = { sweeps: 0, htfOk: 0, mss: 0, fvg: 0, filled: 0, rejHtf: 0, rejRR: 0, rejWin: 0 };
 
   for (let i = 30; i < bars.length; i++) {
@@ -263,8 +266,19 @@ export function findIctSetup(bars, opt = {}) {
         }
       }
     }
+    // son şamda vəziyyəti yadda saxla
+    if (i === bars.length - 1 && stage > 0) {
+      liveState = {
+        stage, dir, sweptName, sweepCnt,
+        barsWaiting: i - stageBar,
+        entryPx: stage === 2 ? entryPx : null,
+        fvg: stage === 2 ? fvg : null,
+        swExt,
+        needs: stage === 1 ? "MSS (gövdə ilə struktur qırılması)" : "FVG orta nöqtəsinə geri çəkilmə",
+      };
+    }
   }
-  return { signal: last, diag };
+  return { signal: last, live: liveState, diag };
 }
 
 /** Siqnalı Telegram mesajına çevir (HTML). */
@@ -284,4 +298,36 @@ export function formatIctSignal(sig, label, price) {
     `Botun digər siqnalları backtest edilib — bu, edilməyib.\n` +
     `Yalnız müşahidə üçün, avtomatik icra edilmir.`
   );
+}
+
+/** Formalaşan (hələ tamamlanmamış) setup üçün bildiriş. */
+export function formatIctForming(live, label, price) {
+  const yon = live.dir === 1 ? "AL 🟢" : "SAT 🔴";
+  const f = (v) => (v == null ? "—" : v >= 1000 ? v.toFixed(1) : v.toFixed(2));
+  const bar = live.stage === 1 ? "1️⃣" : "2️⃣";
+  let m =
+    `⏳ <b>ICT SETUP FORMALAŞIR — ${label}</b>
+
+` +
+    `${bar} Mərhələ ${live.stage}/2  ·  gözlənilən istiqamət: <b>${yon}</b>
+` +
+    `Süpürülən likidite: ${live.sweptName}${live.sweepCnt > 1 ? ` ×${live.sweepCnt}` : ""}
+` +
+    `Gözləmə: ${live.barsWaiting} şam
+
+` +
+    `<b>İndi nə gözlənilir:</b> ${live.needs}
+`;
+  if (live.stage === 2 && live.entryPx != null) {
+    m += `
+Giriş səviyyəsi: <b>${f(live.entryPx)}</b>  (FVG 50%)
+` +
+         `Cari qiymət: ${f(price)}
+` +
+         `→ qiymət giriş səviyyəsinə çatarsa tam siqnal göndəriləcək.
+`;
+  }
+  m += `
+⚠️ Bu, ƏMR DEYİL — setup hələ tamamlanmayıb. Diqqətdə saxla.`;
+  return m;
 }
