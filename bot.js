@@ -2883,11 +2883,86 @@ async function run() {
   } catch (err) {
     console.log(`⚠️  İqtisadi təqvim xətası: ${err.message}`);
   }
+
+  // ICT modeli (təcrübi) — ICT_SIGNALS=1 olmasa heç nə etmir
+  try {
+    await checkIctSignals();
+  } catch (err) {
+    console.log(`⚠️  ICT siqnal xətası: ${err.message}`);
+  }
+}
+
+
+// ─── ICT SİQNALLARI (təcrübi) ────────────────────────────────────────────────
+//
+// 45 videoluq bootcamp-dan çıxarılmış ICT modeli — ict-engine.mjs.
+// ⚠️ Botun digər strategiyalarından FƏRQLİ olaraq bu, gəlirlilik baxımından
+// ÖLÇÜLMƏYİB. Ona görə: ayrıca modul, "TƏCRÜBİ" damğası, avtomatik icra YOX,
+// mövcud strategiyalara TOXUNMUR. ICT_SIGNALS=1 olmasa ümumiyyətlə işləmir.
+// Anthropic API tələb etmir.
+
+const ICT_ASSETS = [
+  { t: "NQ=F", label: "NASDAQ (US100)", kind: "index" },
+  { t: "ES=F", label: "SP500",          kind: "index" },
+  { t: "YM=F", label: "DOW",            kind: "index" },
+  { t: "GC=F", label: "QIZIL",          kind: "gold"  },
+];
+
+async function fetchYahoo5m(ticker) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=5m&range=60d`;
+  const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+  if (!res.ok) throw new Error(`${ticker}: HTTP ${res.status}`);
+  const r = (await res.json())?.chart?.result?.[0];
+  if (!r) throw new Error(`${ticker}: boş cavab`);
+  const t = r.timestamp || [], q = r.indicators.quote[0], out = [];
+  for (let i = 0; i < t.length; i++) {
+    if ([q.open[i], q.high[i], q.low[i], q.close[i]].some((x) => x == null)) continue;
+    out.push({ t: t[i] * 1000, o: q.open[i], h: q.high[i], l: q.low[i], c: q.close[i] });
+  }
+  return out;
+}
+
+async function checkIctSignals() {
+  if (process.env.ICT_SIGNALS !== "1") return;
+  const { findIctSetup, formatIctSignal } = await import("./ict-engine.mjs");
+
+  // data/ qovluğu — signals.yml onu `git add -f data` ilə state branch-ına yazır,
+  // yəni işlər arasında qalır (əks halda hər 15 dəqiqədə eyni siqnal təkrarlanardı).
+  const STATE = "data/ict-state.json";
+  try { await fs.mkdir("data", { recursive: true }); } catch {}
+  let seen = {};
+  try { seen = JSON.parse(await fs.readFile(STATE, "utf-8")); } catch { seen = {}; }
+
+  // Yalnız SON şamlarda yaranan setup bildirilir — köhnə tarixi siqnallar yox.
+  const FRESH_BARS = parseInt(process.env.ICT_FRESH_BARS || "3", 10);
+
+  for (const a of ICT_ASSETS) {
+    try {
+      const bars = await fetchYahoo5m(a.t);
+      const { signal, diag } = findIctSetup(bars, { kind: a.kind });
+      console.log(
+        `  ICT ${a.label}: sweep ${diag.sweeps} → HTF ${diag.htfOk} → MSS ${diag.mss} → ` +
+        `FVG ${diag.fvg} → doldu ${diag.filled}` +
+        (signal ? ` | son setup ${signal.barsAgo} şam əvvəl` : " | setup yoxdur"),
+      );
+      if (!signal) continue;
+      if (signal.barsAgo > FRESH_BARS) continue;          // köhnədir
+      if (seen[a.t] === signal.time) continue;            // artıq göndərilib
+
+      const price = bars[bars.length - 1].c;
+      await sendTelegram(formatIctSignal(signal, a.label, price));
+      seen[a.t] = signal.time;
+      await fs.writeFile(STATE, JSON.stringify(seen, null, 2));
+      console.log(`  📤 ICT siqnalı göndərildi: ${a.label}`);
+    } catch (err) {
+      console.log(`  ⚠️  ICT ${a.label}: ${err.message}`);
+    }
+  }
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
-export { run, CONFIG, sendWeeklyReportIfDue, analyzeLongTermRegime, sendSp500DailyBriefIfDue, sendUs100DailyBriefIfDue, sendOilDailyBriefIfDue, sendGoldDailyBriefIfDue, checkNewsAndNotify, checkPriceLevelAlerts, checkEconomicCalendarAlerts };
+export { run, CONFIG, sendWeeklyReportIfDue, analyzeLongTermRegime, sendSp500DailyBriefIfDue, sendUs100DailyBriefIfDue, sendOilDailyBriefIfDue, sendGoldDailyBriefIfDue, checkNewsAndNotify, checkPriceLevelAlerts, checkEconomicCalendarAlerts, checkIctSignals };
 
 if (isMain) {
   if (process.argv.includes("--tax-summary")) {

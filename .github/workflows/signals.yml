@@ -54,6 +54,14 @@ jobs:
       FOCUS_SYMBOLS: ETHUSDT
       TREND_SYMBOLS: ""
 
+      # ── ICT modeli (TƏCRÜBİ — gəlirlilik baxımından ÖLÇÜLMƏYİB) ──
+      # 45 videoluq bootcamp-dan çıxarılmış model. Digər strategiyalardan fərqli
+      # olaraq backtest edilməyib — siqnallar "TƏCRÜBİ" damğası ilə gəlir və
+      # avtomatik icra OLUNMUR. Söndürmək üçün: "0" qoy və ya sətri sil.
+      # Anthropic API tələb ETMİR.
+      ICT_SIGNALS: "1"
+      ICT_FRESH_BARS: "3"
+
       # ── S&P 500 və US100 günlük siqnalı (NY açılışından sonra hər ticarət günü brifinq) ──
       SP500: "1"
       US100: "1"
