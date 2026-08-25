@@ -2933,7 +2933,12 @@ async function fetchYahoo5m(ticker) {
 
 async function checkIctSignals() {
   if (process.env.ICT_SIGNALS !== "1") return;
-  const { findIctSetup, formatIctSignal, formatIctForming } = await import("./ict-engine.mjs");
+  const { findIctSetup, formatIctSignal, formatIctForming, fetchDxy, dxyContext } =
+    await import("./ict-engine.mjs");
+
+  // DXY — yalnız qızıl/gümüş üçün kontekst (ölçüldü: proqnoz vermir, filtr DEYİL)
+  let dxyBars = null;
+  try { dxyBars = await fetchDxy(); } catch { /* kritik deyil */ }
 
   // data/ qovluğu — signals.yml onu `git add -f data` ilə state branch-ına yazır,
   // yəni işlər arasında qalır (əks halda hər 15 dəqiqədə eyni siqnal təkrarlanardı).
@@ -2959,7 +2964,15 @@ async function checkIctSignals() {
 
       // 1) Tam siqnal — setup tamamlanıb
       if (signal && signal.barsAgo <= FRESH_BARS && seen[a.t] !== signal.time) {
-        await sendTelegram(formatIctSignal(signal, a.label, price));
+        let msg = formatIctSignal(signal, a.label, price);
+        // Qızıl/gümüşdə DXY konteksti əlavə olunur (bloklamır, məlumat verir)
+        if (a.kind === "gold" && dxyBars) {
+          const ctx = dxyContext(dxyBars, bars, signal.dir);
+          if (ctx) msg += `
+
+${ctx.line}`;
+        }
+        await sendTelegram(msg);
         seen[a.t] = signal.time;
         await fs.writeFile(STATE, JSON.stringify(seen, null, 2));
         console.log(`  📤 ICT SİQNALI göndərildi: ${a.label}`);

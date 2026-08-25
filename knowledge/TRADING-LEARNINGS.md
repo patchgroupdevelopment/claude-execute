@@ -193,3 +193,58 @@ təkrarlanmalıdır.
 **Metodoloji qeyd:** bu, `KITAB-DERSLERI.md` §4-dəki "benchmark məcburidir"
 qaydasının birbaşa nəticəsidir. Yalnız "London 12% tutur" desəydik, bu, heç nə
 demirdi. Təsadüfi gözlənti (23.4%) ilə müqayisə **istiqaməti tərsinə çevirdi**.
+
+---
+
+## 7. ⭐ ÖLÇÜLMÜŞ — DXY ↔ QIZIL: əlaqə REALDIR, amma PROQNOZ VERMİR
+
+**Tarix:** 2026-08-24 · **Skript:** `scripts/measure-dxy-gold.mjs`
+**Data:** Yahoo 5m, 60 gün · GC=F vs DX-Y.NYB · 12,897 uyğunlaşan şam
+
+### İddia
+*"DXY qalxanda qızıl düşür, DXY düşəndə qızıl qalxır."*
+
+### Nəticə: ✅ ƏLAQƏ VAR · ❌ FİLTR KİMİ İŞLƏMİR
+
+**1) Eyni anda korrelyasiya — GÜCLÜ VƏ SABİT**
+- `r = -0.473` (5m qaytarımları)
+- Yuvarlanan 1 günlük pəncərə: **1051 pəncərədən 100%-i mənfi**, heç biri müsbət deyil
+- 72%-i güclü mənfi (< -0.4) · aralıq: -0.82 … -0.15
+- → **İstifadəçinin müşahidəsi tamamilə doğrudur.**
+
+**2) Proqnoz gücü — YOXDUR**
+
+| Pəncərə | DXY↓ sonra qızıl | DXY↑ sonra qızıl | fərq | t |
+|---|---|---|---|---|
+| 3 şam | +1.88 bp | −0.40 bp | +2.28 | 1.58 ⚪ |
+| 6 şam | +1.05 bp | −0.34 bp | +1.39 | 1.18 ⚪ |
+| 12 şam | +2.50 bp | +1.43 bp | +1.07 | 0.96 ⚪ |
+| 24 şam | +1.89 bp | +2.47 bp | −0.58 | −0.51 ⚪ |
+
+Heç biri t≥2 həddinə çatmır. **DXY-nin KEÇMİŞ hərəkəti qızılın GƏLƏCƏK
+hərəkətini xəbər vermir.**
+
+**3) SMT divergensiyası (ICT-nin öz üsulu) — EDGE YOXDUR**
+Qızıl low süpürür, DXY müvafiq high-ı süpürmür (= divergensiya):
+- SMT var: **+0.60 bp** (n=556, t=0.33) ⚪
+- SMT yox: **−0.17 bp** (n=205, t=−0.06) ⚪
+- Fərq cəmi **0.76 bp** — spread-dən kiçikdir, mənasızdır
+
+### 🔑 ƏSAS DƏRS: KORRELYASİYA ≠ PROQNOZ
+
+Bu, çox rast gəlinən səhvdir. Əlaqə **eyni anlıdır (contemporaneous)**, önə
+keçən (leading) deyil. DXY düşdüyünü görəndə qızıl **artıq qalxıb** — yəni
+məlumat qiymətə hopub.
+
+→ **DXY-ni istiqamət filtri kimi işlətmək fayda vermir.**
+
+### ✅ Nə üçün İSTİFADƏ EDİLƏ BİLƏR (ölçmə ilə əsaslandırılan)
+
+1. **Korrelyasiya pozulması xəbərdarlığı** — 1051 pəncərədən heç biri müsbət
+   deyildi. Əgər yuvarlanan `r` > −0.2 olarsa, bu **anomal vəziyyətdir**
+   (rejim dəyişikliyi, mərkəzi bank müdaxiləsi və s.) → diqqət siqnalı.
+2. **Ziddiyyət bayrağı (kontekst)** — qızılda LONG siqnalı gələndə DXY də
+   eyni anda güclü qalxırsa, siqnal daxilən ziddiyyətlidir. Bu, **bloklayıcı
+   filtr deyil**, mesajda göstərilən kontekstdir.
+
+**Tətbiq:** `ict-engine.mjs` → `dxyContext()` — yalnız məlumat, filtr DEYİL.

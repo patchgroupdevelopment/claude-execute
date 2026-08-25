@@ -331,3 +331,74 @@ Giriş səviyyəsi: <b>${f(live.entryPx)}</b>  (FVG 50%)
 ⚠️ Bu, ƏMR DEYİL — setup hələ tamamlanmayıb. Diqqətdə saxla.`;
   return m;
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+//  DXY KONTEKSTİ (qızıl/gümüş üçün) — ⚠️ FİLTR DEYİL, MƏLUMATDIR
+//
+//  Ölçüldü (knowledge/TRADING-LEARNINGS.md §7, 12,897 şam):
+//    • Korrelyasiya REAL və SABİT: r = -0.473, yuvarlanan pəncərələrin
+//      100%-i mənfi (1051-dən heç biri müsbət deyil)
+//    • ❌ PROQNOZ GÜCÜ YOXDUR: t = 1.58 / 1.18 / 0.96 / -0.51 — heç biri
+//      t≥2 həddinə çatmır. DXY-nin keçmiş hərəkəti qızılın gələcəyini
+//      xəbər vermir; əlaqə EYNİ ANLIDIR, önə keçən deyil.
+//    • ❌ SMT divergensiyası da edge vermir (fərq 0.76 bp, t=0.33)
+//
+//  Ona görə DXY siqnalı BLOKLAMIR — yalnız iki halda kontekst göstərir:
+//    1. Korrelyasiya pozulubsa (anomal rejim)
+//    2. Siqnal DXY ilə ziddiyyətlidirsə (diqqət üçün)
+// ════════════════════════════════════════════════════════════════════════════
+
+export async function fetchDxy() {
+  const u = "https://query1.finance.yahoo.com/v8/finance/chart/DX-Y.NYB?interval=5m&range=5d";
+  const r = await fetch(u, { headers: { "User-Agent": "Mozilla/5.0" } });
+  if (!r.ok) return null;
+  const d = (await r.json())?.chart?.result?.[0];
+  if (!d?.timestamp) return null;
+  const t = d.timestamp, q = d.indicators.quote[0], o = [];
+  for (let i = 0; i < t.length; i++) {
+    if (q.close[i] == null) continue;
+    o.push({ t: t[i] * 1000, c: q.close[i] });
+  }
+  return o;
+}
+
+/**
+ * Qızıl siqnalı üçün DXY konteksti.
+ * @returns {{line: string, conflict: boolean, broken: boolean}|null}
+ */
+export function dxyContext(dxyBars, goldBars, dir) {
+  if (!dxyBars || dxyBars.length < 60 || !goldBars) return null;
+  const map = new Map(dxyBars.map((x) => [x.t, x.c]));
+  const pairs = [];
+  for (const g of goldBars.slice(-300)) { const d = map.get(g.t); if (d != null) pairs.push([g.c, d]); }
+  if (pairs.length < 60) return null;
+
+  // yuvarlanan korrelyasiya (qaytarımlar üzərində)
+  const rg = [], rd = [];
+  for (let i = 1; i < pairs.length; i++) {
+    rg.push((pairs[i][0] - pairs[i - 1][0]) / pairs[i - 1][0]);
+    rd.push((pairs[i][1] - pairs[i - 1][1]) / pairs[i - 1][1]);
+  }
+  const n = rg.length;
+  const ma = rg.reduce((a, b) => a + b, 0) / n, mb = rd.reduce((a, b) => a + b, 0) / n;
+  let sab = 0, sa = 0, sb = 0;
+  for (let i = 0; i < n; i++) { const x = rg[i] - ma, y = rd[i] - mb; sab += x * y; sa += x * x; sb += y * y; }
+  const corr = sa > 0 && sb > 0 ? sab / Math.sqrt(sa * sb) : 0;
+
+  // DXY-nin son 12 şamdakı hərəkəti
+  const last = dxyBars[dxyBars.length - 1].c;
+  const prev = dxyBars[Math.max(0, dxyBars.length - 13)].c;
+  const move = ((last - prev) / prev) * 100;
+  const rising = move > 0.05, falling = move < -0.05;
+
+  // Ziddiyyət: qızılda AL, amma DXY qalxır (və ya əksi)
+  const conflict = (dir === 1 && rising) || (dir === -1 && falling);
+  const broken = corr > -0.2;   // ölçüldü: normalda 100% pəncərə mənfidir
+
+  let line = `📉 DXY: ${last.toFixed(2)} (${move >= 0 ? "+" : ""}${move.toFixed(2)}% son 1s)  ·  korr ${corr.toFixed(2)}`;
+  if (broken) line += `\n⚠️ Korrelyasiya POZULUB (normalda −0.4…−0.8). Anomal rejim — ehtiyatlı ol.`;
+  else if (conflict) line += `\n⚠️ DXY siqnalla ZİDDİR (${dir === 1 ? "qızılda AL, amma dollar qalxır" : "qızılda SAT, amma dollar düşür"}).`;
+  else line += `\n✅ DXY siqnalı təsdiqləyir.`;
+  line += `\nℹ️ Ölçülüb: DXY proqnoz vermir (t<2) — bu, BLOKLAYICI filtr deyil, kontekstdir.`;
+  return { line, conflict, broken, corr, move };
+}
