@@ -271,6 +271,10 @@ isCrypto = mkt == "Kripto (24/7)"
 isIndex  = mkt == "İndeks (NAS/SPX/DOW)"
 isGold   = mkt == "Qızıl / Əmtəə"
 
+// Taymfreym yoxlaması: model 5 dəqiqəlik üçün qurulub. 4h/1D şamda seans,
+// sweep və FVG məntiqi işləmir — istifadəçi bunu bilməlidir.
+tfBadG = not isCrypto and timeframe.in_seconds(timeframe.period) / 60 > 60
+
 // D17 @00:02:43 — müəllimin ÖZ trade pəncərələri (indikator qutusundan fərqli):
 //   İndeks: 08:30–11:00 (08:30 makro data buraxılışı daxil)
 //   Forex : 07:00–10:00
@@ -922,6 +926,29 @@ if hasSig
         label.delete(array.shift(sLb))
 
 // ════════════════════════════════════════════════════════════════════════════
+//  19b. TAYMFREYM XƏBƏRDARLIĞI — qrafikin ortasında, gözdən qaçmasın
+// ════════════════════════════════════════════════════════════════════════════
+// Model 5 dəqiqəlik üçün qurulub: 4h/1D şamda hər şam saatlarla olduğu üçün
+// seans, sweep və FVG məntiqi işləmir. İstifadəçi bunu cədvəldə görməyə bilər,
+// ona görə qrafikin ORTASINDA böyük xəbərdarlıq göstərilir.
+var label tfWarn = na
+if barstate.islast
+    if not na(tfWarn)
+        label.delete(tfWarn)
+        tfWarn := na
+    if tfBadG
+        tfWarn := label.new(
+             bar_index, (ta.highest(high, 50) + ta.lowest(low, 50)) / 2,
+             "⚠️  YANLIŞ TAYMFREYM  ⚠️\n\n" +
+             "Bu model 5 DƏQİQƏLİK üçün qurulub.\n" +
+             "Cari: " + timeframe.period + "  →  5m və ya 15m seç.\n\n" +
+             "4h/1D şamda bir şam saatlarla davam edir —\n" +
+             "seans, likidite sweep-i və FVG məntiqi işləmir.\n" +
+             "Ona görə TP/SL siqnalı yaranmır.",
+             style = label.style_label_center, color = color.new(C_DN, 12),
+             textcolor = color.white, size = size.large, textalign = text.align_center)
+
+// ════════════════════════════════════════════════════════════════════════════
 //  20. İNFO PANELİ — "nə baş verir" bir baxışda
 // ════════════════════════════════════════════════════════════════════════════
 tblPos = uiTblPos == "Sağ üst" ? position.top_right :
@@ -934,9 +961,6 @@ var table tb = table.new(tblPos, 2, 16, border_width = 1,
 // Başlıq zolağı — bölmələri ayırır
 // Seans işarəsi (qlobal — Pine funksiyaları şərt blokunun içində elan edilə bilməz)
 f_mk(bool on) => on ? "⬤ " : "○ "
-
-// Taymfreym xəbərdarlığı: bu model 5m/15m üçündür
-tfBadG = not isCrypto and timeframe.in_seconds(timeframe.period) / 60 > 60
 
 f_head(int r, string t) =>
     table.cell(tb, 0, r, t, text_color = color.new(color.white, 15), text_size = size.tiny,
