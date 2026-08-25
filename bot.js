@@ -11,7 +11,7 @@
  */
 
 import { readFileSync, writeFileSync, existsSync, appendFileSync } from "fs";
-import { readFile, writeFile, appendFile } from "fs/promises";
+import { readFile, writeFile, appendFile, mkdir } from "fs/promises";
 import { execSync } from "child_process";
 import { pathToFileURL } from "url";
 import path from "path";
@@ -2987,9 +2987,9 @@ ${ctx.line}`;
   // data/ qovluğu — signals.yml onu `git add -f data` ilə state branch-ına yazır,
   // yəni işlər arasında qalır (əks halda hər 15 dəqiqədə eyni siqnal təkrarlanardı).
   const STATE = "data/ict-state.json";
-  try { await fs.mkdir("data", { recursive: true }); } catch {}
+  try { await mkdir("data", { recursive: true }); } catch {}
   let seen = {};
-  try { seen = JSON.parse(await fs.readFile(STATE, "utf-8")); } catch { seen = {}; }
+  try { seen = JSON.parse(await readFile(STATE, "utf-8")); } catch { seen = {}; }
 
   // Yalnız SON şamlarda yaranan setup bildirilir — köhnə tarixi siqnallar yox.
   const FRESH_BARS = parseInt(process.env.ICT_FRESH_BARS || "3", 10);
@@ -3018,7 +3018,7 @@ ${ctx.line}`;
         }
         await sendTelegram(msg);
         seen[a.t] = signal.time;
-        await fs.writeFile(STATE, JSON.stringify(seen, null, 2));
+        await writeFile(STATE, JSON.stringify(seen, null, 2));
         console.log(`  📤 ICT SİQNALI göndərildi: ${a.label}`);
         continue;
       }
@@ -3034,7 +3034,7 @@ ${ctx.line}`;
           // köhnə "forming" açarlarını təmizlə (fayl şişməsin)
           const keys = Object.keys(seen).filter((k) => k.includes(":forming:"));
           if (keys.length > 40) for (const k of keys.slice(0, 20)) delete seen[k];
-          await fs.writeFile(STATE, JSON.stringify(seen, null, 2));
+          await writeFile(STATE, JSON.stringify(seen, null, 2));
           console.log(`  ⏳ ICT setup formalaşır: ${a.label} (mərhələ ${live.stage})`);
         }
       }
