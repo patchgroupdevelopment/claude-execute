@@ -324,6 +324,8 @@ export function formatIctSignal(sig, label, price) {
     `TP1   : ${f(sig.tp1)}${sig.dolUsed ? " (DOL)" : ""}\n` +
     `TP2   : ${f(sig.tp2)}\n` +
     (price ? `Cari  : ${f(price)}\n` : "") +
+    `\n<i>Struktur: likidite sweep → HTF FVG → displacement + MSS →\n` +
+    `FVG 50% girişi → hədəf: ən yaxın toxunulmamış likidite</i>\n` +
     `\n⚠️ Bu strategiya <b>gəlirlilik baxımından ölçülməyib</b>.\n` +
     `Botun digər siqnalları backtest edilib — bu, edilməyib.\n` +
     `Yalnız müşahidə üçün, avtomatik icra edilmir.`
