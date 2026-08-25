@@ -73,7 +73,14 @@ mktMode = input.string("Avtomatik", "Bazar tipi", group = G_MKT,
 //  2. INPUT — SETUP
 // ────────────────────────────────────────────────────────────────────────────
 string G_SET = "⚙️  Setup"
-useKz       = input.bool(true,  "Yalnız trade pəncərəsində siqnal", group = G_SET)
+useKz       = input.bool(false, "Seans/killzone filtri (defolt SÖNÜK)", group = G_SET,
+     tooltip = "⚠️ ÖLÇÜLDÜ (knowledge/TRADING-LEARNINGS.md §6, §8):\n" +
+               "• 'London günün ekstremumunu yaradır' indekslərdə TƏKZİB edildi\n" +
+               "  (ES 6.1% vs təsadüfi 23.4%, z=-2.86, sıra 46/48)\n" +
+               "• İndeks setup-ları killzone saatlarında ÜMUMİYYƏTLƏ tamamlanmır\n" +
+               "• Pəncərəni 2.5→9 saata çıxarmaq siqnalı yalnız 0→2 etdi\n\n" +
+               "Ona görə defolt SÖNÜKDÜR — sistem 24/7 analiz edir.\n" +
+               "Telegram botu ilə eyni davranış (ICT_USE_SESSIONS=0).")
 htfOn       = input.bool(true,  "HTF FVG içində olmaq şərti  ⭐", group = G_SET,
      tooltip = "Dərs 31-in A/B təcrübəsi: EYNİ order block pattern-i HTF vacib\n" +
                "səviyyə olmadan STOP oldu, 1H FVG-nin içində olanda TP oldu.\n" +
@@ -915,111 +922,94 @@ if hasSig
         label.delete(array.shift(sLb))
 
 // ════════════════════════════════════════════════════════════════════════════
-//  20. İNFO CƏDVƏLİ
+//  20. İNFO PANELİ — "nə baş verir" bir baxışda
 // ════════════════════════════════════════════════════════════════════════════
 tblPos = uiTblPos == "Sağ üst" ? position.top_right :
-         uiTblPos == "Sağ alt" ? position.bottom_right :
-         uiTblPos == "Sol üst" ? position.top_left : position.bottom_left
+          uiTblPos == "Sağ alt" ? position.bottom_right :
+          uiTblPos == "Sol üst" ? position.top_left : position.bottom_left
 
-var table tb = table.new(tblPos, 3, 15, border_width = 1,
-     frame_width = 1, frame_color = color.new(C_NEU, 55))
+var table tb = table.new(tblPos, 2, 16, border_width = 1,
+      frame_width = 2, frame_color = color.new(C_NEU, 40), bgcolor = #131722)
 
-f_row(int r, string a, string b, string c, color bg, color tc) =>
-    table.cell(tb, 0, r, a, text_color = color.new(color.white, 25), text_size = size.tiny,
-         bgcolor = bg, text_halign = text.align_left)
-    table.cell(tb, 1, r, b, text_color = tc, text_size = size.tiny,
-         bgcolor = bg, text_halign = text.align_left)
-    table.cell(tb, 2, r, c, text_color = color.new(color.white, 35), text_size = size.tiny,
-         bgcolor = bg, text_halign = text.align_right)
+// Başlıq zolağı — bölmələri ayırır
+// Seans işarəsi (qlobal — Pine funksiyaları şərt blokunun içində elan edilə bilməz)
+f_mk(bool on) => on ? "⬤ " : "○ "
+
+// Taymfreym xəbərdarlığı: bu model 5m/15m üçündür
+tfBadG = not isCrypto and timeframe.in_seconds(timeframe.period) / 60 > 60
+
+f_head(int r, string t) =>
+    table.cell(tb, 0, r, t, text_color = color.new(color.white, 15), text_size = size.tiny,
+         bgcolor = color.new(C_ACC, 45), text_halign = text.align_left)
+    table.cell(tb, 1, r, "", bgcolor = color.new(C_ACC, 45))
+
+// Adi sətir: sol = etiket, sağ = dəyər
+f_kv(int r, string k, string v, color vc) =>
+    table.cell(tb, 0, r, k, text_color = color.new(color.white, 45), text_size = size.tiny,
+         bgcolor = #1a1e29, text_halign = text.align_left)
+    table.cell(tb, 1, r, v, text_color = vc, text_size = size.tiny,
+         bgcolor = #1a1e29, text_halign = text.align_right)
 
 if uiTable and barstate.islast
-    cHd = color.new(C_ACC, 20)
-    cRw = color.new(#1e222d, 25)
-    cOk = color.new(C_UP, 55)
-    cNo = color.new(C_DN, 55)
-
     nyNow = f_pad(hour(timenow, TZ))  + ":" + f_pad(minute(timenow, TZ))
     bkNow = f_pad(hour(timenow, TZB)) + ":" + f_pad(minute(timenow, TZB))
 
-    f_row(0, "ICT UNIVERSAL", mkt, "NY " + nyNow + " · Bakı " + bkNow, cHd, color.white)
+    // ══ 1. HARADAYIQ ══
+    f_head(0, "🕐  HARADAYIQ")
+    f_kv(1, "Saat", "NY " + nyNow + "   ·   Bakı " + bkNow, color.new(color.white, 10))
 
-    kzOkNow = isCrypto or inTradeWin
-    f_row(1, "Seans", kzName, kzOkNow ? "▶ AÇIQ" : inNoTr ? "🚫 CBDR" : "bağlı",
-         kzOkNow ? cOk : cNo, kzOkNow ? C_UP : C_DN)
+    // Cari seans — hansının içindəyiksə O işarələnir
+    sesNow = inNyAm  ? "NY AM"   : inNyPm ? "NY PM"  : inLunch ? "NAHAR" :
+             inLondon ? "LONDON" : inAsia ? "ASİYA"  : inNoTr  ? "CBDR"  : "keçid"
+    sesCol = inNyAm or inLondon ? C_UP : inNyPm ? C_ACC : inAsia ? color.blue :
+             inLunch or inNoTr ? C_GOLD : C_NEU
+    f_kv(2, "Cari seans", "▶ " + sesNow, sesCol)
 
-    f_row(2, "Trade pəncərəsi", isCrypto ? "24/7 (killzone yox)" : f_toBaku(sNyTrade) + " Bakı",
-         isCrypto ? "—" : "NY " + sNyTrade, cRw, color.new(color.white, 20))
-    f_row(3, "London", f_toBaku(sLondon) + " Bakı",
-         not lonOk ? "⊘ ölçmə ilə söndürülüb" : inLondon ? "▶" : "",
-         (lonOk and inLondon) ? cOk : cRw,
-         not lonOk ? C_NEU : inLondon ? C_UP : color.new(color.white, 20))
-    f_row(4, "Asiya", f_toBaku(sAsia) + " Bakı", inAsia ? "▶" : "", inAsia ? cOk : cRw,
-         inAsia ? C_UP : color.new(color.white, 20))
+    // Bütün seanslar Bakı vaxtı ilə — cari olan ⬤ ilə göstərilir
+    f_kv(3, "Asiya  " + f_toBaku(sAsia),   f_mk(inAsia)   + (inAsia   ? "İNDİ" : ""), inAsia   ? color.blue : color.new(color.white, 65))
+    f_kv(4, "London " + f_toBaku(sLondon), f_mk(inLondon) + (inLondon ? "İNDİ" : ""), inLondon ? color.red  : color.new(color.white, 65))
+    f_kv(5, "NY AM  " + f_toBaku(sNyAm),   f_mk(inNyAm)   + (inNyAm   ? "İNDİ" : ""), inNyAm   ? C_UP       : color.new(color.white, 65))
+    f_kv(6, "NY PM  " + f_toBaku(sNyPm),   f_mk(inNyPm)   + (inNyPm   ? "İNDİ" : ""), inNyPm   ? color.purple : color.new(color.white, 65))
 
-    f_row(5, "Günlük bias", biasTxt, "ATR " + str.tostring(atr, format.mintick), cRw, biasCol)
+    // ══ 2. BAZAR ══
+    f_head(7, "📊  BAZAR VƏZİYYƏTİ — " + mkt)
+    f_kv(8, "Günlük bias", biasTxt, biasCol)
+    pdTxt = (inPremium ? "PREMIUM (satış yarısı)" : "DISCOUNT (alış yarısı)") + "  " + str.tostring(pdPct, "#") + "%"
+    f_kv(9, "Range mövqeyi", pdTxt, inPremium ? C_DN : C_UP)
+    htfOk2 = htfNearBull or htfNearBear
+    htfTxt2 = inHtfBull ? "🟢 bull FVG İÇİNDƏ" : inHtfBear ? "🔴 bear FVG İÇİNDƏ" :
+               htfNearBull ? "🟢 bull FVG yaxın" : htfNearBear ? "🔴 bear FVG yaxın" : "yoxdur"
+    f_kv(10, "HTF vacib səviyyə (" + htfTf + ")", htfTxt2, htfOk2 ? C_UP : C_NEU)
 
-    htfOk  = htfNearBull or htfNearBear
-    htfTxt = inHtfBull ? "🟢 bull FVG İÇİNDƏ" : inHtfBear ? "🔴 bear FVG İÇİNDƏ" :
-              htfNearBull ? "🟢 bull FVG yaxınlığında" : htfNearBear ? "🔴 bear FVG yaxınlığında" :
-              "— yoxdur —"
-    f_row(6, "HTF vacib səviyyə ⭐", htfTxt, htfOn ? htfTf : "sönük",
-         htfOk ? cOk : cRw, htfOk ? C_UP : C_NEU)
+    // ══ 3. SETUP — addım-addım ══
+    f_head(11, "🎯  SETUP GEDİŞATI")
+    // Vizual zəncir: hansı addım bitib, hansı gözlənilir
+    s1 = stage >= 1 ? "✅" : "⬜"
+    s2 = stage >= 2 ? "✅" : stage == 1 ? "⏳" : "⬜"
+    s3 = inTrade ? "✅" : stage == 2 ? "⏳" : "⬜"
+    f_kv(12, "sweep " + s1 + "  →  MSS " + s2 + "  →  giriş " + s3,
+         stage > 0 ? sweptNm + (sweepCnt > 1 ? " ×" + str.tostring(sweepCnt) : "") : "—",
+         stage > 0 ? C_GOLD : color.new(color.white, 65))
 
-    f_row(7, "Premium/Discount", (inPremium ? "PREMIUM" : "DISCOUNT") + "  " +
-         str.tostring(pdPct, "#") + "%", usePD ? "filtr ✓" : "", cRw,
-         inPremium ? C_DN : C_UP)
+    stTxt2 = tfBadG ? "⚠️ 5m/15m taymfreymə keç!" :
+              inTrade ? "mövqe açıqdır" :
+              stage == 0 ? "likidite sweep-i gözlənilir" :
+              stage == 1 ? "MSS (gövdə bağlanışı) gözlənilir" :
+              "FVG " + str.tostring(entryPx, format.mintick) + "-ə çəkilmə gözlənilir"
+    f_kv(13, "İndi nə gözlənilir", stTxt2, tfBadG ? C_DN : stage > 0 ? C_GOLD : color.new(color.white, 40))
 
-    stTxt = stage == 0 ? "— gözləyir —" :
-             stage == 1 ? "1️⃣ sweep · MSS gözlənilir" : "2️⃣ MSS · FVG-yə çəkilmə"
-    f_row(8, "Setup", stTxt, stage > 0 ? sweptNm + " ×" + str.tostring(sweepCnt) : "",
-         stage > 0 ? color.new(C_GOLD, 55) : cRw, stage > 0 ? C_GOLD : C_NEU)
-
-    posTxt = inTrade ? (tDir == 1 ? "🟢 LONG " : "🔴 SHORT ") + str.tostring(tEntry, format.mintick) : "— yoxdur —"
-    f_row(9, "Mövqe", posTxt,
-         inTrade ? "SL " + str.tostring(tSl, format.mintick) + (tTp1Hit ? " BE" : "") : "",
-         inTrade ? color.new(C_ACC, 60) : cRw, inTrade ? color.white : C_NEU)
-
-    // Tharp: win rate TƏK BAŞINA mənasızdır — expectancy əsl ölçüdür.
-    // Kahneman (kiçik ədədlər qanunu): 30-dan az nümunə = səs-küy, məlumat deyil.
-    wr  = nSig > 0 ? 100.0 * nTp1 / nSig : na
-    expR = nSig > 0 ? netR / nSig : na
-    thin = nSig < 30
-    f_row(10, "NƏTİCƏ (script sayır)",
-         str.tostring(nSig) + " siqnal · TP1 " + (na(wr) ? "—" : str.tostring(wr, "#") + "%") +
-         " · SL " + str.tostring(nSl),
-         (netR >= 0 ? "+" : "") + str.tostring(netR, "#.#") + "R",
-         color.new(C_NEU, 60), netR >= 0 ? C_UP : C_DN)
-
-    f_row(11, "Expectancy (R/əməliyyat)",
-         na(expR) ? "—" : (expR >= 0 ? "+" : "") + str.tostring(expR, "#.###") + " R",
-         thin ? "⚠️ " + str.tostring(nSig) + "/30 — SƏS-KÜY" : "kifayət qədər nümunə",
-         thin ? color.new(C_GOLD, 55) : (nz(expR) > 0 ? color.new(C_UP, 55) : color.new(C_DN, 55)),
-         thin ? C_GOLD : (nz(expR) > 0 ? C_UP : C_DN))
-
-    // ── Diaqnostika: siqnal yoxdursa SƏBƏBİNİ göstərir ──
-    tfMin = timeframe.in_seconds(timeframe.period) / 60
-    tfBad = not isCrypto and tfMin > 60
-    blockTxt = tfBad ? "⚠️ TAYMFREYM ÇOX BÖYÜK — 5m/15m işlət!" :
-                 inTrade ? "açıq mövqe var (vaxt stopu qoy)" :
-                 useKz and not inTradeWin ? "trade pəncərəsi bağlıdır" :
-                 not isCrypto and inNoTr ? "CBDR qadağan zonası (16:00–20:00 NY)" :
-                 not isCrypto and skipLunch and inLunch ? "nahar saatı" :
-                 htfOn and not htfOk ? "HTF vacib səviyyə yoxdur" :
-                 stage == 0 ? "likidite sweep-i gözlənilir" :
-                 stage == 1 ? "MSS (gövdə bağlanışı) gözlənilir" :
-                 "FVG orta nöqtəsinə çəkilmə gözlənilir"
-    f_row(12, "Niyə siqnal yoxdur?", blockTxt, tfBad ? "❗" : "",
-         tfBad ? color.new(C_DN, 30) : cRw, tfBad ? color.white : color.new(color.white, 20))
-
-    f_row(13, "Rədd edilən setup",
-         "HTF " + str.tostring(nRejHtf) + " · RR " + str.tostring(nRejRR) + " · filtr " + str.tostring(nRejFlt),
-         nTimeX > 0 ? "vaxt stopu " + str.tostring(nTimeX) : "sərtlik göstəricisi", cRw, C_NEU)
-
-    f_row(14, "Rejim", preset + " · HTF " + htfTf + (htfAuto ? " (avto)" : ""),
-         "RR≥" + str.tostring(effRR, "#.#") + " · sweep≥" + str.tostring(effSweep) +
-         " · pəncərə " + str.tostring(effHtfW),
-         isLoose ? color.new(C_GOLD, 55) : isStrict ? color.new(C_ACC, 55) : cRw,
-         isLoose ? C_GOLD : color.new(color.white, 20))
+    // ══ 4. NƏTİCƏ ══
+    f_head(14, "💰  MÖVQE / NƏTİCƏ")
+    wr2  = nSig > 0 ? 100.0 * nTp1 / nSig : na
+    expR2 = nSig > 0 ? netR / nSig : na
+    thin2 = nSig < 30
+    resTxt = inTrade ?
+         (tDir == 1 ? "🟢 LONG " : "🔴 SHORT ") + str.tostring(tEntry, format.mintick) +
+         "  SL " + str.tostring(tSl, format.mintick) + (tTp1Hit ? " (BE)" : "") :
+         str.tostring(nSig) + " siqnal · TP1 " + (na(wr2) ? "—" : str.tostring(wr2, "#") + "%") +
+         " · " + (netR >= 0 ? "+" : "") + str.tostring(netR, "#.#") + "R"
+    f_kv(15, inTrade ? "Açıq mövqe" : "Nəticə (script sayır)", resTxt,
+         inTrade ? color.white : netR >= 0 ? C_UP : C_DN)
 
 // ════════════════════════════════════════════════════════════════════════════
 //  21. ALERT
