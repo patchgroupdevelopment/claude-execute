@@ -2899,12 +2899,239 @@ async function run() {
     console.log(`⚠️  İqtisadi təqvim xətası: ${err.message}`);
   }
 
+  // PSAR + EMA200 + MACD günlük (yalnız long) — PSAR_SIGNALS=1 olmasa işləmir
+  try {
+    await sendPsarDailyBriefIfDue();
+  } catch (err) {
+    console.log(`⚠️  PSAR brifinq xətası: ${err.message}`);
+  }
+
   // ICT modeli (təcrübi) — ICT_SIGNALS=1 olmasa heç nə etmir
   try {
     await checkIctSignals();
   } catch (err) {
     console.log(`⚠️  ICT siqnal xətası: ${err.message}`);
   }
+}
+
+
+
+// ─── PSAR + EMA200 + MACD — GÜNLÜK, YALNIZ LONG ──────────────────────────────
+//
+// Mənbə: tradingview.com/script/eevVxLxD (Saleh_Toodarvari, açıq mənbə).
+// Müəllifin qaydası: qiymət EMA200-dən yuxarı + PSAR yüksəlişdə + MACD delta müsbət.
+// Müəllif nə stop, nə hədəf, nə də backtest verir — hər üçünü biz əlavə etdik.
+//
+// ⭐ ƏLAVƏ EDİLMƏZDƏN ƏVVƏL ÖLÇÜLDÜ (scripts/backtest-psar-ema-macd.mjs):
+//   8 alət, 6 konfiqurasiya sınandı. YALNIZ biri qəbul meyarını keçdi:
+//     5m  long+short : 5441 trade · +0.013R · t=0.83  → gurultu
+//     60m long+short : 5166 trade · +0.015R · t=0.97  → gurultu
+//     1g  long+short :  943 trade · +0.087R · t=2.53  → real, amma həddən aşağı
+//     1g  YALNIZ LONG:  612 trade · +0.180R · t=3.96  → ✅ KEÇİR
+//   Zaman-yarısı testi: +0.256R / +0.105R — eyni işarə (sabit, amma zəifləyir).
+//   Ona görə bu modul YALNIZ GÜNLÜK və YALNIZ LONG işləyir. Aşağı taymfreymdə
+//   və short tərəfdə üstünlük ÖLÇÜLƏRƏK RƏDD EDİLİB — oraya genişləndirmə.
+//
+// ⚠️ MƏCBURİ BENCHMARK (KITAB-DERSLERI §1): eyni 10 ildə sadəcə saxlamaq
+//   NQ +510%, BTC +13532% verib. Bu sistem ~+11R/alət qazanır. Üstünlüyü
+//   GƏLİRDƏ deyil, DÜŞÜŞDƏDİR (-3.8R vs -35%). Bunu bilərək istifadə et.
+//
+// Çıxış qaydası backtestlə eynidir: PSAR əks tərəfə çevriləndə bağlanış qiyməti
+// ilə çıx. PSAR-ın özü trailing stopdur — hər gün yuxarı çəkilir.
+
+const PSAR_STATE_FILE = path.join(DATA_DIR, "psar-state.json");
+
+// Ölçülmüş orta R — mesajda göstərilir ki, hansı alətin nə qədər sınanmış
+// olduğu görünsün. Rəqəmlər 10 illik günlük testdən (yuxarı bax).
+const PSAR_ASSETS = [
+  { t: "NQ=F", label: "NASDAQ 100", xm: "US100Cash", measured: +0.119 },
+  { t: "ES=F", label: "S&P 500", xm: "US500Cash", measured: +0.238 },
+  { t: "YM=F", label: "DOW 30", xm: "US30Cash", measured: +0.137 },
+  { t: "GC=F", label: "QIZIL", xm: "XAUUSD", measured: +0.118 },
+  { t: "SI=F", label: "GÜMÜŞ", xm: "XAGUSD", measured: +0.041 },
+  { t: "CL=F", label: "NEFT (WTI)", xm: "OILUSD", measured: +0.003 },
+  { t: "BTC-USD", label: "BITCOIN", xm: "BTCUSD", measured: +0.444 },
+  { t: "ETH-USD", label: "ETHEREUM", xm: "ETHUSD", measured: +0.350 },
+];
+
+// EMA seriyası (calcEMA yalnız SON dəyəri qaytarır — MACD üçün seriya lazımdır)
+function psarEmaSeries(vals, n) {
+  const out = new Array(vals.length).fill(null);
+  const k = 2 / (n + 1);
+  let e = null;
+  for (let i = 0; i < vals.length; i++) {
+    if (i === n - 1) { e = vals.slice(0, n).reduce((a, b) => a + b, 0) / n; out[i] = e; }
+    else if (i >= n) { e = vals[i] * k + e * (1 - k); out[i] = e; }
+  }
+  return out;
+}
+
+// MACD delta = histoqram = MACD xətti − siqnal xətti
+function psarMacdHist(closes, f = 12, s = 26, sig = 9) {
+  const ef = psarEmaSeries(closes, f);
+  const es = psarEmaSeries(closes, s);
+  const line = closes.map((_, i) => (ef[i] != null && es[i] != null ? ef[i] - es[i] : null));
+  const sl = psarEmaSeries(line.filter((x) => x != null), sig);
+  const out = new Array(closes.length).fill(null);
+  let j = 0;
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] == null) continue;
+    if (sl[j] != null) out[i] = line[i] - sl[j];
+    j++;
+  }
+  return out;
+}
+
+// Wilder Parabolic SAR (0.02 / 0.2) — TradingView ta.sar ilə eyni məntiq
+function psarSeries(c, step = 0.02, max = 0.2) {
+  const n = c.length;
+  const sar = new Array(n).fill(null);
+  const up = new Array(n).fill(null);
+  if (n < 3) return { sar, up };
+  let isUp = c[1].close >= c[0].close;
+  let ep = isUp ? c[1].high : c[1].low;
+  let af = step;
+  let s = isUp ? c[0].low : c[0].high;
+  for (let i = 2; i < n; i++) {
+    s = s + af * (ep - s);
+    if (isUp) s = Math.min(s, c[i - 1].low, c[i - 2].low);
+    else s = Math.max(s, c[i - 1].high, c[i - 2].high);
+    if (isUp && c[i].low < s) { isUp = false; s = ep; ep = c[i].low; af = step; }
+    else if (!isUp && c[i].high > s) { isUp = true; s = ep; ep = c[i].high; af = step; }
+    else if (isUp && c[i].high > ep) { ep = c[i].high; af = Math.min(af + step, max); }
+    else if (!isUp && c[i].low < ep) { ep = c[i].low; af = Math.min(af + step, max); }
+    sar[i] = s;
+    up[i] = isUp;
+  }
+  return { sar, up };
+}
+
+async function sendPsarDailyBriefIfDue() {
+  if (process.env.PSAR_SIGNALS !== "1" || !process.env.TELEGRAM_BOT_TOKEN) return;
+  const force = process.env.FORCE_PSAR === "1";
+  const ny = nyParts();
+  if (!force) {
+    // Gündə bir dəfə, NY bazarı açılandan sonra — günlük şamlar artıq bağlanıb
+    if (ny.hour < 9 || (ny.hour === 9 && ny.minute < 30)) return;
+  }
+
+  let state = { lastBrief: null, positions: {}, history: [] };
+  if (existsSync(PSAR_STATE_FILE)) {
+    try { state = JSON.parse(await readFile(PSAR_STATE_FILE, "utf8")); } catch {}
+  }
+  if (!state.positions) state.positions = {};
+  if (!state.history) state.history = [];
+  if (!force && state.lastBrief === ny.date) return;
+
+  console.log("\n📈 PSAR+EMA200+MACD günlük yoxlaması...");
+
+  const fmtN = (v) => v.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  const yeni = [];      // bu gün yaranan BUY / ÇIXIŞ
+  const aciq = [];      // davam edən mövqelər
+  const gozle = [];     // siqnal yoxdur
+
+  for (const a of PSAR_ASSETS) {
+    try {
+      const c = await fetchYahooDaily(a.t);
+      if (c.length < 230) { gozle.push(`${a.label}: az data`); continue; }
+      const closes = c.map((x) => x.close);
+      const e200 = psarEmaSeries(closes, 200);
+      const hist = psarMacdHist(closes);
+      const { sar, up } = psarSeries(c);
+      const i = c.length - 1;
+      const last = c[i];
+      if (e200[i] == null || hist[i] == null || sar[i] == null) { gozle.push(`${a.label}: hesablanmadı`); continue; }
+
+      const pos = state.positions[a.t];
+
+      // ── 1. Açıq mövqe: PSAR çevrilibsə ÇIXIŞ ──
+      if (pos) {
+        if (up[i] === false) {
+          const pnlPct = ((last.close - pos.entry) / pos.entry) * 100;
+          const r = pos.risk > 0 ? (last.close - pos.entry) / pos.risk : 0;
+          state.history.push({ ...pos, ticker: a.t, label: a.label, exit: last.close, exitDate: last.date, pnlPct, r });
+          delete state.positions[a.t];
+          yeni.push(
+            `${r >= 0 ? "✅" : "🔴"} <b>ÇIXIŞ — ${a.label}</b>  (PSAR çevrildi)\n` +
+            `   giriş $${fmtN(pos.entry)} (${pos.entryDate}) → çıxış $${fmtN(last.close)}  ·  ` +
+            `<b>${r >= 0 ? "+" : ""}${r.toFixed(2)}R</b> (${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(2)}%)\n` +
+            `   XM-də <b>${a.xm}</b> mövqeyin varsa bağla.`,
+          );
+        } else {
+          pos.trailStop = sar[i];              // PSAR-ın özü trailing stopdur
+          const r = pos.risk > 0 ? (last.close - pos.entry) / pos.risk : 0;
+          aciq.push(
+            `⏳ <b>${a.label}</b> — BUY @ $${fmtN(pos.entry)} (${pos.entryDate}), hazırda ` +
+            `<b>${r >= 0 ? "+" : ""}${r.toFixed(2)}R</b>  ·  🛑 stop $${fmtN(pos.trailStop)}`,
+          );
+        }
+        continue;
+      }
+
+      // ── 2. Mövqe yoxdur: üç şərt TƏZƏ tamamlanıbsa GİRİŞ ──
+      const ok = last.close > e200[i] && up[i] === true && hist[i] > 0;
+      const okPrev = e200[i - 1] != null && hist[i - 1] != null &&
+        c[i - 1].close > e200[i - 1] && up[i - 1] === true && hist[i - 1] > 0;
+
+      if (ok && !okPrev) {
+        const stop = sar[i];
+        const risk = Math.abs(last.close - stop);
+        if (risk <= 0) { gozle.push(`${a.label}: stop məsafəsi sıfır`); continue; }
+        state.positions[a.t] = { entry: last.close, entryDate: last.date, stop, risk, trailStop: stop };
+        const xmAccount = parseFloat(process.env.XM_ACCOUNT_USD || "500");
+        const xmRiskPct = parseFloat(process.env.XM_RISK_PCT || "1.5");
+        const riskUsd = xmAccount * (xmRiskPct / 100);
+        const sizing = computeXmUnits(riskUsd, last.close, risk, xmAccount);
+        const units = sizing ? sizing.units : 0;
+        yeni.push(
+          `🚨 <b>BUY — ${a.label}</b>  (${last.date} bağlanışı)\n` +
+          `   Giriş ~$${fmtN(last.close)}  ·  🛑 stop $${fmtN(stop)} (PSAR, hər gün yuxarı çəkilir)\n` +
+          `   Sabit TP yoxdur — PSAR çevrilənə qədər saxla.\n` +
+          `   📐 XM: <b>${a.xm}</b>\n` +
+          `   ⚠️ <b>Sifariş biletinə DƏQİQ bu ölçünü yaz:</b> 👉 <b>${units.toFixed(4)}</b> ` +
+          `(SL itkisi ~$${riskUsd.toFixed(0)}) — standart "1 Lot" ilə buraxma!\n` +
+          `   📊 Bu alətdə ölçülmüş orta: ${a.measured >= 0 ? "+" : ""}${a.measured.toFixed(3)}R/trade (10 il)`,
+        );
+      } else {
+        const eksik = [];
+        if (!(last.close > e200[i])) eksik.push("EMA200-dən aşağı");
+        if (up[i] !== true) eksik.push("PSAR enişdə");
+        if (!(hist[i] > 0)) eksik.push("MACD mənfi");
+        // Şərtlər ödənilirsə amma TƏZƏ deyilsə giriş verilmir — backtestlə eyni.
+        // Trendin ortasında girmək ölçülməyib, ona görə növbəti təzə siqnal gözlənilir.
+        gozle.push(`${a.label}: ${eksik.length ? eksik.join(", ") : "şərtlər ✔ amma giriş anı keçib"}`);
+      }
+    } catch (err) {
+      gozle.push(`${a.label}: ${err.message}`);
+    }
+  }
+
+  let msg = `📈 <b>PSAR + EMA200 + MACD — GÜNLÜK</b> (yalnız LONG)\n`;
+  if (yeni.length) msg += `\n${yeni.join("\n\n")}\n`;
+  if (aciq.length) msg += `\n<b>Açıq mövqelər:</b>\n${aciq.join("\n")}\n`;
+  if (!yeni.length && !aciq.length) msg += `\n⚪ Bu gün siqnal yoxdur, açıq mövqe də yoxdur.\n`;
+  if (gozle.length) msg += `\n<i>Gözləyir: ${gozle.join(" · ")}</i>\n`;
+
+  if (state.history.length) {
+    const rs = state.history.map((h) => h.r);
+    const wins = rs.filter((x) => x > 0).length;
+    const tot = rs.reduce((s, x) => s + x, 0);
+    msg += `\n📊 Bu modulun öz nəticəsi: ${rs.length} əməliyyat · ${wins}✅/${rs.length - wins}❌ · ` +
+      `cəm ${tot >= 0 ? "+" : ""}${tot.toFixed(2)}R\n${expectancyLine(rs, "R")}`;
+  }
+  msg += `\n\n⚠️ <b>Ölçülüb:</b> 10 il · 612 əməliyyat · +0.180R · t=3.96 · maks düşüş -13.2R.\n` +
+    `Eyni dövrdə sadəcə saxlamaq daha çox qazandırırdı (NQ +510%) — bu sistemin ` +
+    `üstünlüyü gəlirdə yox, DÜŞÜŞÜN kiçikliyindədir. Aşağı taymfreymdə işləmir (t=0.83).`;
+
+  if (process.env.PSAR_DEBUG === "1") console.log("\n--- MESAJ ---\n" + msg.replace(/<[^>]+>/g, "") + "\n--- SON ---\n");
+  const sent = await sendTelegram(msg);
+  if (!sent) {
+    console.log("⚠️  PSAR brifinqi göndərilə bilmədi — növbəti dövrədə təkrar cəhd olunacaq.");
+    return;
+  }
+  state.lastBrief = ny.date;
+  await writeFile(PSAR_STATE_FILE, JSON.stringify(state, null, 2));
+  console.log(`📈 PSAR brifinqi göndərildi (${yeni.length} yeni, ${aciq.length} açıq).`);
 }
 
 
@@ -3061,7 +3288,7 @@ ${ctx.line}`;
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
-export { run, CONFIG, sendWeeklyReportIfDue, analyzeLongTermRegime, sendSp500DailyBriefIfDue, sendUs100DailyBriefIfDue, sendOilDailyBriefIfDue, sendGoldDailyBriefIfDue, checkNewsAndNotify, checkPriceLevelAlerts, checkEconomicCalendarAlerts, checkIctSignals };
+export { run, CONFIG, sendWeeklyReportIfDue, analyzeLongTermRegime, sendSp500DailyBriefIfDue, sendUs100DailyBriefIfDue, sendOilDailyBriefIfDue, sendGoldDailyBriefIfDue, checkNewsAndNotify, checkPriceLevelAlerts, checkEconomicCalendarAlerts, checkIctSignals, sendPsarDailyBriefIfDue };
 
 if (isMain) {
   if (process.argv.includes("--tax-summary")) {
