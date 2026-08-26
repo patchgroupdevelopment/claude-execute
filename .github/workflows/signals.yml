@@ -15,6 +15,10 @@ on:
         description: "ICT TEST siqnalı göndər (real deyil — yalnız formatı yoxlamaq üçün)"
         type: boolean
         default: false
+      force_psar:
+        description: "PSAR günlük brifinqini indi göndər (saat şərtinə baxmadan)"
+        type: boolean
+        default: false
 
 # State fayllarını repoya geri yazmaq üçün lazımdır
 permissions:
@@ -68,6 +72,7 @@ jobs:
       # 10 il · 612 əməliyyat · +0.180R · t=3.96 · zaman-yarısı sabit.
       # Aşağı taymfreym (t=0.83) və short tərəf ölçülərək RƏDD edilib.
       PSAR_SIGNALS: "1"
+      FORCE_PSAR: ${{ inputs.force_psar && '1' || '0' }}
       ICT_SIGNALS: "1"
       ICT_FRESH_BARS: "3"
       # Formalaşan setup bildirişi: sweep olub, MSS/giriş gözlənilir.
