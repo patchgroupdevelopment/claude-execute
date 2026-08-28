@@ -24,6 +24,10 @@ const DEFAULT_SYMS = ["NQ=F", "ES=F", "YM=F", "GC=F", "CL=F", "SI=F", "BTC-USD",
 const RANGE = { "5m": "60d", "60m": "730d", "1d": "10y" };
 
 const LONG_ONLY = process.env.LONG_ONLY === "1";
+// ANY_BAR=1 → şərtlər ödənilən İSTƏNİLƏN şamda gir (yalnız "təzə" keçiddə yox).
+// Səbəb: modul canlıda trendin ORTASINDA işə düşəndə təzə keçidi qaçırır və
+// həftələrlə kənarda qala bilər. Bu variantın ölçülməsi lazımdır.
+const ANY_BAR = process.env.ANY_BAR === "1";
 const PSAR_STEP = +(process.env.PSAR_STEP || 0.02);
 const PSAR_MAX = +(process.env.PSAR_MAX || 0.2);
 
@@ -125,10 +129,10 @@ function run(bars) {
 
     // ── yeni giriş: şərtlər TƏZƏ tamamlananda ──
     if (!pos) {
-      if (longOk && !prevLong) {
+      if (longOk && (ANY_BAR || !prevLong)) {
         const risk = Math.abs(b.c - sar[i]);
         if (risk > 0) pos = { dir: 1, entry: b.c, risk, bar: i, t: b.t };
-      } else if (!LONG_ONLY && shortOk && !prevShort) {
+      } else if (!LONG_ONLY && shortOk && (ANY_BAR || !prevShort)) {
         const risk = Math.abs(b.c - sar[i]);
         if (risk > 0) pos = { dir: -1, entry: b.c, risk, bar: i, t: b.t };
       }

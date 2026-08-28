@@ -3021,6 +3021,12 @@ async function sendPsarDailyBriefIfDue() {
   }
   if (!state.positions) state.positions = {};
   if (!state.history) state.history = [];
+  // ⚠️ SOYUQ START: modul trendin ORTASINDA işə düşəndə "təzə keçid" artıq
+  // baş verib, ona görə heç vaxt girməzdi və həftələrlə kənarda qalardı.
+  // Backtestdə bu vəziyyət yaranmır — sistem trendin əvvəlindən mövqedədir.
+  // Canlı vəziyyəti modelin vəziyyəti ilə uyğunlaşdırmaq üçün İLK dövrədə
+  // şərtləri ödəyən alətlərə cari qiymətlə girilir. Yalnız bir dəfə baş verir.
+  const soyuqStart = !state.started;
   if (!force && state.lastBrief === ny.date) return;
 
   console.log("\n📈 PSAR+EMA200+MACD günlük yoxlaması...");
@@ -3073,18 +3079,20 @@ async function sendPsarDailyBriefIfDue() {
       const okPrev = e200[i - 1] != null && hist[i - 1] != null &&
         c[i - 1].close > e200[i - 1] && up[i - 1] === true && hist[i - 1] > 0;
 
-      if (ok && !okPrev) {
+      if (ok && (!okPrev || soyuqStart)) {
         const stop = sar[i];
         const risk = Math.abs(last.close - stop);
         if (risk <= 0) { gozle.push(`${a.label}: stop məsafəsi sıfır`); continue; }
-        state.positions[a.t] = { entry: last.close, entryDate: last.date, stop, risk, trailStop: stop };
+        const bootstrap = soyuqStart && okPrev;
+        state.positions[a.t] = { entry: last.close, entryDate: last.date, stop, risk, trailStop: stop, bootstrap };
         const xmAccount = parseFloat(process.env.XM_ACCOUNT_USD || "500");
         const xmRiskPct = parseFloat(process.env.XM_RISK_PCT || "1.5");
         const riskUsd = xmAccount * (xmRiskPct / 100);
         const sizing = computeXmUnits(riskUsd, last.close, risk, xmAccount);
         const units = sizing ? sizing.units : 0;
         yeni.push(
-          `🚨 <b>BUY — ${a.label}</b>  (${last.date} bağlanışı)\n` +
+          `🚨 <b>BUY — ${a.label}</b>  (${last.date} bağlanışı)` +
+          (bootstrap ? `  <i>[trend davam edir — başlanğıc uyğunlaşdırması]</i>` : "") + `\n` +
           `   Giriş ~$${fmtN(last.close)}  ·  🛑 stop $${fmtN(stop)} (PSAR, hər gün yuxarı çəkilir)\n` +
           `   Sabit TP yoxdur — PSAR çevrilənə qədər saxla.\n` +
           `   📐 XM: <b>${a.xm}</b>\n` +
@@ -3130,6 +3138,7 @@ async function sendPsarDailyBriefIfDue() {
     return;
   }
   state.lastBrief = ny.date;
+  state.started = true;
   await writeFile(PSAR_STATE_FILE, JSON.stringify(state, null, 2));
   console.log(`📈 PSAR brifinqi göndərildi (${yeni.length} yeni, ${aciq.length} açıq).`);
 }
