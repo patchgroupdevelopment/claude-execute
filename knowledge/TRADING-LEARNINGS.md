@@ -326,3 +326,47 @@ kimi ona GÜVƏNMƏK ÜÇÜN ƏSAS YOXDUR. Real pul qoyulmamalıdır.
 **Nəyi ölçmək qalır:** modelin özünü deyil, ayrı-ayrı komponentlərini —
 məsələn "sweep-dən sonra MSS gələrsə" şərti təkbaşına üstünlük verirmi.
 Bütöv modeli deyil, hissələri sınamaq daha məlumatvericidir.
+
+
+---
+
+## §10 — "Powerful Gold Strategy 2026" ölçüldü: iddianın YARISI doğru, yarısı yalan (2026-08-28)
+
+tradingview.com/chart/XAUUSD/EGLuCHK8 — yazılı ideya (skript deyil).
+Qayda: diapazon sərhədi süpürülür → struktur qırılır → giriş.
+İki model: (1) dərhal gir, hədəf diapazonun 50%-i · (2) 61.8–80% geri
+çəkilməni gözlə, hədəf diapazonun qarşı tərəfi.
+**Müəllifin iddiası: qazanma 60–70%, orta R:R 2.0–2.5.**
+
+Ölçmə (`scripts/backtest-gold-sweep-range.mjs`, 7 alət, 3 taymfreym):
+
+| model | tf | trade | qazanc% | orta qazanc | expectancy | t |
+|---|---|---|---|---|---|---|
+| 1 (50% hədəf) | 5m | 2214 | **64%** | **0.6R** | +0.010 | 0.56 |
+| 1 | 60m | 2357 | 59% | 0.6R | −0.029 | −1.50 |
+| 1 | 1g | 477 | 59% | 0.7R | −0.007 | −0.15 |
+| 2 (qarşı tərəf) | 5m | 1968 | 44% | 1.1R | −0.039 | −1.47 |
+| 2 | 60m | 2091 | 41% | 1.2R | **−0.081** | **−3.01** |
+| 2 | 1g | 376 | 36% | 1.5R | −0.092 | −1.36 |
+
+**6 konfiqurasiyanın 6-sı da kəsildi.** Qızılın özündə: Model 1 günlük
++0.058R (65 trade), Model 2 günlük **−0.204R** (49 trade).
+
+### ⭐ ƏSAS DƏRS — iki iddia EYNİ ANDA doğru ola bilməz
+
+Müəllifin **qazanma faizi doğrudur**: Model 1-də 5m-də 64%, tam olaraq
+dediyi 60–70% aralığında. Amma həmin modelin orta qazancı **0.6R-dir**,
+dediyi 2.0–2.5R deyil. Model 2-də R:R yüksəlir (1.1–1.7R) — bu dəfə
+qazanma faizi 36–44%-ə düşür.
+
+Yəni: **yaxın hədəf → çox qazanır, az qazanır. Uzaq hədəf → az qazanır,
+çox qazanır.** Müəllif qazanma faizini BİR modeldən, R:R-i BAŞQA modeldən
+götürüb yan-yana qoyub. Bu ikisi eyni sistemdə birlikdə mövcud deyil.
+
+→ Bundan sonra hər hansı strategiya "yüksək qazanma faizi + yüksək R:R"
+iddia edəndə bu, dərhal şübhə səbəbidir. İkisini AYRI-AYRI yox, BİRLİKDƏ
+(expectancy = qazanma% × ortaQazanc − itki% × ortaİtki) yoxla.
+
+**Nəticə:** əlavə edilmədi. Bu, artıq ölçdüyümüz ICT modelinin (§9) eyni
+ailəsidir — sweep → struktur qırılması → giriş — və eyni nəticəni verir:
+ölçülə bilən üstünlük yoxdur.
