@@ -15,6 +15,7 @@ import { readFile, writeFile, appendFile, mkdir } from "fs/promises";
 import { execSync } from "child_process";
 import { pathToFileURL } from "url";
 import path from "path";
+import { runSweepStrategy, SWING_ASSETS, SWING_DEFAULTS } from "./swing-sweep-engine.mjs";
 
 // Minimal .env yükləyici — dotenv asılılığı yoxdur (GitHub Actions-da npm install lazım deyil).
 // Mühit dəyişəni artıq təyin olunubsa (CI secrets), .env onu üstələmir.
@@ -2906,6 +2907,13 @@ async function run() {
     console.log(`⚠️  PSAR brifinq xətası: ${err.message}`);
   }
 
+  // Swing sweep (eksperimental) — SWING_SIGNALS=1 olmasa işləmir
+  try {
+    await checkSwingSignals();
+  } catch (err) {
+    console.log(`⚠️  Swing siqnal xətası: ${err.message}`);
+  }
+
   // ICT modeli (təcrübi) — ICT_SIGNALS=1 olmasa heç nə etmir
   try {
     await checkIctSignals();
@@ -3144,6 +3152,131 @@ async function sendPsarDailyBriefIfDue() {
 }
 
 
+
+// ─── SWING SWEEP SİQNALLARI (EKSPERİMENTAL) ──────────────────────────────────
+//
+// Mühərrik: swing-sweep-engine.mjs — botun və backtestin İSTİFADƏ ETDİYİ
+// funksiya EYNİDİR (runSweepStrategy). Hər dövrədə tarixçə yenidən hesablanır
+// və cari açıq mövqe oradan oxunur; artan vəziyyət saxlanmır, ona görə canlı
+// məntiq ölçmədən sürüşə bilmir. Doğrulama: node scripts/verify-swing-engine.mjs
+//
+// ⚠️ EKSPERİMENTAL: ölçülmüş expectancy +0.082R (t=2.18), bizim qəbul
+// həddimiz +0.15R-dir. Fuad ölçməni biləndən sonra swing kimi qurmağı istədi.
+// Real pul üçün deyil — irəli (forward) nəticəni toplamaq üçündür.
+// Modul öz nəticəsini özü sayır və hər çıxış mesajında göstərir.
+
+const SWING_STATE_FILE = path.join(DATA_DIR, "swing-state.json");
+
+async function fetchYahooIntraday(ticker, interval = "60m", range = "730d") {
+  const res = await fetch(
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${interval}&range=${range}`,
+    { headers: { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" } },
+  );
+  if (!res.ok) throw new Error(`Yahoo ${res.status}`);
+  const r = (await res.json())?.chart?.result?.[0];
+  if (!r || !r.timestamp) throw new Error("gözlənilməz cavab");
+  const q = r.indicators.quote[0];
+  const out = [];
+  for (let i = 0; i < r.timestamp.length; i++) {
+    if ([q.open[i], q.high[i], q.low[i], q.close[i]].some((x) => x == null)) continue;
+    out.push({ t: r.timestamp[i] * 1000, o: q.open[i], h: q.high[i], l: q.low[i], c: q.close[i] });
+  }
+  // Sonuncu şam HƏLƏ BAĞLANMAYIB — qərarlar yalnız bağlanmış şamla verilir.
+  // Əks halda siqnal şam ərzində yaranıb sonra yox ola bilər (fake siqnal).
+  return out.slice(0, -1);
+}
+
+async function checkSwingSignals() {
+  if (process.env.SWING_SIGNALS !== "1" || !process.env.TELEGRAM_BOT_TOKEN) return;
+
+  let state = { seen: {}, history: [], started: false };
+  if (existsSync(SWING_STATE_FILE)) {
+    try { state = JSON.parse(await readFile(SWING_STATE_FILE, "utf8")); } catch {}
+  }
+  if (!state.seen) state.seen = {};
+  if (!state.history) state.history = [];
+  const soyuqStart = !state.started;
+
+  // İstəyə görə alət siyahısını daralt: SWING_TICKERS="GC=F,ETH-USD"
+  const only = (process.env.SWING_TICKERS || "").split(",").map((x) => x.trim()).filter(Boolean);
+  const assets = only.length ? SWING_ASSETS.filter((a) => only.includes(a.t)) : SWING_ASSETS;
+
+  const fmtN = (v) => v.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  let dirty = false;
+
+  for (const a of assets) {
+    try {
+      const bars = await fetchYahooIntraday(a.t, SWING_DEFAULTS.interval);
+      if (bars.length < 300) { console.log(`  swing ${a.label}: az data`); continue; }
+      const { trades, open } = runSweepStrategy(bars);
+      const prev = state.seen[a.t] || null;
+
+      // ── 1. Bildirdiyimiz mövqe bağlanıbsa — ÇIXIŞ mesajı ──
+      if (prev && (!open || open.t !== prev.t)) {
+        const done = trades.find((x) => x.t === prev.t);
+        if (done) {
+          state.history.push({ ticker: a.t, label: a.label, r: done.r, reason: done.reason, exitT: done.exitT });
+          const rs = state.history.map((x) => x.r);
+          const tot = rs.reduce((s, x) => s + x, 0);
+          await sendTelegram(
+            `${done.r >= 0 ? "✅" : "🔴"} <b>SWING ÇIXIŞ — ${a.label}</b>  <i>(eksperimental)</i>\n\n` +
+            `${done.dir === 1 ? "LONG" : "SHORT"} $${fmtN(done.entry)} → $${fmtN(done.exitPx)}\n` +
+            `Nəticə: <b>${done.r >= 0 ? "+" : ""}${done.r.toFixed(2)}R</b>  ·  səbəb: ${done.reason}\n\n` +
+            `📊 Bu modulun öz nəticəsi: ${rs.length} əməliyyat · cəm ${tot >= 0 ? "+" : ""}${tot.toFixed(2)}R\n` +
+            `${expectancyLine(rs, "R")}`,
+          );
+          console.log(`  📤 swing ÇIXIŞ: ${a.label} ${done.r.toFixed(2)}R`);
+        }
+        delete state.seen[a.t];
+        dirty = true;
+      }
+
+      if (!open) continue;
+
+      // ── 2. Yeni mövqe — GİRİŞ mesajı ──
+      if (!state.seen[a.t] || state.seen[a.t].t !== open.t) {
+        // Soyuq startda köhnə mövqelər "artıq açıq" kimi işarələnir: giriş
+        // qiyməti KEÇMİŞDİR, indi həmin qiymətə girmək olmaz.
+        const kohne = soyuqStart;
+        const son = bars[bars.length - 1].c;
+        const indikiR = ((son - open.entry) / open.risk) * open.dir;
+        const xmAccount = parseFloat(process.env.XM_ACCOUNT_USD || "500");
+        const xmRiskPct = parseFloat(process.env.XM_RISK_PCT || "1.5");
+        const riskUsd = xmAccount * (xmRiskPct / 100);
+        const sizing = computeXmUnits(riskUsd, open.entry, open.risk, xmAccount);
+        const units = sizing ? sizing.units : 0;
+
+        await sendTelegram(
+          `${open.dir === 1 ? "🟢" : "🔴"} <b>SWING ${open.dir === 1 ? "LONG" : "SHORT"} — ${a.label}</b>` +
+          `  <i>(eksperimental)</i>\n` +
+          (kohne ? `⚠️ <b>Mövqe artıq açıqdır</b> — giriş qiyməti keçmişdir, indiki hal: ` +
+            `${indikiR >= 0 ? "+" : ""}${indikiR.toFixed(2)}R. Girmək qərarı sənindir.\n` : "") +
+          `\nGiriş: <b>$${fmtN(open.entry)}</b>\n` +
+          `🛑 Stop: <b>$${fmtN(open.sl)}</b> (ATR×${SWING_DEFAULTS.trailAtr} trailing — hər saat irəli çəkilir)\n` +
+          `Sabit TP yoxdur — trailing stop işləyənə qədər saxla.\n` +
+          `📐 XM: <b>${a.xm}</b>\n` +
+          (kohne ? "" : `⚠️ <b>Sifariş biletinə DƏQİQ bu ölçünü yaz:</b> 👉 <b>${units.toFixed(4)}</b> ` +
+            `(SL itkisi ~$${riskUsd.toFixed(0)}) — standart "1 Lot" ilə buraxma!\n`) +
+          `\n📊 Bu alətdə ölçülmüş orta: ${a.measured >= 0 ? "+" : ""}${a.measured.toFixed(3)}R/trade (2 il)\n` +
+          `⚠️ Sistem cəmi: +0.082R · t=2.18 — qəbul həddimizdən (+0.15R) AŞAĞI. ` +
+          `Kağız üzərində izlə, real pul qoyma.`,
+        );
+        state.seen[a.t] = { t: open.t, entry: open.entry, dir: open.dir };
+        dirty = true;
+        console.log(`  📤 swing GİRİŞ: ${a.label} ${open.dir === 1 ? "LONG" : "SHORT"}${kohne ? " (köhnə)" : ""}`);
+      }
+    } catch (err) {
+      console.log(`  ⚠️  swing ${a.label}: ${err.message}`);
+    }
+  }
+
+  if (dirty || soyuqStart) {
+    state.started = true;
+    await writeFile(SWING_STATE_FILE, JSON.stringify(state, null, 2));
+  }
+}
+
+
 // ─── ICT SİQNALLARI (təcrübi) ────────────────────────────────────────────────
 //
 // 45 videoluq bootcamp-dan çıxarılmış ICT modeli — ict-engine.mjs.
@@ -3297,7 +3430,7 @@ ${ctx.line}`;
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
-export { run, CONFIG, sendWeeklyReportIfDue, analyzeLongTermRegime, sendSp500DailyBriefIfDue, sendUs100DailyBriefIfDue, sendOilDailyBriefIfDue, sendGoldDailyBriefIfDue, checkNewsAndNotify, checkPriceLevelAlerts, checkEconomicCalendarAlerts, checkIctSignals, sendPsarDailyBriefIfDue };
+export { run, CONFIG, sendWeeklyReportIfDue, analyzeLongTermRegime, sendSp500DailyBriefIfDue, sendUs100DailyBriefIfDue, sendOilDailyBriefIfDue, sendGoldDailyBriefIfDue, checkNewsAndNotify, checkPriceLevelAlerts, checkEconomicCalendarAlerts, checkIctSignals, sendPsarDailyBriefIfDue, checkSwingSignals };
 
 if (isMain) {
   if (process.argv.includes("--tax-summary")) {

@@ -67,6 +67,12 @@ jobs:
       # olaraq backtest edilməyib — siqnallar "TƏCRÜBİ" damğası ilə gəlir və
       # avtomatik icra OLUNMUR. Söndürmək üçün: "0" qoy və ya sətri sil.
       # Anthropic API tələb ETMİR.
+      # Swing sweep (EKSPERİMENTAL) — 60 dəqiqəlik, sweep → MSS → ATR trailing.
+      # Ölçülüb: 2148 əməliyyat · +0.082R · t=2.18 · xərc daxil.
+      # ⚠️ Qəbul həddimiz +0.15R-dir, bu ondan AŞAĞIDIR — kağız üzərində izlənilir.
+      # Aşağı taymfreymə KEÇİRİLMƏMƏLİDİR: 5m-də xərclə -0.036R (t=-1.21).
+      # Alət siyahısını daraltmaq üçün: SWING_TICKERS: "GC=F,ETH-USD"
+      SWING_SIGNALS: "1"
       # PSAR + EMA200 + MACD — günlük, yalnız LONG.
       # Əlavə edilməzdən ƏVVƏL ölçülüb (scripts/backtest-psar-ema-macd.mjs):
       # 10 il · 612 əməliyyat · +0.180R · t=3.96 · zaman-yarısı sabit.
