@@ -26,6 +26,13 @@ const MAX_WAIT_MSS = +(process.env.WMSS || 24);     // sweep-dən sonra MSS göz
 const MAX_WAIT_FILL = +(process.env.WFILL || 20);   // retracement gözləmə (Model 2)
 const MAX_BARS = +(process.env.MAXBARS || 60);      // vaxt stopu
 const MODEL = process.env.MODEL || "both";          // "1" | "2" | "both"
+// ── ÇIXIŞ REJİMİ ──────────────────────────────────────────────────────────
+// range : müəllifin qaydası — sabit hədəf (50% və ya qarşı sərhəd)
+// rr3/rr5: sabit R-qatı hədəf
+// trail : hədəf YOXDUR — ATR trailing stop, trend davam etdikcə saxla.
+//         "trend dəyişəndə gir, günlərlə gözlə" məntiqinin düzgün tərcüməsi.
+const EXIT = process.env.EXIT || "range";
+const TRAIL_ATR = +(process.env.TRAIL_ATR || 3);
 
 async function fetchYahoo(sym, interval, range) {
   const u = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=${interval}&range=${range}`;
@@ -78,9 +85,10 @@ function run(bars, model) {
     if (pos) {
       const long = pos.dir === 1;
       const hitSl = long ? b.l <= pos.sl : b.h >= pos.sl;
-      const hitTp = long ? b.h >= pos.tp : b.l <= pos.tp;
+      const hitTp = pos.tp != null && (long ? b.h >= pos.tp : b.l <= pos.tp);
       if (hitSl) {                                  // mühafizəkar: SL əvvəl
-        pos.r = -1;
+        // trailing rejimdə stop irəli çəkilmiş ola bilər — real R hesablanır
+        pos.r = ((pos.sl - pos.entry) / pos.risk) * pos.dir;
         trades.push({ ...pos, exit: "SL", i });
         pos = null;
       } else if (hitTp) {
@@ -91,6 +99,11 @@ function run(bars, model) {
         pos.r = ((b.c - pos.entry) / pos.risk) * pos.dir;
         trades.push({ ...pos, exit: "vaxt", i });
         pos = null;
+      }
+      // ── trailing stop: qiymət lehinə getdikcə stop irəli çəkilir ──
+      if (pos && EXIT === "trail" && atr[i]) {
+        const t = pos.dir === 1 ? b.c - atr[i] * TRAIL_ATR : b.c + atr[i] * TRAIL_ATR;
+        if (pos.dir === 1 ? t > pos.sl : t < pos.sl) pos.sl = t;
       }
       if (pos) continue;
     }
@@ -128,9 +141,12 @@ function run(bars, model) {
         // Model 1: dərhal gir, hədəf diapazonun 50%-i
         const ent = b.c;
         const risk = Math.abs(ent - sl);
-        const tp = mid;
-        // hədəf artıq keçilibsə setup mənasızdır
-        if (risk > 0 && (dir === 1 ? tp > ent : tp < ent))
+        const tp = EXIT === "trail" ? null
+          : EXIT === "rr3" ? ent + dir * risk * 3
+          : EXIT === "rr5" ? ent + dir * risk * 5
+          : mid;
+        const tpOk = tp === null || (dir === 1 ? tp > ent : tp < ent);
+        if (risk > 0 && tpOk)
           pos = { dir, entry: ent, sl, tp, risk, r: 0, openBar: i, t: b.t };
         stage = 0;
       } else {
@@ -152,9 +168,13 @@ function run(bars, model) {
       stage = 0;
       const ent = entryPx;
       const sl = dir === 1 ? swExt - (atr[i] || 0) * 0.15 : swExt + (atr[i] || 0) * 0.15;
-      const tp = dir === 1 ? rHi : rLo;          // diapazonun qarşı tərəfi
       const risk = Math.abs(ent - sl);
-      if (risk > 0 && (dir === 1 ? tp > ent : tp < ent))
+      const tp = EXIT === "trail" ? null
+        : EXIT === "rr3" ? ent + dir * risk * 3
+        : EXIT === "rr5" ? ent + dir * risk * 5
+        : (dir === 1 ? rHi : rLo);              // diapazonun qarşı tərəfi
+      const tpOk = tp === null || (dir === 1 ? tp > ent : tp < ent);
+      if (risk > 0 && tpOk)
         pos = { dir, entry: ent, sl, tp, risk, r: 0, openBar: i, t: b.t };
     }
   }
@@ -183,7 +203,7 @@ const pad = (s, n) => String(s).padStart(n);
   const models = MODEL === "both" ? [1, 2] : [+MODEL];
 
   console.log("\n═══ \"POWERFUL GOLD STRATEGY 2026\" — ÖLÇMƏ ═══");
-  console.log(`diapazon ${RANGE_LEN} şam · MSS gözləmə ${MAX_WAIT_MSS} · vaxt stopu ${MAX_BARS}`);
+  console.log(`diapazon ${RANGE_LEN} şam · MSS gözləmə ${MAX_WAIT_MSS} · vaxt stopu ${MAX_BARS} · çıxış: ${EXIT}${EXIT === "trail" ? " (ATR×" + TRAIL_ATR + ")" : ""}`);
   console.log("Müəllifin iddiası: qazanma 60–70% · orta R:R 2.0–2.5\n");
 
   for (const model of models) {
@@ -192,24 +212,36 @@ const pad = (s, n) => String(s).padStart(n);
     console.log(`\n╔══ ${ad} ══`);
     for (const tf of tfs) {
       const all = [];
+      const allT = [];
       const rows = [];
       for (const s of syms) {
         let bars;
         try { bars = await fetchYahoo(s, tf, RANGE[tf]); } catch { continue; }
         if (bars.length < 300) continue;
-        const rs = run(bars, model).map((x) => x.r);
+        const tr = run(bars, model);
+        const rs = tr.map((x) => x.r);
         all.push(...rs);
+        allT.push(...tr.map((x) => x.t));
         const st = stats(rs);
         if (st.n) rows.push(`${s.padEnd(9)}${pad(st.n, 5)}${pad(st.wr.toFixed(0) + "%", 7)}` +
-          `${pad((st.mean >= 0 ? "+" : "") + st.mean.toFixed(3), 9)}${pad("R:R " + st.avgW.toFixed(1), 9)}`);
+          `${pad((st.mean >= 0 ? "+" : "") + st.mean.toFixed(3), 9)}${pad("R:R " + st.avgW.toFixed(1), 9)}${pad("t=" + st.t.toFixed(2), 9)}`);
       }
       const T = stats(all);
       console.log(`\n  ── ${tf} ──`);
-      console.log("  alət     trade qazanc%   orta R  orta qazanc");
+      console.log("  alət     trade qazanc%   orta R  orta qazanc        t");
       for (const r of rows) console.log("  " + r);
       if (!T.n) { console.log("  trade yaranmadı"); continue; }
       console.log(`  ${"CƏMİ".padEnd(9)}${pad(T.n, 5)}${pad(T.wr.toFixed(0) + "%", 7)}` +
         `${pad((T.mean >= 0 ? "+" : "") + T.mean.toFixed(3), 9)}${pad("R:R " + T.avgW.toFixed(1), 9)}  t=${T.t.toFixed(2)}`);
+      if (allT.length === all.length && all.length >= 40) {
+        const idx = allT.map((t, k) => [t, all[k]]).sort((x, y) => x[0] - y[0]);
+        const m = Math.floor(idx.length / 2);
+        const h1 = stats(idx.slice(0, m).map((x) => x[1]));
+        const h2 = stats(idx.slice(m).map((x) => x[1]));
+        const same = h1.mean > 0 === h2.mean > 0;
+        console.log(`  zaman-yarısı: 1-ci ${(h1.mean >= 0 ? "+" : "") + h1.mean.toFixed(3)}R · ` +
+          `2-ci ${(h2.mean >= 0 ? "+" : "") + h2.mean.toFixed(3)}R  ${same ? "✅ eyni işarə" : "❌ İŞARƏ DƏYİŞİR"}`);
+      }
       const c1 = T.n >= 50, c2 = T.mean >= 0.15, c3 = T.t >= 2;
       console.log(`  ${c1 && c2 && c3 ? "✅ MEYARLARI KEÇİR" : "❌ keçmir"}` +
         `  (${c1 ? "✅" : "❌"}n ${c2 ? "✅" : "❌"}exp ${c3 ? "✅" : "❌"}t)` +

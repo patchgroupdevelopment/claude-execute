@@ -370,3 +370,41 @@ iddia edəndə bu, dərhal şübhə səbəbidir. İkisini AYRI-AYRI yox, BİRLİ
 **Nəticə:** əlavə edilmədi. Bu, artıq ölçdüyümüz ICT modelinin (§9) eyni
 ailəsidir — sweep → struktur qırılması → giriş — və eyni nəticəni verir:
 ölçülə bilən üstünlük yoxdur.
+
+
+### §10 DÜZƏLİŞİ — çıxış qaydası səhv idi (Fuadın iradı, 2026-08-28)
+
+Fuad dedi: "bu scalp üçündür, yəni trend dəyişəndə girirsən gözləyirsən günlərlə."
+Yəni yuxarıdakı ölçmədə ÇIXIŞ qaydası müəllifin niyyətinə uyğun deyildi.
+İrad DOĞRU çıxdı və nəticəni dəyişdi.
+
+Əvvəlcə vaxt stopu yoxlandı (60 → 1440 şam = 5 gün): demək olar heç nə
+dəyişmədi. Səbəb: sabit hədəf onsuz da çox əvvəl dəyirdi. Yəni maneə
+gözləmə müddəti YOX, HƏDƏF idi. Sonra çıxış rejimləri ölçüldü:
+
+| çıxış | tf | trade | qazanc% | orta qazanc | expectancy | t |
+|---|---|---|---|---|---|---|
+| müəllifin qaydası (50%) | 5m | 2214 | 64% | 0.6R | +0.010 | 0.56 |
+| müəllifin qaydası | 60m | 2357 | 59% | 0.6R | −0.029 | −1.50 |
+| sabit 3R | 5m qızıl | 117 | 27% | 3.0R | +0.094 | 0.57 |
+| sabit 5R | 5m qızıl | 81 | 16% | 4.6R | −0.105 | −0.45 |
+| **ATR trailing** | **5m** | 2096 | 35% | 1.3R | −0.012 | −0.39 |
+| **ATR trailing** | **60m** | **2148** | **35%** | **1.6R** | **+0.088** | **2.35** |
+
+60m + trailing: zaman-yarısı **+0.082R / +0.094R** — indiyədək gördüyümüz
+ƏN SABİT bölünmə. Qızılda +0.186R (t=1.87), ETH +0.212R (t=2.02).
+
+Parametr sabitliyi (trailing çarpanı):
+ATR×2 −0.016 · **×3 +0.088** · **×4 +0.124** · ×5 +0.059 · ×6 +0.074
+→ 5-dən 4-ü müsbət, amma ×2-də işarə dəyişir. Yayla (plateau) deyil,
+3–4 ətrafında zirvə. Yəni real, amma möhkəm deyil.
+
+**NƏTİCƏ:** +0.088R bizim +0.15R həddindən aşağıdır → avtomatik siqnal üçün
+qəbul edilmir. LAKİN bu, sweep ailəsindən ölçdüyümüz ilk MÜSBƏT və statistik
+əhəmiyyətli nəticədir və §10-un ilk hökmünü (tam mənfi) yumşaldır.
+
+⭐ **METODOLOJİ DƏRS:** strategiyanı rədd etməzdən əvvəl ÇIXIŞ qaydasının
+müəllifin niyyətinə uyğun olduğuna əmin ol. Eyni giriş siqnalı səhv çıxışla
+−0.029R, düzgün çıxışla +0.088R verdi — fərq girişdə deyil, çıxışdaydı.
+Bundan sonra hər ölçmədə ən azı 3 çıxış variantı yoxlanmalıdır:
+sabit hədəf · R-qatı · trailing.
