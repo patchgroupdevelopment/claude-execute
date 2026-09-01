@@ -33,6 +33,11 @@ const MODEL = process.env.MODEL || "both";          // "1" | "2" | "both"
 //         "trend dəyişəndə gir, günlərlə gözlə" məntiqinin düzgün tərcüməsi.
 const EXIT = process.env.EXIT || "range";
 const TRAIL_ATR = +(process.env.TRAIL_ATR || 3);
+// ── İCRA XƏRCİ ────────────────────────────────────────────────────────────
+// COST_PCT = gediş-gəliş spred+komissiya, qiymətin FAİZİ ilə (XM qızıl ≈ 0.006%).
+// Xərc R ilə ifadə olunur: xərcinR = (qiymət × COST_PCT/100) / risk.
+// Ona görə eyni xərc DAR stoplu scalpda böyük, geniş stoplu swing-də kiçikdir.
+const COST_PCT = +(process.env.COST_PCT || 0);
 
 async function fetchYahoo(sym, interval, range) {
   const u = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=${interval}&range=${range}`;
@@ -178,6 +183,8 @@ function run(bars, model) {
         pos = { dir, entry: ent, sl, tp, risk, r: 0, openBar: i, t: b.t };
     }
   }
+  if (COST_PCT > 0)
+    for (const t of trades) t.r -= (t.entry * COST_PCT) / 100 / t.risk;
   return trades;
 }
 
@@ -203,7 +210,7 @@ const pad = (s, n) => String(s).padStart(n);
   const models = MODEL === "both" ? [1, 2] : [+MODEL];
 
   console.log("\n═══ \"POWERFUL GOLD STRATEGY 2026\" — ÖLÇMƏ ═══");
-  console.log(`diapazon ${RANGE_LEN} şam · MSS gözləmə ${MAX_WAIT_MSS} · vaxt stopu ${MAX_BARS} · çıxış: ${EXIT}${EXIT === "trail" ? " (ATR×" + TRAIL_ATR + ")" : ""}`);
+  console.log(`xərc ${COST_PCT}% · diapazon ${RANGE_LEN} şam · MSS gözləmə ${MAX_WAIT_MSS} · vaxt stopu ${MAX_BARS} · çıxış: ${EXIT}${EXIT === "trail" ? " (ATR×" + TRAIL_ATR + ")" : ""}`);
   console.log("Müəllifin iddiası: qazanma 60–70% · orta R:R 2.0–2.5\n");
 
   for (const model of models) {

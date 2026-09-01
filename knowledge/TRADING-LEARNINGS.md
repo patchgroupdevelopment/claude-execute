@@ -408,3 +408,30 @@ müəllifin niyyətinə uyğun olduğuna əmin ol. Eyni giriş siqnalı səhv ç
 −0.029R, düzgün çıxışla +0.088R verdi — fərq girişdə deyil, çıxışdaydı.
 Bundan sonra hər ölçmədə ən azı 3 çıxış variantı yoxlanmalıdır:
 sabit hədəf · R-qatı · trailing.
+
+
+### §10-a əlavə — "SCALP-da işləyirmi?" sualı ölçüldü: XEYR
+
+Fuad soruşdu. Cavab birmənalıdır — üstünlük YALNIZ yuxarı taymfreymdədir,
+scalpda isə real xərclə STATİSTİK ƏHƏMİYYƏTLİ MƏNFİDİR.
+
+İcra xərci modeli əlavə olundu (COST_PCT = gediş-gəliş spred+komissiya,
+qiymətin faizi ilə). Eyni giriş, eyni çıxış, yalnız taymfreym və xərc dəyişir:
+
+| tf | xərcsiz | XM real (0.006%) | geniş spred (0.02%) |
+|---|---|---|---|
+| **5m (scalp)** | −0.012R (t −0.41) | **−0.036R** (t −1.21) | **−0.092R (t −3.08)** |
+| 60m | +0.088R (t 2.35) | **+0.082R** (t 2.18) | +0.067R (t 1.77) |
+
+⭐ **SƏBƏB — və bu, ümumi qaydadır:** xərc R ilə ölçüləndə
+`xərcinR = qiymət × xərc% / stopMəsafəsi`.
+Scalpda stop DARDIR → eyni spred R-in böyük hissəsini yeyir.
+Swing-də stop GENİŞDİR → eyni spred demək olar hiss olunmur.
+5m-də xərc nəticəni 0.08R aşağı saldı, 60m-də cəmi 0.02R.
+
+→ Aşağı taymfreymdə "üstünlük var" görünən hər nəticə MÜTLƏQ xərclə
+yenidən yoxlanmalıdır. Xərcsiz backtest scalp strategiyaları üçün yanıltıcıdır.
+
+Postun adı "Scalping, Day, Swing Trading" olsa da, ölçmə göstərir ki,
+üstünlük yalnız SWING ucundadır. Scalp ucunda sistem sadəcə "işləmir" deyil —
+real xərclə etibarlı şəkildə PUL İTİRİR (t=−3.08).
