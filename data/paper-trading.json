@@ -1,0 +1,108 @@
+{
+  "startingBalance": 1000,
+  "balance": 1010.3176367058293,
+  "positions": [],
+  "history": [
+    {
+      "symbol": "ETHUSDT",
+      "side": "BUY",
+      "entryPrice": 1887.09,
+      "exitPrice": 1889.72,
+      "quantity": 0.15897492965359364,
+      "pnlPct": 0.13936802166298953,
+      "pnlUsd": 0.41810406498896857,
+      "openedAt": "2026-07-31T07:24:13.108Z",
+      "closedAt": "2026-07-31T08:23:43.724Z",
+      "exitReason": "ETHUSDT izlənilən coinlər siyahısından çıxarılıb — mövqe cari qiymətlə bağlandı."
+    },
+    {
+      "symbol": "ETHUSDT",
+      "side": "BUY",
+      "entryPrice": 1879.01,
+      "exitPrice": 1875.6,
+      "quantity": 0.15972529748085249,
+      "pnlPct": -0.18147854455272094,
+      "pnlUsd": -0.5446632644097201,
+      "openedAt": "2026-07-31T12:29:57.656Z",
+      "closedAt": "2026-08-02T06:19:31.073Z",
+      "exitReason": "RSI(3) 55-i keçdi (bağlanmış şamda 70.52) — gözlənilən geri sıçrayış tamamlandı sayılır. Mənfəəti qorumaq üçün SAT tövsiyə olunur."
+    },
+    {
+      "symbol": "ETHUSDT",
+      "side": "BUY",
+      "entryPrice": 1876.49,
+      "exitPrice": 1876.49,
+      "quantity": 0.1598527208992181,
+      "pnlPct": 0,
+      "pnlUsd": 0,
+      "openedAt": "2026-08-10T16:12:42.386Z",
+      "closedAt": "2026-08-11T12:27:19.452Z",
+      "exitReason": "Stop-loss səviyyəsinə çatdı (breakeven stop (qiymət +0.75×ATR getdiyi üçün stop girişə çəkilib)) — qiymət $1876.49 həddinə toxundu. Zərəri məhdudlaşdırmaq üçün mövqeni bağlamaq tövsiyə olunur."
+    },
+    {
+      "symbol": "BTCUSDT",
+      "side": "BUY",
+      "entryPrice": 76245.99,
+      "exitPrice": 77258.01,
+      "quantity": 0.003934135188488912,
+      "pnlPct": 1.3273091476679488,
+      "pnlUsd": 3.9814234934545074,
+      "openedAt": "2026-08-23T08:17:49.873Z",
+      "closedAt": "2026-08-23T12:01:42.283Z",
+      "exitReason": "RSI(3) 55-i keçdi (bağlanmış şamda 62.21) — gözlənilən geri sıçrayış tamamlandı sayılır. Mənfəəti qorumaq üçün SAT tövsiyə olunur."
+    },
+    {
+      "symbol": "ETHUSDT",
+      "side": "BUY",
+      "entryPrice": 2429.06,
+      "exitPrice": 2452.63,
+      "quantity": 0.1239806588920035,
+      "pnlPct": 0.9703342033543907,
+      "pnlUsd": 2.922224130084543,
+      "openedAt": "2026-08-28T21:27:13.486Z",
+      "closedAt": "2026-08-29T21:19:58.249Z",
+      "exitReason": "RSI(3) 55-i keçdi (bağlanmış şamda 69.32) — gözlənilən geri sıçrayış tamamlandı sayılır. Mənfəəti qorumaq üçün SAT tövsiyə olunur."
+    },
+    {
+      "symbol": "BTCUSDT",
+      "side": "BUY",
+      "entryPrice": 77007.1,
+      "exitPrice": 77007.1,
+      "quantity": 0.003922146484249315,
+      "pnlPct": 0,
+      "pnlUsd": 0,
+      "openedAt": "2026-09-01T21:17:24.281Z",
+      "closedAt": "2026-09-02T11:10:41.705Z",
+      "exitReason": "Stop-loss səviyyəsinə çatdı (breakeven stop (qiymət +0.75×ATR getdiyi üçün stop girişə çəkilib)) — qiymət $77007.10 həddinə toxundu. Zərəri məhdudlaşdırmaq üçün mövqeni bağlamaq tövsiyə olunur."
+    },
+    {
+      "symbol": "BTCUSDT",
+      "side": "BUY",
+      "entryPrice": 76900,
+      "exitPrice": 77750.6,
+      "quantity": 0.00392760892753232,
+      "pnlPct": 1.1061118335500726,
+      "pnlUsd": 3.3408241537590144,
+      "openedAt": "2026-09-02T15:08:44.403Z",
+      "closedAt": "2026-09-03T06:27:11.005Z",
+      "exitReason": "RSI(3) 55-i keçdi (bağlanmış şamda 75.27) — gözlənilən geri sıçrayış tamamlandı sayılır. Mənfəəti qorumaq üçün SAT tövsiyə olunur."
+    },
+    {
+      "symbol": "ETHUSDT",
+      "side": "BUY",
+      "entryPrice": 2404.48,
+      "exitPrice": 2406.07,
+      "quantity": 0.12561265908938124,
+      "pnlPct": 0.06612656374767707,
+      "pnlUsd": 0.19972412795213448,
+      "openedAt": "2026-09-01T21:17:25.523Z",
+      "closedAt": "2026-09-03T06:27:11.798Z",
+      "exitReason": "RSI(3) 55-i keçdi (bağlanmış şamda 60.94) — gözlənilən geri sıçrayış tamamlandı sayılır. Mənfəəti qorumaq üçün SAT tövsiyə olunur."
+    }
+  ],
+  "alerts": {
+    "streak": 0,
+    "windowAt": 0,
+    "ddLevel": 0
+  }
+}
