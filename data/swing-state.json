@@ -1,0 +1,193 @@
+{
+  "seen": {
+    "ES=F": {
+      "t": 1789084800000,
+      "entry": 7610,
+      "dir": 1
+    },
+    "CL=F": {
+      "t": 1789102800000,
+      "entry": 101.37999725341797,
+      "dir": -1
+    },
+    "GC=F": {
+      "t": 1789131600000,
+      "entry": 4443.89990234375,
+      "dir": 1
+    },
+    "SI=F": {
+      "t": 1789131600000,
+      "entry": 65.78500366210938,
+      "dir": 1
+    },
+    "ETH-USD": {
+      "t": 1789149600000,
+      "entry": 2541.260009765625,
+      "dir": -1
+    }
+  },
+  "history": [
+    {
+      "ticker": "SI=F",
+      "label": "GÜMÜŞ",
+      "r": -1.003596621544873,
+      "reason": "trailing stop",
+      "exitT": 1788285600000
+    },
+    {
+      "ticker": "ES=F",
+      "label": "S&P 500",
+      "r": 1.0538357044514277,
+      "reason": "trailing stop",
+      "exitT": 1788357600000
+    },
+    {
+      "ticker": "CL=F",
+      "label": "NEFT (WTI)",
+      "r": -0.447311035686732,
+      "reason": "trailing stop",
+      "exitT": 1788364800000
+    },
+    {
+      "ticker": "ES=F",
+      "label": "S&P 500",
+      "r": -1.0190303175681452,
+      "reason": "trailing stop",
+      "exitT": 1788422400000
+    },
+    {
+      "ticker": "BTC-USD",
+      "label": "BITCOIN",
+      "r": 0.4551968657813638,
+      "reason": "trailing stop",
+      "exitT": 1788418800000
+    },
+    {
+      "ticker": "ETH-USD",
+      "label": "ETHEREUM",
+      "r": 0.44987905914124976,
+      "reason": "trailing stop",
+      "exitT": 1788440400000
+    },
+    {
+      "ticker": "GC=F",
+      "label": "QIZIL",
+      "r": 1.985742805882469,
+      "reason": "trailing stop",
+      "exitT": 1788523200000
+    },
+    {
+      "ticker": "SI=F",
+      "label": "GÜMÜŞ",
+      "r": 1.5977718433689143,
+      "reason": "trailing stop",
+      "exitT": 1788523200000
+    },
+    {
+      "ticker": "ETH-USD",
+      "label": "ETHEREUM",
+      "r": -0.3211013238689158,
+      "reason": "trailing stop",
+      "exitT": 1788627600000
+    },
+    {
+      "ticker": "ETH-USD",
+      "label": "ETHEREUM",
+      "r": -0.6308182580051342,
+      "reason": "trailing stop",
+      "exitT": 1788728400000
+    },
+    {
+      "ticker": "BTC-USD",
+      "label": "BITCOIN",
+      "r": 0.40599492603161413,
+      "reason": "trailing stop",
+      "exitT": 1788739200000
+    },
+    {
+      "ticker": "NQ=F",
+      "label": "NASDAQ 100",
+      "r": -1.006309143285303,
+      "reason": "trailing stop",
+      "exitT": 1788876000000
+    },
+    {
+      "ticker": "CL=F",
+      "label": "NEFT (WTI)",
+      "r": 0.3534211162606942,
+      "reason": "trailing stop",
+      "exitT": 1788883200000
+    },
+    {
+      "ticker": "ETH-USD",
+      "label": "ETHEREUM",
+      "r": -0.3073155674909754,
+      "reason": "trailing stop",
+      "exitT": 1788883200000
+    },
+    {
+      "ticker": "BTC-USD",
+      "label": "BITCOIN",
+      "r": -0.12491676896699493,
+      "reason": "trailing stop",
+      "exitT": 1788966000000
+    },
+    {
+      "ticker": "SI=F",
+      "label": "GÜMÜŞ",
+      "r": -0.21331570047377962,
+      "reason": "trailing stop",
+      "exitT": 1789030800000
+    },
+    {
+      "ticker": "NQ=F",
+      "label": "NASDAQ 100",
+      "r": -1.0074317700147508,
+      "reason": "trailing stop",
+      "exitT": 1789038000000
+    },
+    {
+      "ticker": "ES=F",
+      "label": "S&P 500",
+      "r": -0.8238336921741175,
+      "reason": "trailing stop",
+      "exitT": 1789038000000
+    },
+    {
+      "ticker": "ETH-USD",
+      "label": "ETHEREUM",
+      "r": 0.020006000584140923,
+      "reason": "trailing stop",
+      "exitT": 1789059600000
+    },
+    {
+      "ticker": "GC=F",
+      "label": "QIZIL",
+      "r": 0.7476614562992303,
+      "reason": "trailing stop",
+      "exitT": 1789128000000
+    },
+    {
+      "ticker": "SI=F",
+      "label": "GÜMÜŞ",
+      "r": -1.0037826084012451,
+      "reason": "trailing stop",
+      "exitT": 1789128000000
+    },
+    {
+      "ticker": "BTC-USD",
+      "label": "BITCOIN",
+      "r": -0.7177746007404391,
+      "reason": "trailing stop",
+      "exitT": 1789149600000
+    },
+    {
+      "ticker": "BTC-USD",
+      "label": "BITCOIN",
+      "r": -1.016775845490392,
+      "reason": "trailing stop",
+      "exitT": 1789286400000
+    }
+  ],
+  "started": true
+}
