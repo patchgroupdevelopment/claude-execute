@@ -1,0 +1,9 @@
+Bu qovluqda botun qalıcı vəziyyəti saxlanılır (GitHub Actions hər dövrədən sonra bura commit edir):
+  paper-trading.json        — virtual balans, açıq mövqelər, əməliyyat tarixçəsi
+  positions.json            — izlənilən siqnal mövqeləri
+  safety-check-log.json     — son qərarlar (dublikat qarşısı, günlük limit, həftəlik hesabat)
+  regime-state.json         — uzunmüddətli rejim (dublikat bildiriş qarşısı)
+  weekly-report-state.json  — həftəlik hesabatın göndərilmə vəziyyəti
+  trades.csv                — tam siqnal tarixçəsi
+
+Bu faylları əl ilə redaktə etmə — bot onları özü idarə edir.
