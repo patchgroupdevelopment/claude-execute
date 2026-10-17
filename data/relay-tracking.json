@@ -1,0 +1,80 @@
+[
+  {
+    "sourceKey": "campTradeVip",
+    "msgId": 9489,
+    "sentAt": 1785931792000,
+    "assetCode": "XAUUSD",
+    "direction": "BUY",
+    "entry": 4198,
+    "sl": 4172,
+    "tp": 4210,
+    "tövsiyə": "EHTİYATLI",
+    "status": "TP_HIT",
+    "resolvedAt": 1785934800000
+  },
+  {
+    "sourceKey": "campTradeVip",
+    "msgId": 9495,
+    "sentAt": 1785945203000,
+    "assetCode": "XAUUSD",
+    "direction": "SELL",
+    "entry": 4243,
+    "sl": 4275,
+    "tp": 4230,
+    "tövsiyə": "GİR",
+    "status": "SL_HIT",
+    "resolvedAt": 1785945600000
+  },
+  {
+    "sourceKey": "campTradeVip",
+    "msgId": 9505,
+    "sentAt": 1785947325000,
+    "assetCode": "XAUUSD",
+    "direction": "BUY",
+    "entry": 4239,
+    "sl": 4200,
+    "tp": 4250,
+    "tövsiyə": "GİR",
+    "status": "TP_HIT",
+    "resolvedAt": 1785949200000
+  },
+  {
+    "sourceKey": "campTradeVip",
+    "msgId": 9509,
+    "sentAt": 1785952719000,
+    "assetCode": "XAUUSD",
+    "direction": "BUY",
+    "entry": 4251,
+    "sl": 4200,
+    "tp": 4263,
+    "tövsiyə": "GİR",
+    "status": "TP_HIT",
+    "resolvedAt": 1785952800000
+  },
+  {
+    "sourceKey": "campTradeVip",
+    "msgId": 9515,
+    "sentAt": 1785959811000,
+    "assetCode": "XAUUSD",
+    "direction": "BUY",
+    "entry": 4230,
+    "sl": 4220,
+    "tp": 4300,
+    "tövsiyə": "EHTİYATLI",
+    "status": "TP_HIT",
+    "resolvedAt": 1785960000000
+  },
+  {
+    "sourceKey": "campTradeVip",
+    "msgId": 9518,
+    "sentAt": 1785999125000,
+    "assetCode": "XAUUSD",
+    "direction": "BUY",
+    "entry": 4253,
+    "sl": 4215,
+    "tp": 4265,
+    "tövsiyə": "EHTİYATLI",
+    "status": "TP_HIT",
+    "resolvedAt": 1785999600000
+  }
+]
